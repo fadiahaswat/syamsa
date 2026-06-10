@@ -199,7 +199,7 @@ window.renderPermitList = function () {
 
 window.checkActivePermit = function (nis, currentDateStr, currentSlotId) {
   const permit = appState.permits.find(
-    (p) => String(p.nis) === String(nis) && p.is_active,
+    (p) => String(p.nis) === String(nis) && p.is_active && (p.status === undefined || p.status === "approved"),
   );
   if (!permit) return null;
 
@@ -920,3 +920,268 @@ window.savePermitEdit = function () {
 };
 
 // --- FITUR PEMBINAAN (Baru) ---
+
+// ==========================================
+// CENTRALIZED PERMITS TAB HANDLERS
+// ==========================================
+
+window.lastUploadedDocBase64 = null;
+
+window.initPermitsTab = function() {
+  // Populate student dropdown in centralized modal
+  const select = document.getElementById("add-permit-santri-select");
+  if (select) {
+    const listToUse = FILTERED_SANTRI && FILTERED_SANTRI.length > 0 ? FILTERED_SANTRI : MASTER_SANTRI;
+    select.innerHTML = listToUse.map(s => `<option value="${s.nis || s.id}">${window.sanitizeHTML(s.nama)} (${s.kelas})</option>`).join("");
+  }
+  
+  // Reset fields in central form
+  document.getElementById("add-permit-reason").value = "";
+  document.getElementById("add-permit-start-date").value = window.getLocalDateStr();
+  document.getElementById("add-permit-end-date").value = "";
+  document.getElementById("add-permit-file").value = "";
+  document.getElementById("add-permit-file-label").textContent = "Pilih file foto/PDF";
+  window.lastUploadedDocBase64 = null;
+  
+  window.filterPermitsTabList();
+};
+
+window.handlePermitFileChange = function(input) {
+  const file = input.files[0];
+  const label = document.getElementById("add-permit-file-label");
+  if (!file) {
+    if (label) label.textContent = "Pilih file foto/PDF";
+    window.lastUploadedDocBase64 = null;
+    return;
+  }
+  
+  if (label) label.textContent = file.name + " (" + Math.round(file.size / 1024) + " KB)";
+  
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    window.lastUploadedDocBase64 = e.target.result;
+  };
+  reader.readAsDataURL(file);
+};
+
+window.submitAddPermit = function() {
+  const select = document.getElementById("add-permit-santri-select");
+  const nis = select ? select.value : "";
+  const category = document.getElementById("add-permit-category").value;
+  const startDate = document.getElementById("add-permit-start-date").value;
+  const endDate = document.getElementById("add-permit-end-date").value;
+  const reason = document.getElementById("add-permit-reason").value.trim();
+  
+  if (!nis) return window.showToast("Pilih santri terlebih dahulu", "warning");
+  if (!startDate) return window.showToast("Pilih tanggal mulai", "warning");
+  if (!reason) return window.showToast("Masukkan alasan izin", "warning");
+  
+  const newPermit = {
+    id: "p_" + Date.now(),
+    nis: nis,
+    category: category,
+    start_date: startDate,
+    end_date: endDate || null,
+    reason: reason,
+    status: "pending",
+    document: window.lastUploadedDocBase64 || null,
+    audit_trail: [
+      {
+        action: "Dibuat",
+        by: "Musyrif " + (appState.user?.name || "Admin"),
+        time: new Date().toISOString()
+      }
+    ],
+    is_active: true
+  };
+  
+  if (!appState.permits) appState.permits = [];
+  appState.permits.push(newPermit);
+  localStorage.setItem(APP_CONFIG.permitKey, JSON.stringify(appState.permits));
+  
+  window.closeModal("modal-add-permit");
+  window.filterPermitsTabList();
+  window.renderAttendanceList();
+  window.updateDashboard();
+  window.showToast("Pengajuan izin berhasil dibuat", "success");
+};
+
+window.filterPermitsTabList = function() {
+  const container = document.getElementById("permits-list-content");
+  if (!container) return;
+  
+  const query = (document.getElementById("permits-search-input")?.value || "").toLowerCase();
+  const typeFilter = document.getElementById("permits-filter-type")?.value || "all";
+  const statusFilter = document.getElementById("permits-filter-status")?.value || "all";
+  
+  const filtered = (appState.permits || []).filter(p => {
+    // 1. Search Query
+    const santri = MASTER_SANTRI.find(s => String(s.nis || s.id) === String(p.nis));
+    const name = (santri ? santri.nama : "").toLowerCase();
+    const matchesSearch = name.includes(query) || String(p.nis).includes(query);
+    
+    // 2. Type Filter
+    const matchesType = typeFilter === "all" || p.category.toLowerCase() === typeFilter.toLowerCase();
+    
+    // 3. Status Filter
+    const status = p.status || "approved";
+    const matchesStatus = statusFilter === "all" || status.toLowerCase() === statusFilter.toLowerCase();
+    
+    return matchesSearch && matchesType && matchesStatus;
+  });
+  
+  // Update badge count
+  const badge = document.getElementById("permits-count-badge");
+  if (badge) badge.textContent = filtered.length + " Pengajuan";
+  
+  if (filtered.length === 0) {
+    container.innerHTML = `
+      <div class="col-span-full text-center text-xs text-slate-400 py-12 italic bg-white dark:bg-slate-800 rounded-3xl border border-slate-100 dark:border-slate-700/60 shadow-sm">
+        Tidak ada data perizinan yang sesuai
+      </div>
+    `;
+    return;
+  }
+  
+  // Sort by start_date descending
+  filtered.sort((a, b) => b.start_date.localeCompare(a.start_date) || b.id.localeCompare(a.id));
+  
+  const catTheme = {
+    sakit: { label: "Sakit", badge: "bg-amber-50 text-amber-600 border-amber-100 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-900/30" },
+    izin: { label: "Izin Kegiatan", badge: "bg-blue-50 text-blue-600 border-blue-100 dark:bg-blue-955/20 dark:text-blue-400 dark:border-blue-900/30" },
+    pulang: { label: "Izin Pulang", badge: "bg-purple-50 text-purple-600 border-purple-100 dark:bg-purple-955/20 dark:text-purple-400 dark:border-purple-900/30" }
+  };
+  
+  const statusTheme = {
+    pending: "bg-yellow-50 text-yellow-600 border-yellow-100 dark:bg-yellow-950/40 dark:text-yellow-400 dark:border-yellow-900/30",
+    approved: "bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-955/20 dark:text-emerald-400 dark:border-emerald-900/30",
+    rejected: "bg-red-50 text-red-600 border-red-100 dark:bg-red-955/20 dark:text-red-400 dark:border-red-900/30"
+  };
+  
+  container.innerHTML = filtered.map(p => {
+    const santri = MASTER_SANTRI.find(s => String(s.nis || s.id) === String(p.nis));
+    const name = santri ? santri.nama : "Santri Tidak Dikenal";
+    const kelas = santri ? santri.kelas : "-";
+    
+    const cat = p.category.toLowerCase();
+    const theme = catTheme[cat] || { label: p.category, badge: "bg-slate-50 text-slate-600 border-slate-100" };
+    const stClass = statusTheme[p.status || "approved"] || "bg-slate-50 text-slate-600";
+    
+    return `
+      <div class="bg-white dark:bg-slate-800 rounded-3xl p-5 border border-slate-100 dark:border-slate-700 shadow-sm relative overflow-hidden flex flex-col justify-between">
+        <div>
+          <div class="flex justify-between items-start mb-3">
+            <span class="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase border ${theme.badge}">
+              ${theme.label}
+            </span>
+            <span class="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase border ${stClass}">
+              ${p.status || "approved"}
+            </span>
+          </div>
+          
+          <h4 class="font-black text-slate-800 dark:text-white text-sm truncate">${window.sanitizeHTML(name)}</h4>
+          <p class="text-[9px] text-slate-400 font-bold mt-0.5">NIS: ${p.nis} | Kelas: ${kelas}</p>
+          
+          <div class="my-3 text-xs text-slate-600 dark:text-slate-350 bg-slate-50 dark:bg-slate-900/50 p-3 rounded-2xl border border-slate-100 dark:border-slate-800/80">
+            <p class="font-bold">Alasan: <span class="font-semibold text-slate-500 dark:text-slate-400">${window.sanitizeHTML(p.reason || "-")}</span></p>
+            <p class="font-bold mt-1.5">Tanggal: <span class="font-semibold text-slate-500 dark:text-slate-400">${window.formatDate(p.start_date)} ${p.end_date ? ' s/d ' + window.formatDate(p.end_date) : '(Harian)'}</span></p>
+          </div>
+          
+          ${p.document ? `
+            <div class="mb-3">
+              <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Lampiran Dokumen</p>
+              <img src="${p.document}" class="w-full max-h-32 object-cover rounded-2xl border border-slate-200 dark:border-slate-700 cursor-zoom-in" onclick="window.zoomPermitDocument('${p.document}')" />
+            </div>
+          ` : ''}
+          
+          <!-- Audit Trail -->
+          <div class="border-t border-slate-100 dark:border-slate-750 pt-2 mt-2">
+            <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Audit Trail</p>
+            <div class="space-y-1 text-[9px] text-slate-400 dark:text-slate-500">
+              ${(p.audit_trail || []).map(a => `
+                <div class="flex justify-between">
+                  <span>${a.action} oleh ${a.by}</span>
+                  <span class="font-bold">${new Date(a.time).toLocaleDateString()}</span>
+                </div>
+              `).join("")}
+            </div>
+          </div>
+        </div>
+        
+        <!-- Action Buttons if Pending -->
+        ${p.status === "pending" ? `
+          <div class="flex gap-2 mt-4">
+            <button onclick="window.rejectPermit('	ext-red-500')" onclick="window.rejectPermit('${p.id}')" class="flex-1 py-2 text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/20 border border-red-100 dark:border-red-900/30 font-bold rounded-2xl text-xs transition-colors hover:bg-red-100 dark:hover:bg-red-950/40">
+              Tolak
+            </button>
+            <button onclick="window.approvePermit('${p.id}')" class="flex-1 py-2 text-white bg-blue-500 font-bold rounded-2xl text-xs transition-colors hover:bg-blue-600 shadow-md">
+              Setujui
+            </button>
+          </div>
+        ` : `
+          <div class="mt-4 flex justify-end">
+            <button onclick="window.deletePermitsTabItem('${p.id}')" class="text-[10px] text-slate-450 hover:text-red-500 transition-colors font-bold flex items-center gap-1">
+              <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Hapus Izin
+            </button>
+          </div>
+        `}
+      </div>
+    `;
+  }).join("");
+  
+  if (window.lucide) window.lucide.createIcons();
+};
+
+window.approvePermit = function(id) {
+  const idx = appState.permits.findIndex(p => p.id === id);
+  if (idx !== -1) {
+    appState.permits[idx].status = "approved";
+    if (!appState.permits[idx].audit_trail) appState.permits[idx].audit_trail = [];
+    appState.permits[idx].audit_trail.push({
+      action: "Disetujui",
+      by: "Musyrif " + (appState.user?.name || "Admin"),
+      time: new Date().toISOString()
+    });
+    localStorage.setItem(APP_CONFIG.permitKey, JSON.stringify(appState.permits));
+    window.filterPermitsTabList();
+    window.renderAttendanceList();
+    window.updateDashboard();
+    window.showToast("Pengajuan izin disetujui", "success");
+  }
+};
+
+window.rejectPermit = function(id) {
+  const idx = appState.permits.findIndex(p => p.id === id);
+  if (idx !== -1) {
+    appState.permits[idx].status = "rejected";
+    if (!appState.permits[idx].audit_trail) appState.permits[idx].audit_trail = [];
+    appState.permits[idx].audit_trail.push({
+      action: "Ditolak",
+      by: "Musyrif " + (appState.user?.name || "Admin"),
+      time: new Date().toISOString()
+    });
+    localStorage.setItem(APP_CONFIG.permitKey, JSON.stringify(appState.permits));
+    window.filterPermitsTabList();
+    window.renderAttendanceList();
+    window.updateDashboard();
+    window.showToast("Pengajuan izin ditolak", "warning");
+  }
+};
+
+window.deletePermitsTabItem = function(id) {
+  if (!confirm("Hapus data izin ini? Status kehadiran santri akan dikembalikan ke default.")) return;
+  appState.permits = appState.permits.filter(p => p.id !== id);
+  localStorage.setItem(APP_CONFIG.permitKey, JSON.stringify(appState.permits));
+  window.filterPermitsTabList();
+  window.renderAttendanceList();
+  window.updateDashboard();
+  window.showToast("Data izin berhasil dihapus", "info");
+};
+
+window.zoomPermitDocument = function(src) {
+  const overlay = document.createElement("div");
+  overlay.className = "fixed inset-0 z-[999] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 cursor-zoom-out animate-fade-in";
+  overlay.innerHTML = `<img src="${src}" class="max-w-full max-h-[90vh] rounded-3xl shadow-2xl border border-white/10" />`;
+  overlay.onclick = () => overlay.remove();
+  document.body.appendChild(overlay);
+};

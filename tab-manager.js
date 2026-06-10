@@ -144,6 +144,12 @@ window.switchTab = function (tabName) {
     window.renderTimesheetCalendar();
     window.renderPembinaanManagement(); // Refresh list di profil
     window.renderPermitHistory();
+  } else if (tabName === "permits") {
+    if (typeof window.initPermitsTab === "function") window.initPermitsTab();
+  } else if (tabName === "fasting") {
+    if (typeof window.initFastingTab === "function") window.initFastingTab();
+  } else if (tabName === "performance") {
+    if (typeof window.initPerformanceTab === "function") window.initPerformanceTab();
   }
   // 6. Refresh Icon Lucide
   if (window.lucide) window.lucide.createIcons();

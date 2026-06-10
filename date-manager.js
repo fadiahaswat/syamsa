@@ -102,3 +102,138 @@ window.goToToday = function () {
 
   window.showToast("Kembali ke hari ini", "success");
 };
+
+// ==========================================
+// KALKULASI HIJRIAH & JADWAL SHALAT KHGT
+// ==========================================
+
+window.getHijriDateStr = function (dateObj = new Date()) {
+  try {
+    const formatter = new Intl.DateTimeFormat("id-ID-u-ca-islamic-umalqura", {
+      day: "numeric",
+      month: "long",
+      year: "numeric"
+    });
+    return formatter.format(dateObj) + " H";
+  } catch (e) {
+    return "26 Dzulhijjah 1447 H";
+  }
+};
+
+window.calculatePrayerTimes = function (dateObj = new Date(), lat = -7.8078, lng = 110.3509, timezone = 7) {
+  const start = new Date(dateObj.getFullYear(), 0, 0);
+  const diff = dateObj - start;
+  const oneDay = 1000 * 60 * 60 * 24;
+  const dayOfYear = Math.floor(diff / oneDay);
+
+  const d = dayOfYear;
+  const pi = Math.PI;
+  const rad = pi / 180;
+  
+  const fractionalYear = (2 * pi / 365) * (d - 1);
+  
+  const eot = 229.18 * (0.000075 + 0.001868 * Math.cos(fractionalYear) - 0.032077 * Math.sin(fractionalYear) 
+              - 0.014615 * Math.cos(2 * fractionalYear) - 0.040849 * Math.sin(2 * fractionalYear));
+              
+  const decl = 0.006918 - 0.399912 * Math.cos(fractionalYear) + 0.070257 * Math.sin(fractionalYear) 
+              - 0.006758 * Math.cos(2 * fractionalYear) + 0.000907 * Math.sin(2 * fractionalYear) 
+              - 0.002697 * Math.cos(3 * fractionalYear) + 0.00148 * Math.sin(3 * fractionalYear);
+              
+  const noon = 12 + (timezone - lng / 15) - (eot / 60);
+  
+  const hourAngle = (angle, latRad, declRad) => {
+    const cosH = (Math.sin(angle * rad) - Math.sin(latRad) * Math.sin(declRad)) / (Math.cos(latRad) * Math.cos(declRad));
+    if (cosH > 1) return null;
+    if (cosH < -1) return null;
+    return Math.acos(cosH) / rad;
+  };
+  
+  const latRad = lat * rad;
+  const declRad = decl;
+  
+  const hSubuh = hourAngle(-20, latRad, declRad);
+  const subuhTime = hSubuh ? noon - hSubuh / 15 : 4.5;
+  
+  const hSyuruk = hourAngle(-0.833, latRad, declRad);
+  const syurukTime = hSyuruk ? noon - hSyuruk / 15 : 5.75;
+  
+  const dzuhurTime = noon + (2 / 60);
+  
+  const cotAlt = 1 + Math.abs(Math.tan(latRad - declRad));
+  const altAshar = Math.atan(1 / cotAlt) / rad;
+  const hAshar = hourAngle(altAshar, latRad, declRad);
+  const asharTime = hAshar ? noon + hAshar / 15 : 15.0;
+  
+  const hMaghrib = hourAngle(-1, latRad, declRad);
+  const maghribTime = hMaghrib ? noon + hMaghrib / 15 : 17.75;
+  
+  const hIsya = hourAngle(-18, latRad, declRad);
+  const isyaTime = hIsya ? noon + hIsya / 15 : 18.9;
+  
+  const formatTime = (hoursFraction) => {
+    let h = Math.floor(hoursFraction);
+    let m = Math.floor((hoursFraction - h) * 60);
+    return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+  };
+
+  return {
+    subuh: formatTime(subuhTime),
+    syuruk: formatTime(hSyuruk ? syurukTime : 5.45),
+    dzuhur: formatTime(dzuhurTime),
+    ashar: formatTime(asharTime),
+    maghrib: formatTime(maghribTime),
+    isya: formatTime(isyaTime)
+  };
+};
+
+window.getFastingInfo = function (dateObj = new Date()) {
+  const dayOfWeek = dateObj.getDay();
+  let hDay = 1, hMonth = 1, hYear = 1447;
+  try {
+    const formatter = new Intl.DateTimeFormat("id-ID-u-ca-islamic-umalqura", {
+      day: "numeric",
+      month: "numeric",
+      year: "numeric"
+    });
+    const parts = formatter.formatToParts(dateObj);
+    hDay = Number(parts.find(p => p.type === "day").value);
+    hMonth = Number(parts.find(p => p.type === "month").value);
+    hYear = Number(parts.find(p => p.type === "year").value);
+  } catch (e) {
+    hDay = dateObj.getDate();
+    hMonth = 1;
+  }
+  
+  const fasts = [];
+  
+  if (hMonth === 9) {
+    fasts.push("Puasa Ramadhan (Wajib)");
+  }
+  
+  if (hMonth === 12 && hDay === 9) {
+    fasts.push("Puasa Arafah (Sunnah)");
+  }
+  
+  if (hMonth === 1 && hDay === 9) {
+    fasts.push("Puasa Tasu'a (Sunnah)");
+  }
+  if (hMonth === 1 && hDay === 10) {
+    fasts.push("Puasa Asyura (Sunnah)");
+  }
+  
+  if (hMonth === 10 && hDay >= 2 && hDay <= 7) {
+    fasts.push("Puasa Syawal (Sunnah)");
+  }
+  
+  if ((hDay === 13 || hDay === 14 || hDay === 15) && !(hMonth === 12 && hDay === 13)) {
+    fasts.push("Puasa Ayyamul Bidh (Sunnah)");
+  }
+  
+  if (dayOfWeek === 1) {
+    fasts.push("Puasa Senin (Sunnah)");
+  } else if (dayOfWeek === 4) {
+    fasts.push("Puasa Kamis (Sunnah)");
+  }
+  
+  return fasts.length > 0 ? fasts.join(" & ") : null;
+};

@@ -61,6 +61,10 @@ window.updateDashboard = function () {
   if (window.lucide) window.lucide.createIcons();
 
   window.updateLocationStatus();
+  if (typeof window.updateWorshipWidget === "function") window.updateWorshipWidget();
+  if (typeof window.updateHeroWidget === "function") window.updateHeroWidget();
+  if (typeof window.renderAgendaWidget === "function") window.renderAgendaWidget();
+  if (typeof window.renderReminderWidget === "function") window.renderReminderWidget();
 };
 
 // ==========================================
@@ -1691,4 +1695,325 @@ window.verifyLocationCached = async function () {
   );
 
   return true;
+};
+
+// ==========================================
+// SUPERAPP NEW WIDGETS LOGIC
+// ==========================================
+
+window.updateWorshipWidget = function() {
+  const now = new Date();
+  
+  // Date formatters
+  const elGreg = document.getElementById("worship-date-gregorian");
+  if (elGreg) {
+    const days = ["Ahad", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+    const months = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Ags", "Sep", "Okt", "Nov", "Des"];
+    elGreg.textContent = `${days[now.getDay()]}, ${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}`;
+  }
+  
+  const elHijri = document.getElementById("worship-date-hijri");
+  if (elHijri && typeof window.getHijriDateStr === "function") {
+    elHijri.textContent = window.getHijriDateStr(now);
+  }
+  
+  // Update Prayer grid times
+  const times = typeof window.calculatePrayerTimes === "function" ? window.calculatePrayerTimes(now) : null;
+  if (times) {
+    const slots = ["subuh", "syuruk", "dzuhur", "ashar", "maghrib", "isya"];
+    slots.forEach(s => {
+      const el = document.querySelector(`#pt-${s} span.tracking-tight`);
+      if (el) el.textContent = times[s];
+    });
+  }
+  
+  // Update Running Clock
+  const elClock = document.getElementById("worship-time");
+  if (elClock) {
+    elClock.textContent = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}:${String(now.getSeconds()).padStart(2, "0")}`;
+  }
+  
+  // Countdown to next prayer
+  if (times) {
+    const timeToMin = (tStr) => {
+      const [h, m] = tStr.split(":").map(Number);
+      return h * 60 + m;
+    };
+    
+    const currMin = now.getHours() * 60 + now.getMinutes();
+    const currSec = now.getSeconds();
+    const currTimeMs = (currMin * 60 + currSec) * 1000;
+    
+    const prayerList = [
+      { name: "Subuh", key: "subuh", min: timeToMin(times.subuh) },
+      { name: "Syuruk", key: "syuruk", min: timeToMin(times.syuruk) },
+      { name: "Dzuhur", key: "dzuhur", min: timeToMin(times.dzuhur) },
+      { name: "Ashar", key: "ashar", min: timeToMin(times.ashar) },
+      { name: "Maghrib", key: "maghrib", min: timeToMin(times.maghrib) },
+      { name: "Isya", key: "isya", min: timeToMin(times.isya) }
+    ];
+    
+    // Find next prayer
+    let nextIndex = prayerList.findIndex(p => p.min * 60 * 1000 > currTimeMs);
+    let prevIndex = nextIndex - 1;
+    let nextPrayer, prevPrayer;
+    
+    if (nextIndex === -1) {
+      // Past Isya, next is Subuh tomorrow
+      nextPrayer = { name: "Subuh", min: prayerList[0].min + 24 * 60 };
+      prevPrayer = prayerList[5]; // Isya
+    } else if (nextIndex === 0) {
+      // Before Subuh, prev is Isya yesterday
+      nextPrayer = prayerList[0];
+      prevPrayer = { name: "Isya", min: prayerList[5].min - 24 * 60 };
+    } else {
+      nextPrayer = prayerList[nextIndex];
+      prevPrayer = prayerList[prevIndex];
+    }
+    
+    const nextMs = nextPrayer.min * 60 * 1000;
+    const diffMs = nextMs - currTimeMs;
+    
+    // Format countdown
+    const cdSec = Math.floor(diffMs / 1000) % 60;
+    const cdMin = Math.floor(diffMs / (1000 * 60)) % 60;
+    const cdHour = Math.floor(diffMs / (1000 * 60 * 60));
+    
+    const elNextName = document.getElementById("worship-next-name");
+    const elCD = document.getElementById("worship-countdown");
+    if (elNextName) elNextName.textContent = nextPrayer.name;
+    if (elCD) {
+      elCD.textContent = `${String(cdHour).padStart(2, "0")}:${String(cdMin).padStart(2, "0")}:${String(cdSec).padStart(2, "0")}`;
+    }
+    
+    // Progress Bar
+    const totalSpanMs = (nextPrayer.min - prevPrayer.min) * 60 * 1000;
+    let passedMs = currTimeMs - (prevPrayer.min * 60 * 1000);
+    if (passedMs < 0) passedMs += 24 * 60 * 60 * 1000; // handle wrap around midnight
+    const pct = Math.max(0, Math.min(100, (passedMs / totalSpanMs) * 100));
+    
+    const elProgress = document.getElementById("worship-progress");
+    if (elProgress) elProgress.style.width = `${pct}%`;
+    
+    const elPrevTime = document.getElementById("worship-prev-time");
+    const elNextTime = document.getElementById("worship-next-time");
+    if (elPrevTime) {
+      const displayKey = prevPrayer.key || "isya";
+      elPrevTime.textContent = prevPrayer.name + " (" + (times[displayKey] || "--:--") + ")";
+    }
+    if (elNextTime) {
+      const displayKey = nextPrayer.key || "subuh";
+      elNextTime.textContent = nextPrayer.name + " (" + (times[displayKey] || "--:--") + ")";
+    }
+  }
+};
+
+window.updateHeroWidget = function() {
+  const h = new Date().getHours();
+  const elBg = document.getElementById("hero-bg-gradient");
+  const elGreet = document.getElementById("hero-greeting-text");
+  const elContext = document.getElementById("hero-context-text");
+  const elSvg = document.getElementById("hero-svg-container");
+  
+  let greet = "Selamat Pagi, Musyrif.";
+  let context = "Semoga hari ini penuh berkah.";
+  let gradientClass = "from-emerald-600 to-teal-650";
+  let svgPath = "";
+  
+  if (h >= 4 && h < 5.5) {
+    greet = "Selamat Fajar, Musyrif.";
+    context = "Sesi Shubuh siap diisi.";
+    gradientClass = "from-indigo-900 to-amber-700";
+    svgPath = `<svg viewBox="0 0 24 24" width="80" height="80" class="text-white/20 fill-none stroke-current stroke-2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/><circle cx="12" cy="12" r="4"/></svg>`;
+  } else if (h >= 5.5 && h < 10) {
+    greet = "Selamat Pagi, Musyrif.";
+    context = "Semoga aktivitas hari ini membawa berkah.";
+    gradientClass = "from-emerald-600 to-teal-650";
+    svgPath = `<svg viewBox="0 0 24 24" width="80" height="80" class="text-white/20 fill-none stroke-current stroke-2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>`;
+  } else if (h >= 10 && h < 15) {
+    greet = "Selamat Siang, Musyrif.";
+    context = "Jangan lupa isi presensi sekolah santri.";
+    gradientClass = "from-cyan-500 to-blue-600";
+    svgPath = `<svg viewBox="0 0 24 24" width="80" height="80" class="text-white/20 fill-none stroke-current stroke-2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M5.64 18.36l-1.42 1.42M19.78 4.22l-1.42 1.42"/></svg>`;
+  } else if (h >= 15 && h < 17.5) {
+    greet = "Selamat Sore, Musyrif.";
+    context = "Waktu Ashar sedang berlangsung.";
+    gradientClass = "from-amber-500 to-orange-600";
+    svgPath = `<svg viewBox="0 0 24 24" width="80" height="80" class="text-white/20 fill-none stroke-current stroke-2"><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>`;
+  } else if (h >= 17.5 && h < 18.5) {
+    greet = "Selamat Senja, Musyrif.";
+    context = "Bersiap untuk shalat Maghrib berjamaah.";
+    gradientClass = "from-orange-650 to-indigo-900";
+    svgPath = `<svg viewBox="0 0 24 24" width="80" height="80" class="text-white/20 fill-none stroke-current stroke-2"><path d="M12 2v2M4.93 4.93l1.41 1.41M2 12h2M20 12h2M19.07 4.93l-1.41 1.41"/><path d="M2 22h20M12 18a6 6 0 0 0-6-6H4v6h14v-6h-2a6 6 0 0 0-6 6z"/></svg>`;
+  } else {
+    greet = "Selamat Malam, Musyrif.";
+    context = "Cek rekap dan pastikan semua data hari ini lengkap.";
+    gradientClass = "from-slate-900 to-slate-800";
+    svgPath = `<svg viewBox="0 0 24 24" width="80" height="80" class="text-white/20 fill-none stroke-current stroke-2"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>`;
+  }
+  
+  if (elBg) {
+    elBg.className = `absolute inset-0 bg-gradient-to-br ${gradientClass} opacity-90 transition-all duration-1000`;
+  }
+  if (elGreet) elGreet.textContent = greet;
+  if (elContext) elContext.textContent = context;
+  if (elSvg) elSvg.innerHTML = svgPath;
+};
+
+window.renderAgendaWidget = function() {
+  const container = document.getElementById("dashboard-agenda-list");
+  if (!container) return;
+  
+  const todayStr = window.getLocalDateStr();
+  const sorted = (appState.agendas || [])
+    .filter(a => a.date >= todayStr)
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .slice(0, 3);
+    
+  if (sorted.length === 0) {
+    container.innerHTML = `
+      <div class="text-center text-xs text-slate-400 py-6 italic bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-100 dark:border-slate-800">
+        Tidak ada agenda terdekat
+      </div>
+    `;
+    return;
+  }
+  
+  const badgeClasses = {
+    ujian: "bg-red-50 text-red-600 border-red-100 dark:bg-red-950/40 dark:text-red-400 dark:border-red-900/30",
+    perpulangan: "bg-blue-50 text-blue-600 border-blue-100 dark:bg-blue-955/20 dark:text-blue-400 dark:border-blue-900/30",
+    event: "bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-955/40 dark:text-emerald-400 dark:border-emerald-900/30",
+    kegiatan: "bg-purple-50 text-purple-600 border-purple-100 dark:bg-purple-955/20 dark:text-purple-400 dark:border-purple-900/30"
+  };
+  
+  container.innerHTML = sorted.map(a => {
+    const diffTime = new Date(a.date) - new Date(todayStr);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    const countdownText = diffDays === 0 ? "Hari Ini" : diffDays === 1 ? "Besok" : `${diffDays} hari lagi`;
+    
+    return `
+      <div class="p-3 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-100/50 dark:border-slate-700/50 flex items-center justify-between gap-3">
+        <div class="min-w-0 flex-1">
+          <span class="inline-block px-2 py-0.5 rounded-full text-[8px] font-black uppercase border ${badgeClasses[a.type] || "bg-slate-100 text-slate-500"} mb-1">
+            ${a.type}
+          </span>
+          <h4 class="text-xs font-bold text-slate-700 dark:text-slate-200 truncate">${window.sanitizeHTML(a.title)}</h4>
+          <p class="text-[9px] text-slate-400 mt-0.5">${window.formatDate(a.date)}</p>
+        </div>
+        <span class="text-[10px] font-black text-indigo-500 whitespace-nowrap bg-indigo-50 dark:bg-indigo-900/20 px-2.5 py-1 rounded-xl">
+          ${countdownText}
+        </span>
+      </div>
+    `;
+  }).join("");
+};
+
+window.renderReminderWidget = function() {
+  const container = document.getElementById("dashboard-reminder-list");
+  if (!container) return;
+  
+  const reminders = appState.reminders || [];
+  if (reminders.length === 0) {
+    container.innerHTML = `
+      <div class="text-center text-xs text-slate-400 py-6 italic bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-100 dark:border-slate-800">
+        Tidak ada pengingat tugas
+      </div>
+    `;
+    return;
+  }
+  
+  container.innerHTML = reminders.map(r => {
+    const doneClass = r.done ? "line-through text-slate-400 dark:text-slate-500" : "text-slate-700 dark:text-slate-200";
+    const checkIcon = r.done ? "check-square" : "square";
+    const checkColor = r.done ? "text-pink-500" : "text-slate-400 dark:text-slate-650";
+    
+    return `
+      <div class="p-3 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-100/50 dark:border-slate-700/50 flex items-center justify-between gap-3">
+        <div class="flex items-center gap-3 min-w-0 flex-1">
+          <button onclick="window.toggleReminderDone('${r.id}')" class="${checkColor} hover:text-pink-500 transition-colors shrink-0">
+            <i data-lucide="${checkIcon}" class="w-5 h-5"></i>
+          </button>
+          <div class="min-w-0 flex-1">
+            <p class="text-xs font-bold ${doneClass} truncate">${window.sanitizeHTML(r.title)}</p>
+            <p class="text-[8px] text-slate-400 font-semibold mt-0.5">Deadline: ${window.formatDate(r.date)}</p>
+          </div>
+        </div>
+        <button onclick="window.deleteReminder('${r.id}')" class="text-slate-350 hover:text-red-500 transition-colors shrink-0">
+          <i data-lucide="trash-2" class="w-4 h-4"></i>
+        </button>
+      </div>
+    `;
+  }).join("");
+  
+  if (window.lucide) window.lucide.createIcons();
+};
+
+window.toggleReminderDone = function(id) {
+  const rem = (appState.reminders || []).find(r => r.id === id);
+  if (rem) {
+    rem.done = !rem.done;
+    localStorage.setItem(APP_CONFIG.remindersKey, JSON.stringify(appState.reminders));
+    window.renderReminderWidget();
+    window.showToast(rem.done ? "Tugas ditandai selesai" : "Tugas diaktifkan kembali", "success");
+  }
+};
+
+window.deleteReminder = function(id) {
+  if (!confirm("Hapus pengingat ini?")) return;
+  appState.reminders = (appState.reminders || []).filter(r => r.id !== id);
+  localStorage.setItem(APP_CONFIG.remindersKey, JSON.stringify(appState.reminders));
+  window.renderReminderWidget();
+  window.showToast("Pengingat dihapus", "info");
+};
+
+window.openAddReminderModal = function() {
+  document.getElementById("add-reminder-title").value = "";
+  document.getElementById("add-reminder-date").value = window.getLocalDateStr();
+  window.openModal("modal-add-reminder");
+};
+
+window.submitAddReminder = function() {
+  const title = document.getElementById("add-reminder-title").value.trim();
+  const date = document.getElementById("add-reminder-date").value;
+  
+  if (!title) return window.showToast("Judul pengingat wajib diisi", "warning");
+  if (!date) return window.showToast("Tanggal wajib diisi", "warning");
+  
+  const newRem = {
+    id: "rem_" + Date.now(),
+    title: title,
+    done: false,
+    date: date
+  };
+  
+  if (!appState.reminders) appState.reminders = [];
+  appState.reminders.push(newRem);
+  localStorage.setItem(APP_CONFIG.remindersKey, JSON.stringify(appState.reminders));
+  
+  window.closeModal("modal-add-reminder");
+  window.renderReminderWidget();
+  window.showToast("Pengingat berhasil disimpan", "success");
+};
+
+window.openReminderModal = function() {
+  window.openAddReminderModal();
+};
+
+window.openNotificationSettingsModal = function() {
+  const types = appState.settings.notificationTypes || {};
+  Object.keys(types).forEach(key => {
+    const btn = document.getElementById("notif-toggle-" + key);
+    if (btn) {
+      const active = !!types[key];
+      btn.classList.toggle("bg-emerald-500", active);
+      btn.classList.toggle("bg-slate-200", !active);
+      btn.classList.toggle("dark:bg-slate-700", !active);
+      const dot = btn.querySelector("div");
+      if (dot) {
+        dot.classList.toggle("left-5", active);
+        dot.classList.toggle("left-1", !active);
+      }
+    }
+  });
+  window.openModal("modal-notification-settings");
 };

@@ -33,9 +33,45 @@ window.initApp = async function () {
           appState.permits = [];
         }
       }
+
+      appState.reminders = [];
+      const savedReminders = localStorage.getItem(APP_CONFIG.remindersKey);
+      if (savedReminders) {
+        try {
+          appState.reminders = JSON.parse(savedReminders);
+        } catch (e) {
+          console.error("Error parsing reminders:", e);
+        }
+      } else {
+        appState.reminders = [
+          { id: "rem1", title: "Siapkan administrasi kehadiran kelas", done: false, date: window.getLocalDateStr(new Date(Date.now() + 24*3600*1000)) },
+          { id: "rem2", title: "Rapat koordinasi pamong asrama", done: false, date: window.getLocalDateStr(new Date(Date.now() + 2*24*3600*1000)) },
+        ];
+        localStorage.setItem(APP_CONFIG.remindersKey, JSON.stringify(appState.reminders));
+      }
+
+      appState.agendas = [];
+      const savedAgendas = localStorage.getItem(APP_CONFIG.agendasKey);
+      if (savedAgendas) {
+        try {
+          appState.agendas = JSON.parse(savedAgendas);
+        } catch (e) {
+          console.error("Error parsing agendas:", e);
+        }
+      } else {
+        appState.agendas = [
+          { id: "ag1", title: "Ujian Syahadah Tahfizh", type: "ujian", date: window.getLocalDateStr(new Date(Date.now() + 5 * 24 * 3600 * 1000)) },
+          { id: "ag2", title: "Perpulangan Santri Ganjil", type: "perpulangan", date: window.getLocalDateStr(new Date(Date.now() + 14 * 24 * 3600 * 1000)) },
+          { id: "ag3", title: "Kajian Akbar Bulanan", type: "event", date: window.getLocalDateStr(new Date(Date.now() + 8 * 24 * 3600 * 1000)) },
+          { id: "ag4", title: "Rapat Musyrif Akbar", type: "kegiatan", date: window.getLocalDateStr(new Date(Date.now() + 2 * 24 * 3600 * 1000)) },
+        ];
+        localStorage.setItem(APP_CONFIG.agendasKey, JSON.stringify(appState.agendas));
+      }
     } catch (storageError) {
       console.error("Storage Error:", storageError);
       if (!appState.permits) appState.permits = [];
+      if (!appState.reminders) appState.reminders = [];
+      if (!appState.agendas) appState.agendas = [];
     }
     appState.currentSlotId = window.determineCurrentSlot();
     const dataLoadingPromise = Promise.all([

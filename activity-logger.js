@@ -33,34 +33,52 @@ window.logActivity = function (action, detail) {
 
 
 window.kirimLaporanWA = function () {
-  if (!FILTERED_SANTRI.length) return alert("Pilih kelas dulu");
+  if (!FILTERED_SANTRI.length) return alert("Pilih kelas terlebih dahulu");
 
-  const slot = SLOT_WAKTU[appState.currentSlotId];
-  const stats = window.calculateSlotStats(slot.id);
-  const dbSlot = appState.attendanceData[appState.date]?.[slot.id];
+  const dateKey = appState.date;
+  const attendance = appState.attendanceData[dateKey];
+  
+  let msg = `*LAPORAN HARIAN GABUNGAN - KELAS ${appState.selectedClass}*\n`;
+  msg += `📅 Tanggal: ${window.formatDate(dateKey)}\n`;
+  msg += `👤 Musyrif: ${appState.user?.name || "Ustadz Binaan"}\n`;
+  msg += `===================================\n\n`;
 
-  // PERBAIKAN: Dinamis ambil ID aktivitas utama (shalat atau kbm_sekolah)
-  const mainActId = slot.activities[0]?.id || "shalat";
+  Object.values(SLOT_WAKTU).forEach(slot => {
+    let h = 0, s = 0, i = 0, a = 0;
+    const dbSlot = attendance?.[slot.id];
+    const mainActId = slot.activities[0]?.id || "shalat";
+    
+    FILTERED_SANTRI.forEach(stInfo => {
+      const id = String(stInfo.nis || stInfo.id);
+      const st = dbSlot?.[id]?.status?.[mainActId] || "Alpa";
+      if (st === "Hadir" || st === "Ya" || st === "Telat") h++;
+      else if (st === "Sakit") s++;
+      else if (st === "Izin" || st === "Pulang") i++;
+      else if (st === "Alpa" || st === "Tidak") a++;
+    });
 
-  let msg = `*LAPORAN ${appState.selectedClass} - ${slot.label}*\n`;
-  msg += `📅 ${window.formatDate(appState.date)}\n\n`;
-  msg += `✅ Hadir: ${stats.h}\n`;
-  msg += `🤒 Sakit: ${stats.s}\n`;
-  msg += `📝 Izin: ${stats.i}\n`;
-  msg += `❌ Alpa: ${stats.a}\n\n`;
-
-  const notPresent = [];
-  FILTERED_SANTRI.forEach((s) => {
-    const id = String(s.nis || s.id);
-    const st = dbSlot?.[id]?.status?.[mainActId]; // <-- PERBAIKAN DI SINI
-    if (st === "Alpa" || st === "Sakit" || st === "Izin" || st === "Pulang") {
-      notPresent.push(`- ${s.nama} (${st})`);
+    msg += `*📌 Sesi: ${slot.label}*\n`;
+    msg += `• Hadir: ${h} | Sakit: ${s} | Izin: ${i} | Alpa: ${a}\n`;
+    
+    const notPresent = [];
+    FILTERED_SANTRI.forEach(stInfo => {
+      const id = String(stInfo.nis || stInfo.id);
+      const st = dbSlot?.[id]?.status?.[mainActId] || "Alpa";
+      if (st === "Alpa" || st === "Sakit" || st === "Izin" || st === "Pulang") {
+        const note = dbSlot?.[id]?.note || "";
+        const noteStr = note ? ` (${note})` : "";
+        notPresent.push(`  - ${stInfo.nama}: ${st}${noteStr}`);
+      }
+    });
+    
+    if (notPresent.length > 0) {
+      msg += `• Keterangan:\n${notPresent.join("\n")}\n`;
     }
+    msg += `\n`;
   });
-
-  if (notPresent.length) {
-    msg += `*Detail Tidak Hadir:*\n${notPresent.join("\n")}\n`;
-  }
+  
+  msg += `===================================\n`;
+  msg += `_Laporan otomatis dikirim via Musyrif SuperApp_`;
 
   window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`);
 };

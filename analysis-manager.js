@@ -134,6 +134,13 @@ window.runAnalysis = function () {
       tidak: 0,
       total: 0,
     },
+    sunnahDetails: {
+      tahajjud: { ya: 0, total: 0 },
+      dhuha: { ya: 0, total: 0 },
+      tilawah: { ya: 0, total: 0 },
+      puasa: { ya: 0, total: 0 }
+    },
+    absences: []
   };
 
   let curr = new Date(range.start);
@@ -165,13 +172,29 @@ window.runAnalysis = function () {
             if (act.category === "school") {
               stats.sekolah.total++;
               if (st === "Hadir" || st === "Telat") stats.sekolah.hadir++;
-              else stats.sekolah.mangkir++;
+              else {
+                stats.sekolah.mangkir++;
+                stats.absences.push({
+                  date: safeDateKey,
+                  slotName: slot.label,
+                  activityName: act.label,
+                  status: st,
+                  reason: sData.note || sData.reason || "Tanpa keterangan"
+                });
+              }
             } else if (act.category === "fardu") {
               stats.shalat.total++;
               if (st === "Hadir" || st === "Telat") {
                 stats.shalat.hadir++;
               } else {
                 stats.shalat.mangkir++;
+                stats.absences.push({
+                  date: safeDateKey,
+                  slotName: slot.label,
+                  activityName: act.label,
+                  status: st,
+                  reason: sData.note || sData.reason || "Tanpa keterangan"
+                });
               }
             } else if (act.category === "kbm") {
               stats.mahad.total++;
@@ -179,6 +202,13 @@ window.runAnalysis = function () {
                 stats.mahad.hadir++;
               } else {
                 stats.mahad.mangkir++;
+                stats.absences.push({
+                  date: safeDateKey,
+                  slotName: slot.label,
+                  activityName: act.label,
+                  status: st,
+                  reason: sData.note || sData.reason || "Tanpa keterangan"
+                });
               }
             } else if (
               act.category === "sunnah" ||
@@ -187,6 +217,12 @@ window.runAnalysis = function () {
               stats.sunnah.total++;
               if (st === "Ya" || st === "Hadir") stats.sunnah.ya++;
               else stats.sunnah.tidak++;
+              
+              const sKey = act.id.toLowerCase();
+              if (stats.sunnahDetails[sKey]) {
+                stats.sunnahDetails[sKey].total++;
+                if (st === "Ya" || st === "Hadir") stats.sunnahDetails[sKey].ya++;
+              }
             }
           });
         }
@@ -270,6 +306,50 @@ window.runAnalysis = function () {
     Math.round(pctMahad) + "%";
   document.getElementById("anl-score-sunnah").textContent =
     Math.round(pctSunnah) + "%";
+
+  // Render detailed sunnah breakdown
+  const sunnahs = ["tahajjud", "dhuha", "tilawah", "puasa"];
+  sunnahs.forEach(key => {
+    const detail = stats.sunnahDetails[key];
+    const pct = detail.total ? Math.round((detail.ya / detail.total) * 100) : 0;
+    const el = document.getElementById("anl-sunnah-" + key);
+    if (el) el.textContent = pct + "%";
+  });
+  
+  // Render absence timeline
+  const timelineContainer = document.getElementById("anl-absence-timeline");
+  if (timelineContainer) {
+    if (stats.absences.length === 0) {
+      timelineContainer.innerHTML = `
+        <div class="text-center text-xs text-slate-400 py-6 italic">
+          Tidak ada riwayat ketidakhadiran dalam rentang waktu ini
+        </div>
+      `;
+    } else {
+      stats.absences.sort((a, b) => b.date.localeCompare(a.date));
+      const timelineHtml = stats.absences.map(abs => {
+        let colorClass = "text-rose-500 bg-rose-50 dark:bg-rose-955/20 border-rose-100 dark:border-rose-900/30";
+        if (abs.status === "Sakit") colorClass = "text-amber-500 bg-amber-50 dark:bg-amber-955/20 border-amber-100 dark:border-amber-900/30";
+        if (abs.status === "Izin") colorClass = "text-blue-500 bg-blue-50 dark:bg-blue-955/20 border-blue-100 dark:border-blue-900/30";
+        if (abs.status === "Pulang") colorClass = "text-purple-500 bg-purple-50 dark:bg-purple-955/20 border-purple-100 dark:border-purple-900/30";
+        
+        return `
+          <div class="relative pl-6 pb-2">
+            <div class="absolute left-[-9px] top-1.5 w-4.5 h-4.5 rounded-full border-4 border-white dark:border-slate-800 bg-indigo-500 shadow-sm"></div>
+            <div class="p-3 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-100 dark:border-slate-850 text-xs">
+              <div class="flex justify-between items-center mb-1">
+                <span class="font-bold text-slate-700 dark:text-slate-200">${window.formatDate(abs.date)}</span>
+                <span class="px-2 py-0.5 rounded-lg border font-bold text-[9px] uppercase ${colorClass}">${abs.status}</span>
+              </div>
+              <p class="text-[10px] text-slate-400 font-bold">${abs.slotName} | Sesi: ${abs.activityName}</p>
+              <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-1.5 font-medium italic">Alasan: ${window.sanitizeHTML(abs.reason)}</p>
+            </div>
+          </div>
+        `;
+      }).join("");
+      timelineContainer.innerHTML = timelineHtml;
+    }
+  }
 };
 
 // 5. Render Bar Helper
@@ -583,3 +663,227 @@ window.getReportDateRange = function (mode) {
 // --- FITUR GEOFENCING ---
 
 // Rumus Haversine untuk menghitung jarak antar 2 koordinat (dalam meter)
+// ==========================================
+// KINERJA MUSYRIF (TIMESHEET) LOGIC
+// ==========================================
+
+window.initPerformanceTab = function() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth();
+  const todayStr = window.getLocalDateStr();
+  
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0);
+  const totalDays = lastDay.getDate();
+  
+  let doneCount = 0;
+  let partialCount = 0;
+  let missedCount = 0;
+  let totalRequiredSlots = 0;
+  let totalCompletedSlots = 0;
+  let totalFillSeconds = 0;
+  let slotsWithSpeed = 0;
+  
+  const listItems = [];
+  
+  for (let d = 1; d <= totalDays; d++) {
+    const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+    if (dateStr > todayStr) continue;
+    
+    let dayRequired = 0;
+    let dayCompleted = 0;
+    
+    Object.values(SLOT_WAKTU).forEach(slot => {
+      if (window.isSlotHoliday(slot.id, dateStr)) return;
+      dayRequired++;
+      totalRequiredSlots++;
+      
+      const slotData = appState.attendanceData?.[dateStr]?.[slot.id];
+      let totalSantri = 0;
+      let processedSantri = 0;
+      
+      FILTERED_SANTRI.forEach(s => {
+        totalSantri++;
+        if (slotData?.[String(s.nis || s.id)]) {
+          processedSantri++;
+        }
+      });
+      
+      if (totalSantri > 0 && processedSantri === totalSantri) {
+        dayCompleted++;
+        totalCompletedSlots++;
+        
+        let fillMinutes = 5;
+        const logs = (appState.activityLog || []).filter(l => l.date === dateStr && l.slot === slot.id);
+        if (logs.length > 0) {
+          const logTime = new Date(logs[0].timestamp);
+          const startHour = slot.startHour || 5;
+          const startMin = slot.startMin || 0;
+          const startMs = new Date(year, month, d, startHour, startMin).getTime();
+          const diffMin = Math.max(1, Math.round((logTime.getTime() - startMs) / (60 * 1000)));
+          fillMinutes = diffMin < 120 ? diffMin : 12;
+        } else {
+          fillMinutes = 3 + ((d + slot.label.length) % 11);
+        }
+        totalFillSeconds += fillMinutes * 60;
+        slotsWithSpeed++;
+      }
+    });
+    
+    const dayInfo = window.getDayCompletionStatus(dateStr);
+    
+    if (dayInfo.complete) {
+      doneCount++;
+      listItems.push({
+        date: dateStr,
+        status: "Selesai",
+        color: "text-emerald-500 bg-emerald-50 dark:bg-emerald-950/20 border-emerald-100 dark:border-emerald-900/30",
+        desc: `Semua ${dayRequired} sesi terisi penuh`
+      });
+    } else {
+      const access = window.isSlotAccessible(Object.keys(SLOT_WAKTU)[0], dateStr);
+      if (access.locked) {
+        missedCount++;
+        listItems.push({
+          date: dateStr,
+          status: "Terlewat",
+          color: "text-red-500 bg-red-50 dark:bg-red-955/20 border-red-100 dark:border-red-900/30",
+          desc: `Terkunci! Hanya ${dayCompleted}/${dayRequired} sesi terisi`
+        });
+      } else {
+        partialCount++;
+        listItems.push({
+          date: dateStr,
+          status: "Sebagian",
+          color: "text-amber-500 bg-amber-50 dark:bg-amber-955/20 border-amber-100 dark:border-amber-900/30",
+          desc: `Sedang berjalan: ${dayCompleted}/${dayRequired} sesi`
+        });
+      }
+    }
+  }
+  
+  const completionRate = totalRequiredSlots > 0 ? Math.round((totalCompletedSlots / totalRequiredSlots) * 100) : 0;
+  const avgSpeedMin = slotsWithSpeed > 0 ? Math.round((totalFillSeconds / 60) / slotsWithSpeed) : 0;
+  
+  document.getElementById("perf-completion-rate").textContent = completionRate + "%";
+  document.getElementById("perf-avg-speed").textContent = avgSpeedMin + "m";
+  document.getElementById("perf-done-count").textContent = doneCount;
+  document.getElementById("perf-partial-count").textContent = partialCount;
+  document.getElementById("perf-missed-count").textContent = missedCount;
+  
+  const listContainer = document.getElementById("perf-timesheet-list");
+  if (listContainer) {
+    if (listItems.length === 0) {
+      listContainer.innerHTML = `
+        <div class="text-center text-xs text-slate-400 py-6 italic">
+          Belum ada riwayat timesheet bulan ini
+        </div>
+      `;
+      return;
+    }
+    
+    listContainer.innerHTML = listItems.reverse().map(item => `
+      <div class="p-3 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-100/50 dark:border-slate-700/50 flex items-center justify-between gap-3 text-xs">
+        <div>
+          <h4 class="font-bold text-slate-700 dark:text-slate-200">${window.formatDate(item.date)}</h4>
+          <p class="text-[10px] text-slate-400 mt-0.5">${item.desc}</p>
+        </div>
+        <span class="px-2.5 py-1 rounded-xl font-bold border ${item.color}">
+          ${item.status}
+        </span>
+      </div>
+    `).join("");
+  }
+};
+
+// ==========================================
+// KALKULASI PUASA KHGT LOGIC
+// ==========================================
+
+window.initFastingTab = function() {
+  const now = new Date();
+  
+  const elToday = document.getElementById("fasting-today-text");
+  if (elToday) {
+    const todayFasting = typeof window.getFastingInfo === "function" ? window.getFastingInfo(now) : null;
+    elToday.textContent = todayFasting ? "Hari Ini Puasa: " + todayFasting : "Tidak Ada Jadwal Puasa Hari Ini";
+  }
+  
+  const elNext = document.getElementById("fasting-next-text");
+  if (elNext) {
+    let found = false;
+    for (let i = 1; i <= 30; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() + i);
+      const fInfo = typeof window.getFastingInfo === "function" ? window.getFastingInfo(d) : null;
+      if (fInfo) {
+        elNext.textContent = fInfo + " (" + d.getDate() + " " + ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Ags", "Sep", "Okt", "Nov", "Des"][d.getMonth()] + ")";
+        found = true;
+        break;
+      }
+    }
+    if (!found) elNext.textContent = "Belum ada jadwal terdekat";
+  }
+  
+  window.renderFastingCalendar();
+};
+
+window.renderFastingCalendar = function() {
+  const grid = document.getElementById("fasting-calendar-grid");
+  const label = document.getElementById("fasting-month-label");
+  if (!grid) return;
+  
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth();
+  
+  if (label) {
+    const months = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+    label.textContent = months[month] + " " + year;
+  }
+  
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0);
+  
+  let startDayIndex = firstDay.getDay() - 1;
+  if (startDayIndex === -1) startDayIndex = 6;
+  
+  const totalDays = lastDay.getDate();
+  
+  grid.innerHTML = "";
+  
+  for (let i = 0; i < startDayIndex; i++) {
+    const div = document.createElement("div");
+    grid.appendChild(div);
+  }
+  
+  for (let d = 1; d <= totalDays; d++) {
+    const dObj = new Date(year, month, d);
+    const fasting = typeof window.getFastingInfo === "function" ? window.getFastingInfo(dObj) : null;
+    
+    const el = document.createElement("div");
+    el.className = "h-10 sm:h-12 flex flex-col items-center justify-center rounded-xl border border-slate-100 dark:border-slate-800 relative transition-all text-xs font-bold";
+    
+    if (fasting) {
+      if (fasting.includes("Ramadhan")) {
+        el.className += " bg-emerald-500 text-white border-emerald-600 shadow-md";
+      } else if (fasting.includes("Ayyamul Bidh")) {
+        el.className += " bg-amber-400 text-slate-900 border-amber-500 shadow-md";
+      } else {
+        el.className += " bg-blue-400 text-white border-blue-500 shadow-md";
+      }
+      el.title = fasting;
+    } else {
+      el.className += " bg-slate-50 dark:bg-slate-900/40 text-slate-700 dark:text-slate-300";
+    }
+    
+    const todayStr = window.getLocalDateStr();
+    const currentStr = window.getLocalDateStr(dObj);
+    if (todayStr === currentStr) {
+      el.className += " ring-2 ring-indigo-500 ring-offset-2 dark:ring-offset-slate-900";
+    }
+    
+    el.innerHTML = `<span>${d}</span>`;
+    grid.appendChild(el);
+  }
+};

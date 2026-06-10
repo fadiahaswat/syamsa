@@ -985,6 +985,77 @@
           </div>
         </header>
 
+        <!-- Worship Widget -->
+        <div id="worship-widget" class="bg-gradient-to-br from-emerald-500 to-teal-600 dark:from-emerald-950 dark:to-teal-900 text-white rounded-3xl p-5 shadow-lg relative overflow-hidden animate-slide-up" style="animation-delay: 0.12s">
+          <div class="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.15),transparent_60%)] pointer-events-none"></div>
+          <div class="relative z-10 flex flex-col md:flex-row justify-between gap-4">
+            <div class="flex flex-col gap-1">
+              <div class="flex items-center gap-2">
+                <i data-lucide="clock" class="w-4 h-4 text-emerald-200"></i>
+                <span class="text-xs font-bold text-emerald-100 uppercase tracking-wider">Jadwal Shalat KHGT</span>
+              </div>
+              <div class="flex items-baseline gap-2 mt-1">
+                <span id="worship-time" class="text-3xl font-black tracking-tight tabular-nums">00:00:00</span>
+                <span class="text-[10px] font-bold text-emerald-200">WIB</span>
+              </div>
+              <div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 text-xs font-medium text-emerald-100 mt-1">
+                <span id="worship-date-gregorian">-</span>
+                <span class="hidden sm:inline w-1 h-1 rounded-full bg-emerald-300"></span>
+                <span id="worship-date-hijri" class="font-bold">-</span>
+              </div>
+            </div>
+
+            <div class="flex-1 max-w-sm bg-white/10 dark:bg-black/20 rounded-2xl p-3 border border-white/5 flex flex-col justify-between">
+              <div class="flex justify-between items-start mb-2">
+                <div>
+                  <span class="text-[9px] font-bold text-emerald-200 uppercase tracking-wider">Shalat Berikutnya</span>
+                  <h4 id="worship-next-name" class="text-base font-black text-white leading-tight">Dzuhur</h4>
+                </div>
+                <div class="text-right">
+                  <span class="text-[9px] font-bold text-emerald-200 uppercase tracking-wider">Countdown</span>
+                  <p id="worship-countdown" class="text-sm font-black text-white tracking-tight tabular-nums">--:--:--</p>
+                </div>
+              </div>
+              <div class="flex flex-col gap-1">
+                <div class="w-full h-1.5 bg-white/20 rounded-full overflow-hidden">
+                  <div id="worship-progress" class="h-full bg-white rounded-full transition-all duration-1000" style="width: 0%"></div>
+                </div>
+                <div class="flex justify-between text-[8px] font-bold text-emerald-200">
+                  <span id="worship-prev-time">--:--</span>
+                  <span id="worship-next-time">--:--</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-6 gap-1.5 mt-4 pt-4 border-t border-white/10 text-center">
+            <div id="pt-subuh" class="p-1.5 rounded-xl bg-white/5 border border-white/5">
+              <span class="block text-[8px] font-bold text-emerald-200 uppercase">Subuh</span>
+              <span class="text-xs font-black tracking-tight tabular-nums">04:30</span>
+            </div>
+            <div id="pt-syuruk" class="p-1.5 rounded-xl bg-white/5 border border-white/5">
+              <span class="block text-[8px] font-bold text-emerald-200 uppercase">Syuruk</span>
+              <span class="text-xs font-black tracking-tight tabular-nums">05:45</span>
+            </div>
+            <div id="pt-dzuhur" class="p-1.5 rounded-xl bg-white/5 border border-white/5">
+              <span class="block text-[8px] font-bold text-emerald-200 uppercase">Dzuhur</span>
+              <span class="text-xs font-black tracking-tight tabular-nums">11:45</span>
+            </div>
+            <div id="pt-ashar" class="p-1.5 rounded-xl bg-white/5 border border-white/5">
+              <span class="block text-[8px] font-bold text-emerald-200 uppercase">Ashar</span>
+              <span class="text-xs font-black tracking-tight tabular-nums">15:00</span>
+            </div>
+            <div id="pt-maghrib" class="p-1.5 rounded-xl bg-white/5 border border-white/5">
+              <span class="block text-[8px] font-bold text-emerald-200 uppercase">Maghrib</span>
+              <span class="text-xs font-black tracking-tight tabular-nums">17:40</span>
+            </div>
+            <div id="pt-isya" class="p-1.5 rounded-xl bg-white/5 border border-white/5">
+              <span class="block text-[8px] font-bold text-emerald-200 uppercase">Isya</span>
+              <span class="text-xs font-black tracking-tight tabular-nums">18:50</span>
+            </div>
+          </div>
+        </div>
+
         <!-- Date Navigator -->
         <div
           class="glass-card p-2 rounded-2xl flex items-center gap-2 animate-slide-up shadow-sm border border-slate-100 dark:border-slate-700 bg-white/80 dark:bg-slate-800/80 backdrop-blur-md"
@@ -1045,6 +1116,61 @@
           </button>
         </div>
 
+        <!-- SuperApp Feature Grid (Menu Layanan) -->
+        <div class="bg-white dark:bg-slate-800 rounded-3xl p-5 border border-slate-100 dark:border-slate-700 shadow-sm animate-slide-up" style="animation-delay: 0.18s">
+          <h3 class="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-4 ml-1">Menu Layanan Musyrif</h3>
+          <div class="grid grid-cols-4 gap-4 text-center">
+            <button onclick="window.openAttendance()" class="flex flex-col items-center gap-2 group active:scale-95 transition-all">
+              <div class="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shadow-sm border border-emerald-100/30 dark:border-emerald-900/30 group-hover:scale-105 transition-transform">
+                <i data-lucide="check-square" class="w-6 h-6"></i>
+              </div>
+              <span class="text-[10px] font-bold text-slate-700 dark:text-slate-200 leading-tight">Presensi Harian</span>
+            </button>
+            <button onclick="window.switchTab('tahfizh')" class="flex flex-col items-center gap-2 group active:scale-95 transition-all">
+              <div class="w-12 h-12 rounded-2xl bg-orange-50 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400 flex items-center justify-center shadow-sm border border-orange-100/30 dark:border-orange-900/30 group-hover:scale-105 transition-transform">
+                <i data-lucide="book-open" class="w-6 h-6"></i>
+              </div>
+              <span class="text-[10px] font-bold text-slate-700 dark:text-slate-200 leading-tight">Setor.in (Tahfizh)</span>
+            </button>
+            <button onclick="window.switchTab('permits')" class="flex flex-col items-center gap-2 group active:scale-95 transition-all">
+              <div class="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-955/20 text-blue-600 dark:text-blue-400 flex items-center justify-center shadow-sm border border-blue-100/30 dark:border-blue-900/30 group-hover:scale-105 transition-transform">
+                <i data-lucide="shield" class="w-6 h-6"></i>
+              </div>
+              <span class="text-[10px] font-bold text-slate-700 dark:text-slate-200 leading-tight">Manajemen Izin</span>
+            </button>
+            <button onclick="window.switchTab('fasting')" class="flex flex-col items-center gap-2 group active:scale-95 transition-all">
+              <div class="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-955/40 text-amber-600 dark:text-amber-400 flex items-center justify-center shadow-sm border border-amber-100/30 dark:border-amber-900/30 group-hover:scale-105 transition-transform">
+                <i data-lucide="moon" class="w-6 h-6"></i>
+              </div>
+              <span class="text-[10px] font-bold text-slate-700 dark:text-slate-200 leading-tight">Kalender Puasa</span>
+            </button>
+            <button onclick="window.switchTab('performance')" class="flex flex-col items-center gap-2 group active:scale-95 transition-all">
+              <div class="w-12 h-12 rounded-2xl bg-purple-50 dark:bg-purple-955/40 text-purple-600 dark:text-purple-400 flex items-center justify-center shadow-sm border border-purple-100/30 dark:border-purple-900/30 group-hover:scale-105 transition-transform">
+                <i data-lucide="award" class="w-6 h-6"></i>
+              </div>
+              <span class="text-[10px] font-bold text-slate-700 dark:text-slate-200 leading-tight">Kinerja Musyrif</span>
+            </button>
+            <button onclick="window.openReminderModal()" class="flex flex-col items-center gap-2 group active:scale-95 transition-all">
+              <div class="w-12 h-12 rounded-2xl bg-pink-50 dark:bg-pink-955/40 text-pink-600 dark:text-pink-400 flex items-center justify-center shadow-sm border border-pink-100/30 dark:border-pink-900/30 group-hover:scale-105 transition-transform">
+                <i data-lucide="check-circle" class="w-6 h-6"></i>
+              </div>
+              <span class="text-[10px] font-bold text-slate-700 dark:text-slate-200 leading-tight">Remind.in (Tugas)</span>
+            </button>
+            <button onclick="window.openNotificationSettingsModal()" class="flex flex-col items-center gap-2 group active:scale-95 transition-all">
+              <div class="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600 dark:indigo-400 flex items-center justify-center shadow-sm border border-indigo-100/30 dark:border-indigo-900/30 group-hover:scale-105 transition-transform">
+                <i data-lucide="bell" class="w-6 h-6"></i>
+              </div>
+              <span class="text-[10px] font-bold text-slate-700 dark:text-slate-200 leading-tight">Notif Cerdas</span>
+            </button>
+            <button onclick="window.switchReportView('analysis'); window.switchTab('report')" class="flex flex-col items-center gap-2 group active:scale-95 transition-all">
+              <div class="w-12 h-12 rounded-2xl bg-teal-50 dark:bg-teal-950/40 text-teal-600 dark:text-teal-400 flex items-center justify-center shadow-sm border border-teal-100/30 dark:border-teal-900/30 group-hover:scale-105 transition-transform">
+                <i data-lucide="user-search" class="w-6 h-6"></i>
+              </div>
+              <span class="text-[10px] font-bold text-slate-700 dark:text-slate-200 leading-tight">Analisis Santri</span>
+            </button>
+          </div>
+        </div>
+
         <div
           id="kbm-active-banner"
           class="hidden mb-4 relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800 border border-teal-100 dark:border-teal-900/30 p-4 shadow-sm transition-all"
@@ -1091,49 +1217,63 @@
           </div>
         </div>
 
-        <!-- Main Action Card (Current Slot) -->
+        <!-- Dynamic Hero Card -->
         <div
           id="dash-main-card"
-          class="bg-slate-900 dark:bg-black rounded-3xl p-6 sm:p-8 text-white shadow-2xl shadow-slate-900/20 relative overflow-hidden group animate-slide-up"
+          class="rounded-3xl p-6 sm:p-8 text-white shadow-2xl relative overflow-hidden group animate-slide-up transition-all duration-1000 bg-slate-900"
           style="animation-delay: 0.2s"
         >
-          <div
-            class="absolute top-0 right-0 w-64 h-64 bg-emerald-500 rounded-full blur-[100px] opacity-20 -mr-16 -mt-16 group-hover:opacity-30 transition-opacity duration-700 pointer-events-none"
-          ></div>
-          <div
-            class="absolute bottom-0 left-0 w-48 h-48 bg-blue-600 rounded-full blur-[90px] opacity-10 -ml-10 -mb-10 pointer-events-none"
-          ></div>
+          <!-- Background Blurs -->
+          <div class="absolute inset-0 bg-gradient-to-br from-emerald-600 to-teal-650 opacity-90 transition-all duration-1000" id="hero-bg-gradient"></div>
+          <div class="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-[100px] pointer-events-none"></div>
+          
+          <!-- SVG Illustration Container -->
+          <div id="hero-svg-container" class="absolute right-2 bottom-0 top-0 w-2/5 opacity-20 pointer-events-none flex items-center justify-end select-none">
+            <!-- Dynamic SVG will be injected here -->
+          </div>
 
           <div class="relative z-10 flex flex-col h-full">
             <div class="flex justify-between items-start mb-6">
-              <div>
+              <div class="flex-1 pr-12">
                 <div class="flex items-center gap-2 mb-2">
                   <span
-                    class="px-2.5 py-1 rounded-full bg-white/10 border border-white/5 text-[10px] font-bold backdrop-blur-md uppercase tracking-wider flex items-center gap-1.5"
+                    class="px-2.5 py-1 rounded-full bg-white/20 border border-white/10 text-[9px] font-bold backdrop-blur-md uppercase tracking-wider flex items-center gap-1.5"
                   >
                     <span
                       class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"
                     ></span>
-                    Saat Ini
+                    Sesi Aktif
                   </span>
                 </div>
                 <h2
+                  id="hero-greeting-text"
+                  class="text-xl font-bold tracking-tight opacity-90 mb-1"
+                >
+                  Selamat Pagi, Musyrif.
+                </h2>
+                <h3
                   id="dash-card-title"
-                  class="text-3xl sm:text-4xl font-black tracking-tight leading-none mb-1"
+                  class="text-3xl sm:text-4xl font-black tracking-tight leading-none mb-2"
                 >
                   ...
-                </h2>
+                </h3>
+                <div
+                  id="hero-context-text"
+                  class="text-xs text-emerald-300 font-bold mb-3"
+                >
+                  Presensi Sekolah akan dimulai dalam 15 menit.
+                </div>
                 <div
                   id="dash-card-time"
-                  class="text-emerald-400 text-sm font-bold flex items-center gap-1.5 opacity-90"
+                  class="text-white/85 text-xs font-bold flex items-center gap-1.5"
                 >
-                  <i data-lucide="clock" class="w-3.5 h-3.5"></i> --:--
+                  <i data-lucide="clock" class="w-3.5 h-3.5 text-white/60"></i> --:--
                 </div>
               </div>
 
               <button
                 onclick="window.openAttendance()"
-                class="w-14 h-14 rounded-2xl bg-white text-slate-900 flex items-center justify-center shadow-lg shadow-white/10 hover:scale-110 hover:rotate-3 active:scale-95 transition-all duration-300 group/btn"
+                class="w-14 h-14 rounded-2xl bg-white text-slate-900 flex items-center justify-center shadow-lg hover:scale-110 hover:rotate-3 active:scale-95 transition-all duration-300 group/btn shrink-0"
               >
                 <i
                   data-lucide="arrow-right"
@@ -1143,88 +1283,88 @@
             </div>
 
             <div
-              class="h-px w-full bg-gradient-to-r from-transparent via-white/10 to-transparent my-4"
+              class="h-px w-full bg-white/10 my-4"
             ></div>
 
             <div>
               <p
-                class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 text-center sm:text-left"
+                class="text-[9px] font-bold text-white/50 uppercase tracking-widest mb-3"
               >
-                Akses Cepat
+                Pindah Sesi Presensi
               </p>
 
               <div class="grid grid-cols-5 gap-2 sm:gap-3">
                 <button
                   onclick="window.quickOpen('shubuh')"
-                  class="flex flex-col items-center gap-2 p-2 rounded-xl bg-white/5 border border-white/5 hover:bg-emerald-500/20 hover:border-emerald-500/50 transition-all active:scale-95 group/item"
+                  class="flex flex-col items-center gap-2 p-2 rounded-xl bg-white/5 border border-white/5 hover:bg-white/15 transition-all active:scale-95 group/item"
                 >
                   <div
-                    class="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center text-emerald-400 group-hover/item:bg-emerald-500 group-hover/item:text-white transition-colors"
+                    class="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center text-white group-hover/item:bg-white group-hover/item:text-slate-900 transition-colors"
                   >
                     <i data-lucide="sunrise" class="w-4 h-4"></i>
                   </div>
                   <span
-                    class="text-[9px] sm:text-[10px] font-bold text-slate-300 group-hover/item:text-emerald-200 whitespace-nowrap"
+                    class="text-[9px] sm:text-[10px] font-bold text-white/90 whitespace-nowrap"
                     >Shubuh</span
                   >
                 </button>
 
                 <button
                   onclick="window.quickOpen('sekolah')"
-                  class="flex flex-col items-center gap-2 p-2 rounded-xl bg-white/5 border border-white/5 hover:bg-cyan-500/20 hover:border-cyan-500/50 transition-all active:scale-95 group/item"
+                  class="flex flex-col items-center gap-2 p-2 rounded-xl bg-white/5 border border-white/5 hover:bg-white/15 transition-all active:scale-95 group/item"
                 >
                   <div
-                    class="w-8 h-8 rounded-lg bg-cyan-500/20 flex items-center justify-center text-cyan-400 group-hover/item:bg-cyan-500 group-hover/item:text-white transition-colors"
+                    class="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center text-white group-hover/item:bg-white group-hover/item:text-slate-900 transition-colors"
                   >
                     <i data-lucide="graduation-cap" class="w-4 h-4"></i>
                   </div>
                   <span
-                    class="text-[9px] sm:text-[10px] font-bold text-slate-300 group-hover/item:text-cyan-200 whitespace-nowrap"
+                    class="text-[9px] sm:text-[10px] font-bold text-white/90 whitespace-nowrap"
                     >Sekolah</span
                   >
                 </button>
 
                 <button
                   onclick="window.quickOpen('ashar')"
-                  class="flex flex-col items-center gap-2 p-2 rounded-xl bg-white/5 border border-white/5 hover:bg-orange-500/20 hover:border-orange-500/50 transition-all active:scale-95 group/item"
+                  class="flex flex-col items-center gap-2 p-2 rounded-xl bg-white/5 border border-white/5 hover:bg-white/15 transition-all active:scale-95 group/item"
                 >
                   <div
-                    class="w-8 h-8 rounded-lg bg-orange-500/20 flex items-center justify-center text-orange-400 group-hover/item:bg-orange-500 group-hover/item:text-white transition-colors"
+                    class="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center text-white group-hover/item:bg-white group-hover/item:text-slate-900 transition-colors"
                   >
                     <i data-lucide="sun" class="w-4 h-4"></i>
                   </div>
                   <span
-                    class="text-[9px] sm:text-[10px] font-bold text-slate-300 group-hover/item:text-orange-200 whitespace-nowrap"
+                    class="text-[9px] sm:text-[10px] font-bold text-white/90 whitespace-nowrap"
                     >Ashar</span
                   >
                 </button>
 
                 <button
                   onclick="window.quickOpen('maghrib')"
-                  class="flex flex-col items-center gap-2 p-2 rounded-xl bg-white/5 border border-white/5 hover:bg-indigo-500/20 hover:border-indigo-500/50 transition-all active:scale-95 group/item"
+                  class="flex flex-col items-center gap-2 p-2 rounded-xl bg-white/5 border border-white/5 hover:bg-white/15 transition-all active:scale-95 group/item"
                 >
                   <div
-                    class="w-8 h-8 rounded-lg bg-indigo-500/20 flex items-center justify-center text-indigo-400 group-hover/item:bg-indigo-500 group-hover/item:text-white transition-colors"
+                    class="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center text-white group-hover/item:bg-white group-hover/item:text-slate-900 transition-colors"
                   >
                     <i data-lucide="sunset" class="w-4 h-4"></i>
                   </div>
                   <span
-                    class="text-[9px] sm:text-[10px] font-bold text-slate-300 group-hover/item:text-indigo-200 whitespace-nowrap"
+                    class="text-[9px] sm:text-[10px] font-bold text-white/90 whitespace-nowrap"
                     >Maghrib</span
                   >
                 </button>
 
                 <button
                   onclick="window.quickOpen('isya')"
-                  class="flex flex-col items-center gap-2 p-2 rounded-xl bg-white/5 border border-white/5 hover:bg-blue-500/20 hover:border-blue-500/50 transition-all active:scale-95 group/item"
+                  class="flex flex-col items-center gap-2 p-2 rounded-xl bg-white/5 border border-white/5 hover:bg-white/15 transition-all active:scale-95 group/item"
                 >
                   <div
-                    class="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center text-blue-400 group-hover/item:bg-blue-500 group-hover/item:text-white transition-colors"
+                    class="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center text-white group-hover/item:bg-white group-hover/item:text-slate-900 transition-colors"
                   >
                     <i data-lucide="moon" class="w-4 h-4"></i>
                   </div>
                   <span
-                    class="text-[9px] sm:text-[10px] font-bold text-slate-300 group-hover/item:text-blue-200 whitespace-nowrap"
+                    class="text-[9px] sm:text-[10px] font-bold text-white/90 whitespace-nowrap"
                     >Isya</span
                   >
                 </button>
@@ -1426,65 +1566,48 @@
           </div>
         </div>
 
-        <div class="animate-slide-up mb-6 mt-4" style="animation-delay: 0.25s">
-          <div
-            class="bg-white dark:bg-slate-800 rounded-3xl p-2 shadow-sm border border-slate-100 dark:border-slate-700"
-          >
-            <div class="grid grid-cols-2 gap-2 mb-2">
-              <button
-                onclick="window.openPermitModal('daily')"
-                class="p-3 rounded-2xl bg-orange-50 dark:bg-orange-900/20 border border-orange-100 dark:border-orange-800 flex flex-col items-center justify-center gap-2 group active:scale-95 transition-all"
-              >
-                <div
-                  class="w-8 h-8 rounded-full bg-white dark:bg-slate-800 text-orange-500 flex items-center justify-center shadow-sm"
-                >
-                  <i data-lucide="file-plus-2" class="w-4 h-4"></i>
+        <!-- Agenda & Personal Reminders Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <!-- Widget: Agenda Pondok Mendatang -->
+          <div class="bg-white dark:bg-slate-800 rounded-3xl p-5 border border-slate-100 dark:border-slate-700 shadow-sm flex flex-col justify-between">
+            <div>
+              <div class="flex justify-between items-center mb-4 px-1">
+                <div class="flex items-center gap-2">
+                  <div class="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950/20 text-indigo-500 flex items-center justify-center shadow-sm">
+                    <i data-lucide="calendar" class="w-4 h-4"></i>
+                  </div>
+                  <div>
+                    <h3 class="text-sm font-black text-slate-800 dark:text-white leading-tight">Agenda Pondok</h3>
+                    <p class="text-[9px] text-slate-400 font-semibold">Agenda dan event terdekat</p>
+                  </div>
                 </div>
-                <span
-                  class="text-[10px] font-bold text-slate-700 dark:text-slate-200"
-                  >Input Harian</span
-                >
-              </button>
-
-              <button
-                onclick="window.openPermitModal('pulang')"
-                class="p-3 rounded-2xl bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-800 flex flex-col items-center justify-center gap-2 group active:scale-95 transition-all"
-              >
-                <div
-                  class="w-8 h-8 rounded-full bg-white dark:bg-slate-800 text-indigo-500 flex items-center justify-center shadow-sm"
-                >
-                  <i data-lucide="bus" class="w-4 h-4"></i>
-                </div>
-                <span
-                  class="text-[10px] font-bold text-slate-700 dark:text-slate-200"
-                  >Perpulangan</span
-                >
-              </button>
-            </div>
-
-            <div
-              class="bg-slate-50 dark:bg-slate-900/50 rounded-2xl p-3 border border-slate-100 dark:border-slate-700"
-            >
-              <div class="flex justify-between items-center mb-3 px-1">
-                <h4
-                  class="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2"
-                >
-                  <span
-                    class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"
-                  ></span>
-                  Status Aktif
-                </h4>
-                <span
-                  id="active-permit-count"
-                  class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-slate-500"
-                  >0</span
-                >
               </div>
+              <div id="dashboard-agenda-list" class="space-y-3">
+                <!-- Agenda items loaded via JS -->
+              </div>
+            </div>
+          </div>
 
-              <div
-                id="dashboard-active-permits-list"
-                class="space-y-2 max-h-60 overflow-y-auto pr-1 custom-scrollbar"
-              ></div>
+          <!-- Widget: Personal Reminders (Remind.in) -->
+          <div class="bg-white dark:bg-slate-800 rounded-3xl p-5 border border-slate-100 dark:border-slate-700 shadow-sm flex flex-col justify-between">
+            <div>
+              <div class="flex justify-between items-center mb-4 px-1">
+                <div class="flex items-center gap-2">
+                  <div class="w-8 h-8 rounded-xl bg-pink-50 dark:bg-pink-955/20 text-pink-500 flex items-center justify-center shadow-sm">
+                    <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+                  </div>
+                  <div>
+                    <h3 class="text-sm font-black text-slate-800 dark:text-white leading-tight">Remind.in</h3>
+                    <p class="text-[9px] text-slate-400 font-semibold">Tugas & deadline personal Anda</p>
+                  </div>
+                </div>
+                <button onclick="window.openAddReminderModal()" class="w-7 h-7 rounded-lg bg-pink-50 hover:bg-pink-100 dark:bg-pink-955/40 text-pink-500 flex items-center justify-center active:scale-95 transition-all shadow-sm">
+                  <i data-lucide="plus" class="w-4 h-4"></i>
+                </button>
+              </div>
+              <div id="dashboard-reminder-list" class="space-y-2 max-h-[180px] overflow-y-auto pr-1 custom-scrollbar">
+                <!-- Checklist loaded via JS -->
+              </div>
             </div>
           </div>
         </div>
@@ -1816,30 +1939,50 @@
             </button>
           </div>
 
-          <div class="flex items-center gap-3 mb-6">
-            <div
-              class="flex-none px-4 py-2 rounded-full bg-indigo-50 dark:bg-indigo-900/40 border border-indigo-200 dark:border-indigo-800 flex items-center gap-2"
-            >
-              <i data-lucide="calendar" class="w-3.5 h-3.5 text-indigo-500"></i>
-              <span
-                id="report-date-range"
-                class="text-[10px] font-black uppercase tracking-wider text-indigo-600 dark:text-indigo-400"
-                >-</span
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+            <div class="flex flex-wrap items-center gap-3">
+              <div
+                class="flex-none px-4 py-2 rounded-full bg-indigo-50 dark:bg-indigo-900/40 border border-indigo-200 dark:border-indigo-800 flex items-center gap-2"
               >
+                <i data-lucide="calendar" class="w-3.5 h-3.5 text-indigo-500"></i>
+                <span
+                  id="report-date-range"
+                  class="text-[10px] font-black uppercase tracking-wider text-indigo-600 dark:text-indigo-400"
+                  >-</span
+                >
+              </div>
+
+              <!-- Report Date Picker -->
+              <div
+                class="relative flex-none px-4 py-2 rounded-full bg-indigo-50 dark:bg-indigo-900/40 border border-indigo-200 dark:border-indigo-800 flex items-center gap-2 cursor-pointer hover:bg-indigo-100/50"
+              >
+                <i data-lucide="calendar-search" class="w-3.5 h-3.5 text-indigo-500"></i>
+                <span
+                  id="report-date-label"
+                  class="text-[10px] font-black uppercase tracking-wider text-indigo-600 dark:text-indigo-400"
+                  >Pilih Tanggal</span
+                >
+                <input
+                  type="date"
+                  id="report-date-picker"
+                  onchange="window.handleReportDateChange(this.value)"
+                  class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                />
+              </div>
             </div>
 
-            <div class="flex flex-1 gap-2">
+            <div class="flex gap-2 w-full sm:w-auto">
               <button
                 onclick="window.kirimLaporanWA()"
-                class="flex-1 py-2 rounded-xl bg-emerald-500 text-white font-bold text-[10px] flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-500/30 active:scale-95 transition-all"
+                class="flex-1 sm:flex-none px-4 py-2 rounded-xl bg-emerald-500 text-white font-bold text-[10px] flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-500/30 active:scale-95 transition-all"
               >
                 <i data-lucide="message-circle" class="w-3.5 h-3.5"></i> WA
               </button>
               <button
-                onclick="window.exportToExcel()"
-                class="flex-1 py-2 rounded-xl bg-blue-500 text-white font-bold text-[10px] flex items-center justify-center gap-1.5 shadow-lg shadow-blue-500/30 active:scale-95 transition-all"
+                onclick="window.exportToPDF()"
+                class="flex-1 sm:flex-none px-4 py-2 rounded-xl bg-red-500 text-white font-bold text-[10px] flex items-center justify-center gap-1.5 shadow-lg shadow-red-500/30 active:scale-95 transition-all"
               >
-                <i data-lucide="download" class="w-3.5 h-3.5"></i> Excel
+                <i data-lucide="file-text" class="w-3.5 h-3.5"></i> Export PDF
               </button>
             </div>
           </div>
@@ -2300,7 +2443,7 @@
                       class="h-full bg-slate-400 dark:bg-slate-500 transition-all duration-1000 ease-out w-0"
                     ></div>
                   </div>
-                  <div class="flex justify-between text-[10px] font-bold px-1">
+                                    <div class="flex justify-between text-[10px] font-bold px-1">
                     <span class="text-amber-700 dark:text-amber-400"
                       >Ya: <span id="txt-sunnah-y">0</span></span
                     >
@@ -2309,6 +2452,37 @@
                     >
                   </div>
                 </div>
+              </div>
+            </div>
+            
+            <!-- Detailed Sunnah Stats Breakdown -->
+            <div class="bg-white dark:bg-slate-800 rounded-3xl p-5 border border-slate-100 dark:border-slate-700 shadow-sm space-y-4">
+              <h3 class="font-bold text-sm text-slate-800 dark:text-slate-200">Breakdown Ibadah Sunnah</h3>
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div class="bg-slate-50 dark:bg-slate-900/50 p-3.5 rounded-2xl flex flex-col items-center justify-center border border-slate-100 dark:border-slate-800/80">
+                  <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Tahajjud</span>
+                  <span id="anl-sunnah-tahajjud" class="text-lg font-black text-amber-500">0%</span>
+                </div>
+                <div class="bg-slate-50 dark:bg-slate-900/50 p-3.5 rounded-2xl flex flex-col items-center justify-center border border-slate-100 dark:border-slate-800/80">
+                  <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Dhuha</span>
+                  <span id="anl-sunnah-dhuha" class="text-lg font-black text-amber-500">0%</span>
+                </div>
+                <div class="bg-slate-50 dark:bg-slate-900/50 p-3.5 rounded-2xl flex flex-col items-center justify-center border border-slate-100 dark:border-slate-800/80">
+                  <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Tilawah</span>
+                  <span id="anl-sunnah-tilawah" class="text-lg font-black text-amber-500">0%</span>
+                </div>
+                <div class="bg-slate-50 dark:bg-slate-900/50 p-3.5 rounded-2xl flex flex-col items-center justify-center border border-slate-100 dark:border-slate-800/80">
+                  <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Puasa Sunnah</span>
+                  <span id="anl-sunnah-puasa" class="text-lg font-black text-amber-500">0%</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Absence Timeline History -->
+            <div class="bg-white dark:bg-slate-800 rounded-3xl p-5 border border-slate-100 dark:border-slate-700 shadow-sm space-y-4">
+              <h3 class="font-bold text-sm text-slate-800 dark:text-slate-200">Riwayat & Linimasa Ketidakhadiran</h3>
+              <div id="anl-absence-timeline" class="space-y-4 relative border-l-2 border-slate-100 dark:border-slate-750 pl-4 ml-2 max-h-[300px] overflow-y-auto">
+                <!-- Timeline items loaded dynamically -->
               </div>
             </div>
           </div>
@@ -3446,32 +3620,478 @@
 <div id="tahfizhConfirmModal" class="tahfizh-modal modal hidden fixed inset-0 z-50 flex items-center justify-center p-4">
   <div class="modal-backdrop absolute inset-0 bg-slate-900/40 dark:bg-slate-950/65 backdrop-blur-sm" onclick="window.closeModal('tahfizhConfirmModal')"></div>
   <div class="modal-content bg-white dark:bg-slate-900 rounded-3xl max-w-sm w-full p-8 shadow-2xl relative border border-slate-200 dark:border-slate-800">
-    <div class="w-16 h-16 bg-red-50 dark:bg-red-950/30 text-red-500 rounded-full flex items-center justify-center mb-6 mx-auto border border-red-100 dark:border-red-900/30">
+    <div class="w-16 h-16 bg-red-50 dark:bg-red-955/35 text-red-500 rounded-full flex items-center justify-center mb-6 mx-auto border border-red-100 dark:border-red-900/30">
       <i data-lucide="alert-triangle" class="w-8 h-8"></i>
     </div>
     <h3 class="text-xl font-black text-slate-800 dark:text-white text-center mb-2">Konfirmasi Hapus</h3>
     <p class="text-slate-500 dark:text-slate-400 text-sm text-center mb-6 font-medium">Apakah Anda yakin ingin menghapus data setoran ini? Tindakan ini tidak dapat dibatalkan.</p>
-    <div class="flex gap-3">
+        <div class="flex gap-3">
       <button onclick="window.closeModal('tahfizhConfirmModal')" class="flex-1 px-4 py-3.5 text-slate-600 dark:text-slate-350 font-bold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-750 rounded-xl transition-colors">Batal</button>
       <button id="tahfizh-confirmDeleteBtn" class="flex-1 px-4 py-3.5 bg-red-500 hover:bg-red-600 text-white font-bold rounded-xl shadow-lg shadow-red-500/20 transition-colors">Hapus</button>
     </div>
   </div>
 </div>
 
+
+<!-- Modal: Tambah Izin Terpusat -->
+<div id="modal-add-permit" class="modal hidden fixed inset-0 z-50 flex items-center justify-center p-4">
+  <div class="modal-backdrop absolute inset-0 bg-slate-900/40 dark:bg-slate-950/65 backdrop-blur-sm" onclick="window.closeModal('modal-add-permit')"></div>
+  <div class="modal-content bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full p-6 shadow-2xl relative border border-slate-200 dark:border-slate-800 max-h-[90vh] overflow-y-auto">
+    <h3 class="text-xl font-black text-slate-800 dark:text-white mb-4">Buat Izin Baru (Terpusat)</h3>
+    
+    <div class="space-y-4">
+      <div class="space-y-1">
+        <label class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Pilih Santri</label>
+        <select id="add-permit-santri-select" class="w-full h-12 px-4 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-sm font-bold text-slate-700 dark:text-slate-200 outline-none">
+        </select>
+      </div>
+
+      <div class="space-y-1">
+        <label class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Kategori Izin</label>
+        <select id="add-permit-category" class="w-full h-12 px-4 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-sm font-bold text-slate-700 dark:text-slate-200 outline-none">
+          <option value="Sakit">Sakit</option>
+          <option value="Izin">Izin Kegiatan</option>
+          <option value="Pulang">Izin Pulang (Pulang ke Rumah)</option>
+        </select>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div class="space-y-1">
+          <label class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Mulai</label>
+          <input type="date" id="add-permit-start-date" class="w-full h-12 px-4 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-sm font-bold text-slate-700 dark:text-slate-200 outline-none" />
+        </div>
+        <div class="space-y-1">
+          <label class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Selesai</label>
+          <input type="date" id="add-permit-end-date" class="w-full h-12 px-4 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-sm font-bold text-slate-700 dark:text-slate-200 outline-none" />
+        </div>
+      </div>
+
+      <div class="space-y-1">
+        <label class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Alasan / Keterangan</label>
+        <textarea id="add-permit-reason" rows="2" class="w-full p-4 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-sm font-bold text-slate-700 dark:text-slate-200 outline-none resize-none" placeholder="Masukkan alasan detail..."></textarea>
+      </div>
+
+      <div class="space-y-1">
+        <label class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Lampiran Surat / Dokumen</label>
+        <div class="relative flex items-center h-12 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all cursor-pointer">
+          <input type="file" id="add-permit-file" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onchange="window.handlePermitFileChange(this)" />
+          <div class="flex items-center justify-center gap-2 w-full px-4 text-slate-500 dark:text-slate-400">
+            <i data-lucide="upload-cloud" class="w-5 h-5"></i>
+            <span id="add-permit-file-label" class="text-xs font-bold truncate">Pilih file foto/PDF</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex gap-3 mt-6">
+      <button onclick="window.closeModal('modal-add-permit')" class="flex-1 h-12 text-slate-600 dark:text-slate-350 font-bold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-750 rounded-2xl transition-colors">Batal</button>
+      <button onclick="window.submitAddPermit()" class="flex-1 h-12 bg-blue-500 hover:bg-blue-600 text-white font-bold rounded-2xl shadow-lg transition-colors">Kirim Izin</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Tambah Pengingat Personal -->
+<div id="modal-add-reminder" class="modal hidden fixed inset-0 z-50 flex items-center justify-center p-4">
+  <div class="modal-backdrop absolute inset-0 bg-slate-900/40 dark:bg-slate-950/65 backdrop-blur-sm" onclick="window.closeModal('modal-add-reminder')"></div>
+  <div class="modal-content bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full p-6 shadow-2xl relative border border-slate-200 dark:border-slate-800">
+    <h3 class="text-xl font-black text-slate-800 dark:text-white mb-4">Tambah Pengingat</h3>
+    
+    <div class="space-y-4">
+      <div class="space-y-1">
+        <label class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Judul Pengingat</label>
+        <input type="text" id="add-reminder-title" class="w-full h-12 px-4 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-sm font-bold text-slate-700 dark:text-slate-200 outline-none" placeholder="Contoh: Rapat Wali Santri" />
+      </div>
+
+      <div class="space-y-1">
+        <label class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Tanggal Target</label>
+        <input type="date" id="add-reminder-date" class="w-full h-12 px-4 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-sm font-bold text-slate-700 dark:text-slate-200 outline-none" />
+      </div>
+    </div>
+
+    <div class="flex gap-3 mt-6">
+      <button onclick="window.closeModal('modal-add-reminder')" class="flex-1 h-12 text-slate-600 dark:text-slate-350 font-bold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-750 rounded-2xl transition-colors">Batal</button>
+      <button onclick="window.submitAddReminder()" class="flex-1 h-12 bg-pink-500 hover:bg-pink-600 text-white font-bold rounded-2xl shadow-lg transition-colors">Simpan</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Pengaturan Notifikasi Cerdas -->
+<div id="modal-notification-settings" class="modal hidden fixed inset-0 z-50 flex items-center justify-center p-4">
+  <div class="modal-backdrop absolute inset-0 bg-slate-900/40 dark:bg-slate-950/65 backdrop-blur-sm" onclick="window.closeModal('modal-notification-settings')"></div>
+  <div class="modal-content bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full p-6 shadow-2xl relative border border-slate-200 dark:border-slate-800 max-h-[90vh] overflow-y-auto">
+    <div class="flex justify-between items-center mb-6">
+      <h3 class="text-xl font-black text-slate-800 dark:text-white">Pengaturan Notifikasi Pintar</h3>
+      <button onclick="window.closeModal('modal-notification-settings')" class="p-2 rounded-full bg-slate-100 dark:bg-slate-850 text-slate-400 hover:text-slate-650 transition-colors">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+    </div>
+    
+    <div class="space-y-4" id="notification-settings-list">
+      <div class="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700/50">
+        <div>
+          <h4 class="text-xs font-bold text-slate-700 dark:text-slate-200">Sesi Presensi Dimulai</h4>
+          <p class="text-[9px] text-slate-400 font-semibold">Pengingat ketika waktu presensi santri masuk</p>
+        </div>
+        <button onclick="window.toggleNotificationType('sesi_presensi_mulai')" id="notif-toggle-sesi_presensi_mulai" class="w-10 h-6 bg-slate-200 dark:bg-slate-700 rounded-full relative transition-colors">
+          <div class="w-4 h-4 bg-white rounded-full absolute top-1 left-1 transition-all"></div>
+        </button>
+      </div>
+
+      <div class="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700/50">
+        <div>
+          <h4 class="text-xs font-bold text-slate-700 dark:text-slate-200">Sesi Ma'had Dimulai</h4>
+          <p class="text-[9px] text-slate-400 font-semibold">Pengingat ketika sesi diniyah mahad dimulai</p>
+        </div>
+        <button onclick="window.toggleNotificationType('sesi_mahad_mulai')" id="notif-toggle-sesi_mahad_mulai" class="w-10 h-6 bg-slate-200 dark:bg-slate-700 rounded-full relative transition-colors">
+          <div class="w-4 h-4 bg-white rounded-full absolute top-1 left-1 transition-all"></div>
+        </button>
+      </div>
+
+      <div class="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700/50">
+        <div>
+          <h4 class="text-xs font-bold text-slate-700 dark:text-slate-200">Sisa Waktu 5 Menit</h4>
+          <p class="text-[9px] text-slate-400 font-semibold">Peringatan 5 menit sebelum sesi presensi dikunci</p>
+        </div>
+        <button onclick="window.toggleNotificationType('sisa_5_menit')" id="notif-toggle-sisa_5_menit" class="w-10 h-6 bg-slate-200 dark:bg-slate-700 rounded-full relative transition-colors">
+          <div class="w-4 h-4 bg-white rounded-full absolute top-1 left-1 transition-all"></div>
+        </button>
+      </div>
+
+      <div class="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700/50">
+        <div>
+          <h4 class="text-xs font-bold text-slate-700 dark:text-slate-200">Sisa Waktu 1 Menit</h4>
+          <p class="text-[9px] text-slate-400 font-semibold">Peringatan kritis 1 menit sebelum sesi ditutup</p>
+        </div>
+        <button onclick="window.toggleNotificationType('sisa_1_menit')" id="notif-toggle-sisa_1_menit" class="w-10 h-6 bg-slate-200 dark:bg-slate-700 rounded-full relative transition-colors">
+          <div class="w-4 h-4 bg-white rounded-full absolute top-1 left-1 transition-all"></div>
+        </button>
+      </div>
+
+      <div class="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700/50">
+        <div>
+          <h4 class="text-xs font-bold text-slate-700 dark:text-slate-200">Incomplete Kemarin</h4>
+          <p class="text-[9px] text-slate-400 font-semibold">Mengingatkan presensi hari sebelumnya belum lengkap</p>
+        </div>
+        <button onclick="window.toggleNotificationType('belum_lengkap_kemarin')" id="notif-toggle-belum_lengkap_kemarin" class="w-10 h-6 bg-slate-200 dark:bg-slate-700 rounded-full relative transition-colors">
+          <div class="w-4 h-4 bg-white rounded-full absolute top-1 left-1 transition-all"></div>
+        </button>
+      </div>
+
+      <div class="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700/50">
+        <div>
+          <h4 class="text-xs font-bold text-slate-700 dark:text-slate-200">Santri Belum Dipresensi</h4>
+          <p class="text-[9px] text-slate-400 font-semibold">Notifikasi jika ada santri yang belum diisi statusnya</p>
+        </div>
+        <button onclick="window.toggleNotificationType('ada_santri_belum')" id="notif-toggle-ada_santri_belum" class="w-10 h-6 bg-slate-200 dark:bg-slate-700 rounded-full relative transition-colors">
+          <div class="w-4 h-4 bg-white rounded-full absolute top-1 left-1 transition-all"></div>
+        </button>
+      </div>
+
+      <div class="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700/50">
+        <div>
+          <h4 class="text-xs font-bold text-slate-700 dark:text-slate-200">Izin Belum Diverifikasi</h4>
+          <p class="text-[9px] text-slate-400 font-semibold">Notifikasi jika ada pengajuan izin santri yang pending</p>
+        </div>
+        <button onclick="window.toggleNotificationType('ada_izin_belum_verif')" id="notif-toggle-ada_izin_belum_verif" class="w-10 h-6 bg-slate-200 dark:bg-slate-700 rounded-full relative transition-colors">
+          <div class="w-4 h-4 bg-white rounded-full absolute top-1 left-1 transition-all"></div>
+        </button>
+      </div>
+
+      <div class="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700/50">
+        <div>
+          <h4 class="text-xs font-bold text-slate-700 dark:text-slate-200">Kegiatan Akan Mulai</h4>
+          <p class="text-[9px] text-slate-400 font-semibold">Jadwal kegiatan umum atau pengajian terdekat</p>
+        </div>
+        <button onclick="window.toggleNotificationType('ada_kegiatan_mulai')" id="notif-toggle-ada_kegiatan_mulai" class="w-10 h-6 bg-slate-200 dark:bg-slate-700 rounded-full relative transition-colors">
+          <div class="w-4 h-4 bg-white rounded-full absolute top-1 left-1 transition-all"></div>
+        </button>
+      </div>
+
+      <div class="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700/50">
+        <div>
+          <h4 class="text-xs font-bold text-slate-700 dark:text-slate-200">Rapat Musyrif</h4>
+          <p class="text-[9px] text-slate-400 font-semibold">Pengingat undangan rapat koordinasi Musyrif</p>
+        </div>
+        <button onclick="window.toggleNotificationType('ada_rapat_musyrif')" id="notif-toggle-ada_rapat_musyrif" class="w-10 h-6 bg-slate-200 dark:bg-slate-700 rounded-full relative transition-colors">
+          <div class="w-4 h-4 bg-white rounded-full absolute top-1 left-1 transition-all"></div>
+        </button>
+      </div>
+
+      <div class="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700/50">
+        <div>
+          <h4 class="text-xs font-bold text-slate-700 dark:text-slate-200">Pengingat Perpulangan</h4>
+          <p class="text-[9px] text-slate-400 font-semibold">Pengingat jadwal kepulangan massal santri</p>
+        </div>
+        <button onclick="window.toggleNotificationType('pengingat_perpulangan')" id="notif-toggle-pengingat_perpulangan" class="w-10 h-6 bg-slate-200 dark:bg-slate-700 rounded-full relative transition-colors">
+          <div class="w-4 h-4 bg-white rounded-full absolute top-1 left-1 transition-all"></div>
+        </button>
+      </div>
+
+      <div class="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700/50">
+        <div>
+          <h4 class="text-xs font-bold text-slate-700 dark:text-slate-200">Puasa Sunnah & Wajib</h4>
+          <p class="text-[9px] text-slate-400 font-semibold">Pengingat sahur dan berbuka puasa</p>
+        </div>
+        <button onclick="window.toggleNotificationType('pengingat_puasa')" id="notif-toggle-pengingat_puasa" class="w-10 h-6 bg-slate-200 dark:bg-slate-700 rounded-full relative transition-colors">
+          <div class="w-4 h-4 bg-white rounded-full absolute top-1 left-1 transition-all"></div>
+        </button>
+      </div>
+
+      <div class="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700/50">
+        <div>
+          <h4 class="text-xs font-bold text-slate-700 dark:text-slate-200">Jadwal Tahfizh</h4>
+          <p class="text-[9px] text-slate-400 font-semibold">Pengingat sesi setoran hafalan (Setor.in)</p>
+        </div>
+        <button onclick="window.toggleNotificationType('pengingat_tahfizh')" id="notif-toggle-pengingat_tahfizh" class="w-10 h-6 bg-slate-200 dark:bg-slate-700 rounded-full relative transition-colors">
+          <div class="w-4 h-4 bg-white rounded-full absolute top-1 left-1 transition-all"></div>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+      <!-- Tab: Manajemen Izin Terpusat -->
+      <div
+        id="tab-permits"
+        class="tab-content hidden flex-1 overflow-y-auto pb-32 hide-scrollbar scroll-smooth p-6 space-y-6 pt-safe"
+      >
+        <div class="mb-6 flex flex-col gap-1">
+          <h1 class="text-3xl font-black text-slate-800 dark:text-white tracking-tight">
+            Administrasi
+            <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-indigo-500">Izin Santri</span>
+          </h1>
+          <p class="text-sm font-medium text-slate-500 dark:text-slate-400">
+            Pusat manajemen perizinan, sakit, dan perpulangan santri
+          </p>
+        </div>
+
+        <!-- Control Card (Wadah Utama) -->
+        <div class="bg-white dark:bg-slate-800 rounded-3xl p-5 border border-slate-100 dark:border-slate-700 shadow-sm space-y-4">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <!-- Search -->
+            <div class="relative flex items-center h-12 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 shadow-inner focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500 transition-all">
+              <div class="w-10 h-full flex items-center justify-center text-slate-400 pointer-events-none">
+                <i data-lucide="search" class="w-4 h-4"></i>
+              </div>
+              <input
+                type="text"
+                id="permits-search-input"
+                oninput="window.filterPermitsTabList()"
+                placeholder="Cari nama santri..."
+                class="flex-1 h-full bg-transparent pl-0 pr-4 text-sm font-bold text-slate-700 dark:text-slate-200 outline-none"
+              />
+            </div>
+            
+            <!-- Filter Type -->
+            <div class="relative flex items-center h-12 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500 transition-all">
+              <div class="w-10 h-full flex items-center justify-center text-slate-400 pointer-events-none">
+                <i data-lucide="filter" class="w-4 h-4"></i>
+              </div>
+              <select
+                id="permits-filter-type"
+                onchange="window.filterPermitsTabList()"
+                class="flex-1 h-full bg-transparent pl-0 pr-8 text-sm font-bold text-slate-700 dark:text-slate-200 outline-none cursor-pointer appearance-none"
+              >
+                <option value="all">Semua Tipe</option>
+                <option value="Sakit">Sakit</option>
+                <option value="Izin">Izin Kegiatan</option>
+                <option value="Pulang">Izin Pulang</option>
+              </select>
+            </div>
+
+            <!-- Filter Status -->
+            <div class="relative flex items-center h-12 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500 transition-all">
+              <div class="w-10 h-full flex items-center justify-center text-slate-400 pointer-events-none">
+                <i data-lucide="check-square" class="w-4 h-4"></i>
+              </div>
+              <select
+                id="permits-filter-status"
+                onchange="window.filterPermitsTabList()"
+                class="flex-1 h-full bg-transparent pl-0 pr-8 text-sm font-bold text-slate-700 dark:text-slate-200 outline-none cursor-pointer appearance-none"
+              >
+                <option value="all">Semua Status</option>
+                <option value="pending">Pending</option>
+                <option value="approved">Disetujui</option>
+                <option value="rejected">Ditolak</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="flex justify-between items-center pt-2">
+            <button
+              onclick="window.openModal('modal-add-permit')"
+              class="w-full h-12 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white font-bold rounded-2xl transition-all shadow-md active:scale-95 flex items-center justify-center gap-2"
+            >
+              <i data-lucide="plus" class="w-5 h-5"></i>
+              Tambah Izin Baru (Terpusat)
+            </button>
+          </div>
+        </div>
+
+        <!-- Permits List Container -->
+        <div class="space-y-4">
+          <div class="flex items-center justify-between px-1">
+            <h3 class="text-sm font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+              Daftar Perizinan Aktif
+            </h3>
+            <span id="permits-count-badge" class="px-2.5 py-0.5 rounded-full text-xs font-black bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900/30">
+              0 Pengajuan
+            </span>
+          </div>
+
+          <div id="permits-list-content" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Dynamic Cards -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab: Kalender Puasa KHGT -->
+      <div
+        id="tab-fasting"
+        class="tab-content hidden flex-1 overflow-y-auto pb-32 hide-scrollbar scroll-smooth p-6 space-y-6 pt-safe"
+      >
+        <div class="mb-6 flex flex-col gap-1">
+          <h1 class="text-3xl font-black text-slate-800 dark:text-white tracking-tight">
+            Kalender
+            <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-500 to-teal-500">Puasa Sunnah & Wajib</span>
+          </h1>
+          <p class="text-sm font-medium text-slate-500 dark:text-slate-400">
+            Panduan puasa harian berdasarkan kalender Hijriyah dan kriteria KHGT
+          </p>
+        </div>
+
+        <!-- Fasting Status Banner -->
+        <div id="fasting-status-banner" class="bg-gradient-to-br from-emerald-500 to-teal-600 text-white p-6 rounded-3xl shadow-lg relative overflow-hidden flex flex-col gap-4">
+          <div class="absolute -right-8 -top-8 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
+          <div class="flex items-center gap-3 relative z-10">
+            <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+              <i data-lucide="moon-star" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <p class="text-xs font-bold uppercase tracking-wider opacity-90">Hari Ini</p>
+              <h2 id="fasting-today-text" class="text-lg font-black mt-0.5">Tidak Ada Jadwal Puasa</h2>
+            </div>
+          </div>
+          <div class="border-t border-white/20 pt-4 flex flex-col gap-1 relative z-10">
+            <span class="text-xs opacity-90 font-bold uppercase tracking-wider">Jadwal Puasa Terdekat</span>
+            <p id="fasting-next-text" class="text-sm font-black">Puasa Senin (15 Jun)</p>
+          </div>
+        </div>
+
+        <!-- Fasting Monthly Calendar Card -->
+        <div class="bg-white dark:bg-slate-800 p-5 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-sm space-y-4">
+          <div class="flex items-center justify-between">
+            <h3 class="font-bold text-sm text-slate-800 dark:text-slate-200">Kalender Puasa Bulan Ini</h3>
+            <span id="fasting-month-label" class="text-xs font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest bg-emerald-50 dark:bg-emerald-950/30 px-3 py-1 rounded-full border border-emerald-100/30">
+              Juni 2026 / Dzulhijjah 1447
+            </span>
+          </div>
+
+          <div class="grid grid-cols-7 gap-1 sm:gap-2 text-center">
+            <div class="text-[10px] sm:text-xs font-bold text-slate-400 dark:text-slate-500 uppercase py-1">Sen</div>
+            <div class="text-[10px] sm:text-xs font-bold text-slate-400 dark:text-slate-500 uppercase py-1">Sel</div>
+            <div class="text-[10px] sm:text-xs font-bold text-slate-400 dark:text-slate-500 uppercase py-1">Rab</div>
+            <div class="text-[10px] sm:text-xs font-bold text-slate-400 dark:text-slate-500 uppercase py-1">Kam</div>
+            <div class="text-[10px] sm:text-xs font-bold text-slate-400 dark:text-slate-500 uppercase py-1">Jum</div>
+            <div class="text-[10px] sm:text-xs font-bold text-slate-400 dark:text-slate-500 uppercase py-1">Sab</div>
+            <div class="text-[10px] sm:text-xs font-bold text-rose-400 dark:text-rose-500 uppercase py-1">Ahd</div>
+          </div>
+          <div id="fasting-calendar-grid" class="grid grid-cols-7 gap-1.5 sm:gap-2 text-center min-h-[220px]">
+            <!-- Dynamic Grid Days -->
+          </div>
+
+          <!-- Legend -->
+          <div class="border-t border-slate-100 dark:border-slate-700/60 pt-4 flex flex-wrap gap-3 text-[10px] font-bold text-slate-500">
+            <div class="flex items-center gap-1.5">
+              <span class="w-3 h-3 bg-emerald-500 rounded-md"></span>
+              <span>Puasa Wajib</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span class="w-3 h-3 bg-amber-400 rounded-md"></span>
+              <span>Ayyamul Bidh</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span class="w-3 h-3 bg-blue-400 rounded-md"></span>
+              <span>Senin-Kamis / Sunnah Lain</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab: Kinerja Musyrif (Timesheet) -->
+      <div
+        id="tab-performance"
+        class="tab-content hidden flex-1 overflow-y-auto pb-32 hide-scrollbar scroll-smooth p-6 space-y-6 pt-safe"
+      >
+        <div class="mb-6 flex flex-col gap-1">
+          <h1 class="text-3xl font-black text-slate-800 dark:text-white tracking-tight">
+            Dashboard
+            <span class="text-transparent bg-clip-text bg-gradient-to-r from-purple-500 to-pink-500">Kinerja Musyrif</span>
+          </h1>
+          <p class="text-sm font-medium text-slate-500 dark:text-slate-400">
+            Statistik dan evaluasi keaktifan pengisian presensi kelas
+          </p>
+        </div>
+
+        <!-- Performance Stats Cards -->
+        <div class="grid grid-cols-2 gap-4">
+          <div class="bg-white dark:bg-slate-800 p-5 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-sm flex flex-col gap-2">
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Penyelesaian</span>
+            <h2 id="perf-completion-rate" class="text-3xl font-black text-purple-600 dark:text-purple-400">0%</h2>
+            <p class="text-[9px] text-slate-400 font-bold">Total target bulanan</p>
+          </div>
+          <div class="bg-white dark:bg-slate-800 p-5 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-sm flex flex-col gap-2">
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Rata-rata Waktu</span>
+            <h2 id="perf-avg-speed" class="text-3xl font-black text-pink-600 dark:text-pink-400">0m</h2>
+            <p class="text-[9px] text-slate-400 font-bold">Setelah sesi dibuka</p>
+          </div>
+        </div>
+
+        <!-- Missed Sessions & Details Card -->
+        <div class="bg-white dark:bg-slate-800 p-5 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-sm space-y-4">
+          <h3 class="font-bold text-sm text-slate-800 dark:text-slate-200">Status Keaktifan Presensi Harian</h3>
+          
+          <div class="grid grid-cols-3 gap-2">
+            <div class="bg-slate-50 dark:bg-slate-900/50 p-3 rounded-2xl text-center">
+              <span id="perf-done-count" class="text-xl font-black text-emerald-500">0</span>
+              <p class="text-[9px] font-bold text-slate-400 uppercase mt-0.5">Selesai</p>
+            </div>
+            <div class="bg-slate-50 dark:bg-slate-900/50 p-3 rounded-2xl text-center">
+              <span id="perf-partial-count" class="text-xl font-black text-amber-500">0</span>
+              <p class="text-[9px] font-bold text-slate-400 uppercase mt-0.5">Sebagian</p>
+            </div>
+            <div class="bg-slate-50 dark:bg-slate-900/50 p-3 rounded-2xl text-center">
+              <span id="perf-missed-count" class="text-xl font-black text-red-500">0</span>
+              <p class="text-[9px] font-bold text-slate-400 uppercase mt-0.5">Terlewat</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Timesheet Details List -->
+        <div class="bg-white dark:bg-slate-800 p-5 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-sm space-y-4">
+          <h3 class="font-bold text-sm text-slate-800 dark:text-slate-200">Catatan Timesheet</h3>
+          <div id="perf-timesheet-list" class="space-y-3 max-h-[300px] overflow-y-auto">
+            <!-- Dynamic list items -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab: Profil Musyrif -->
       <div
         id="tab-profile"
         class="tab-content hidden flex-1 overflow-y-auto pb-32 hide-scrollbar scroll-smooth p-6 space-y-5 pt-safe"
       >
         <div
-          class="glass-card p-6 rounded-3xl text-center relative overflow-hidden border-t-4 border-t-emerald-500 shadow-xl"
+          class="glass-card p-6 rounded-3xl text-center relative overflow-hidden border-t-4 border-t-emerald-500 shadow-xl dark:bg-slate-800"
         >
           <div
-            class="absolute top-0 left-0 w-full h-24 bg-gradient-to-b from-emerald-500/10 to-transparent"
+            class="absolute top-0 left-0 w-full h-24 bg-gradient-to-b from-emerald-500/10 to-transparent pointer-events-none"
           ></div>
 
           <div class="relative z-10">
             <div
-              class="w-24 h-24 bg-white dark:bg-slate-800 rounded-full mx-auto mb-4 p-1 shadow-lg border border-slate-100 dark:border-slate-700"
+              class="w-24 h-24 bg-white dark:bg-slate-750 rounded-full mx-auto mb-4 p-1 shadow-lg border border-slate-100 dark:border-slate-700"
             >
               <div
                 id="profile-avatar"
@@ -3486,6 +4106,7 @@
             >
               ...
             </h2>
+
             <p
               id="profile-role-tab"
               class="text-xs font-bold text-emerald-500 uppercase tracking-widest mb-6"

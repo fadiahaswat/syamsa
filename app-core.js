@@ -32,6 +32,8 @@ const APP_CONFIG = {
   activityLogKey: "musyrif_activity_log",
   settingsKey: "musyrif_settings",
   googleAuthKey: "musyrif_google_session",
+  remindersKey: "musyrif_reminders_db",
+  agendasKey: "musyrif_agendas_db",
   googleClientId: window.APP_CREDENTIALS.googleClientId,
 };
 
@@ -85,12 +87,12 @@ window.parseJwt = function (token) {
   var base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
   var jsonPayload = decodeURIComponent(
     window
-      .atob(base64)
-      .split("")
-      .map(function (c) {
-        return "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2);
-      })
-      .join(""),
+    .atob(base64)
+    .split("")
+    .map(function (c) {
+      return "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2);
+    })
+    .join(""),
   );
   return JSON.parse(jsonPayload);
 };
@@ -128,7 +130,7 @@ window.formatDate = function (dateStr) {
   ];
 
   const d = new Date(dateStr + "T12:00:00");
-  return `${days[d.getDay()]}, ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+  return `${days[d.getDay()]} ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
 };
 
 // Cek apakah tanggal Masehi (YYYY-MM-DD) jatuh di bulan Ramadhan (Hijriyah ke-9)
@@ -191,10 +193,26 @@ let appState = {
   date: window.getLocalDateStr(),
   timesheetViewDate: window.getLocalDateStr(),
   activityLog: [],
+  reminders: [],
+  agendas: [],
   settings: {
     darkMode: false,
     notifications: true,
     autoSave: true,
+    notificationTypes: {
+      sesi_presensi_mulai: true,
+      sesi_mahad_mulai: true,
+      sisa_5_menit: true,
+      sisa_1_menit: true,
+      belum_lengkap_kemarin: true,
+      ada_santri_belum: true,
+      ada_izin_belum_verif: true,
+      ada_kegiatan_mulai: true,
+      ada_rapat_musyrif: true,
+      pengingat_perpulangan: true,
+      pengingat_puasa: true,
+      pengingat_tahfizh: true,
+    },
   },
 };
 
