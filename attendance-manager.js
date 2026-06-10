@@ -229,8 +229,9 @@ window.renderAttendanceList = function () {
     const avatarEl = clone.querySelector(".santri-avatar");
     const initials = santri.nama.substring(0, 2).toUpperCase();
     avatarEl.className =
-      "w-10 h-10 rounded-xl bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-700 dark:to-slate-800 flex items-center justify-center font-black text-xs text-slate-500 dark:text-slate-400 shadow-inner shrink-0 ring-1 ring-white/50 dark:ring-black/20";
+      "w-10 h-10 rounded-xl bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-700 dark:to-slate-800 flex items-center justify-center font-black text-xs text-slate-500 dark:text-slate-400 shadow-inner shrink-0 ring-1 ring-white/50 dark:ring-black/20 cursor-pointer hover:scale-105 transition-transform";
     avatarEl.textContent = initials;
+    avatarEl.onclick = () => { if (window.openStudentDetail) window.openStudentDetail(id); };
 
     // NAME & INFO
     const nameContainer = clone.querySelector(".name-container");
@@ -241,8 +242,9 @@ window.renderAttendanceList = function () {
 
     const nameText = clone.querySelector(".santri-name");
     nameText.className =
-      "font-bold text-slate-800 dark:text-white text-sm leading-tight line-clamp-1";
+      "font-bold text-slate-800 dark:text-white text-sm leading-tight line-clamp-1 cursor-pointer hover:underline hover:text-emerald-505 transition-all";
     nameText.textContent = window.sanitizeHTML(santri.nama);
+    nameText.onclick = () => { if (window.openStudentDetail) window.openStudentDetail(id); };
 
     // BADGE - Only for active permit (inline conditional)
     const badgeContainer = clone.querySelector(".badge-container");

@@ -34,6 +34,10 @@ const APP_CONFIG = {
   googleAuthKey: "musyrif_google_session",
   remindersKey: "musyrif_reminders_db",
   agendasKey: "musyrif_agendas_db",
+  studentLogsKey: "musyrif_student_logs",
+  violationsKey: "musyrif_violations",
+  studentTargetsKey: "musyrif_student_targets",
+  auditLogsKey: "musyrif_audit_logs",
   googleClientId: window.APP_CREDENTIALS.googleClientId,
 };
 
@@ -195,6 +199,10 @@ let appState = {
   activityLog: [],
   reminders: [],
   agendas: [],
+  studentLogs: [],
+  violations: [],
+  studentTargets: {},
+  auditLogs: [],
   settings: {
     darkMode: false,
     notifications: true,
@@ -620,4 +628,28 @@ window.getDayCompletionStatus = function (dateStr) {
     completedSlots,
     complete: requiredSlots > 0 && completedSlots >= requiredSlots,
   };
+};
+
+window.logActivityAudit = function (action, studentName, details) {
+  const logEntry = {
+    id: "audit_" + Date.now() + "_" + Math.random().toString(36).substr(2, 5),
+    timestamp: new Date().toISOString(),
+    musyrif: (appState.userProfile && appState.userProfile.email) ? appState.userProfile.email : "tester-musyrif@gmail.com",
+    action: action,
+    studentName: studentName || "-",
+    details: details || ""
+  };
+  
+  if (!appState.auditLogs) appState.auditLogs = [];
+  appState.auditLogs.unshift(logEntry);
+  
+  if (appState.auditLogs.length > 100) {
+    appState.auditLogs.pop();
+  }
+  
+  localStorage.setItem(APP_CONFIG.auditLogsKey, JSON.stringify(appState.auditLogs));
+  
+  if (window.logActivity) {
+    window.logActivity(action, `${studentName}: ${details}`);
+  }
 };

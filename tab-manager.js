@@ -572,7 +572,7 @@ window.updateReportTab = function () {
             </td>
         
             <td class="p-3">
-                <div class="font-bold text-slate-700 dark:text-slate-200 text-xs">
+                <div onclick="window.openStudentDetail('${s.nis || s.id}')" class="font-bold text-slate-700 dark:text-slate-200 text-xs cursor-pointer hover:underline hover:text-emerald-500 transition-colors">
                     ${window.sanitizeHTML(s.nama)}
                 </div>
             </td>

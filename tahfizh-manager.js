@@ -248,6 +248,9 @@ async function reloadTahfizhData() {
         };
 
         processTahfizhResponse(data);
+        if (typeof window.updateCommandCenterStats === 'function') {
+            window.updateCommandCenterStats();
+        }
     } catch (error) {
         console.error("Gagal memuat data Tahfizh:", error);
         if (window.showToast) window.showToast("Gagal memuat data Tahfizh.", "error");

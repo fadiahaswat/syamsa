@@ -67,11 +67,39 @@ window.initApp = async function () {
         ];
         localStorage.setItem(APP_CONFIG.agendasKey, JSON.stringify(appState.agendas));
       }
+
+      appState.studentLogs = [];
+      const savedStudentLogs = localStorage.getItem(APP_CONFIG.studentLogsKey);
+      if (savedStudentLogs) {
+        try { appState.studentLogs = JSON.parse(savedStudentLogs); } catch(e) { console.error(e); }
+      }
+      
+      appState.violations = [];
+      const savedViolations = localStorage.getItem(APP_CONFIG.violationsKey);
+      if (savedViolations) {
+        try { appState.violations = JSON.parse(savedViolations); } catch(e) { console.error(e); }
+      }
+
+      appState.studentTargets = {};
+      const savedStudentTargets = localStorage.getItem(APP_CONFIG.studentTargetsKey);
+      if (savedStudentTargets) {
+        try { appState.studentTargets = JSON.parse(savedStudentTargets); } catch(e) { console.error(e); }
+      }
+
+      appState.auditLogs = [];
+      const savedAuditLogs = localStorage.getItem(APP_CONFIG.auditLogsKey);
+      if (savedAuditLogs) {
+        try { appState.auditLogs = JSON.parse(savedAuditLogs); } catch(e) { console.error(e); }
+      }
     } catch (storageError) {
       console.error("Storage Error:", storageError);
       if (!appState.permits) appState.permits = [];
       if (!appState.reminders) appState.reminders = [];
       if (!appState.agendas) appState.agendas = [];
+      if (!appState.studentLogs) appState.studentLogs = [];
+      if (!appState.violations) appState.violations = [];
+      if (!appState.studentTargets) appState.studentTargets = {};
+      if (!appState.auditLogs) appState.auditLogs = [];
     }
     appState.currentSlotId = window.determineCurrentSlot();
     const dataLoadingPromise = Promise.all([
@@ -117,6 +145,67 @@ window.initApp = async function () {
               const sKelas = String(s.kelas || s.rombel || "").trim();
               return sKelas === appState.selectedClass;
             }).sort((a, b) => a.nama.localeCompare(b.nama));
+
+            if (FILTERED_SANTRI.length > 0) {
+              let updatedTargets = false;
+              FILTERED_SANTRI.forEach(s => {
+                const id = String(s.nis || s.id);
+                if (!appState.studentTargets[id]) {
+                  appState.studentTargets[id] = {
+                    hafalan: { target: "Juz 30", achieved: 12 },
+                    tahajjud: { target: 8, achieved: 6 },
+                    puasa: { target: 4, achieved: 2 },
+                    tilawah: { target: 30, achieved: 15 },
+                    discipline: { target: 100, achieved: 95 }
+                  };
+                  updatedTargets = true;
+                }
+              });
+              if (updatedTargets) {
+                localStorage.setItem(APP_CONFIG.studentTargetsKey, JSON.stringify(appState.studentTargets));
+              }
+
+              if (appState.studentLogs.length === 0) {
+                appState.studentLogs = [
+                  {
+                    id: "log_1",
+                    studentId: String(FILTERED_SANTRI[0].nis || FILTERED_SANTRI[0].id),
+                    type: "Konseling",
+                    date: window.getLocalDateStr(new Date(Date.now() - 24*3600*1000)),
+                    content: "Santri dinasihati agar merapikan lemari asrama sebelum sekolah.",
+                    musyrif: appState.userProfile ? appState.userProfile.email : "tester-musyrif@gmail.com",
+                    timestamp: new Date(Date.now() - 24*3600*1000).toISOString()
+                  },
+                  {
+                    id: "log_2",
+                    studentId: String(FILTERED_SANTRI[0].nis || FILTERED_SANTRI[0].id),
+                    type: "Nasihat",
+                    date: window.getLocalDateStr(new Date(Date.now() - 3*24*3600*1000)),
+                    content: "Mendorong motivasi belajar dan murajaah tahfizh.",
+                    musyrif: appState.userProfile ? appState.userProfile.email : "tester-musyrif@gmail.com",
+                    timestamp: new Date(Date.now() - 3*24*3600*1000).toISOString()
+                  }
+                ];
+                localStorage.setItem(APP_CONFIG.studentLogsKey, JSON.stringify(appState.studentLogs));
+              }
+
+              if (appState.violations.length === 0) {
+                appState.violations = [
+                  {
+                    id: "viol_1",
+                    studentId: String(FILTERED_SANTRI[0].nis || FILTERED_SANTRI[0].id),
+                    type: "Keterlambatan",
+                    date: window.getLocalDateStr(new Date(Date.now() - 2*24*3600*1000)),
+                    points: 5,
+                    note: "Terlambat datang shalat Shubuh 15 menit.",
+                    musyrif: appState.userProfile ? appState.userProfile.email : "tester-musyrif@gmail.com",
+                    timestamp: new Date(Date.now() - 2*24*3600*1000).toISOString()
+                  }
+                ];
+                localStorage.setItem(APP_CONFIG.violationsKey, JSON.stringify(appState.violations));
+              }
+            }
+
             if (FILTERED_SANTRI.length > 0) {
               document.getElementById("view-login").classList.add("hidden");
               document.getElementById("view-main").classList.remove("hidden");
