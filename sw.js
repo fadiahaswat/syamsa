@@ -1,4 +1,4 @@
-const CACHE_NAME = "musyrif-app-v10";
+const CACHE_NAME = "musyrif-app-v12";
 const ASSETS_TO_CACHE = [
   "./",
   "./index.html",
@@ -15,6 +15,8 @@ const ASSETS_TO_CACHE = [
   "./permit-manager.js",
   "./analysis-manager.js",
   "./export-manager.js",
+  "./tahfizh-manager.js",
+  "./tahfizh_metadata.json",
   "./script.js",
   "./data-santri.js",
   "./data-kelas.js",

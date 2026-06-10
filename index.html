@@ -464,6 +464,152 @@
           background: #334155;
         }
       }
+
+      /* --- Scoped Tahfizh Module Styles --- */
+      #tab-tahfizh, .tahfizh-modal {
+        --brand-primary: #d97706;
+        --brand-focus: #f59e0b;
+        --brand-focus-ring: rgba(245, 158, 11, 0.3);
+        --brand-bg-subtle: rgba(251, 191, 36, 0.1);
+        --card-bg: rgba(255, 255, 255, 0.75);
+        --card-border: rgba(229, 231, 235, 0.8);
+        --input-bg: rgba(249, 250, 251, 0.8);
+        --input-border: rgba(209, 213, 219, 0.8);
+        --input-focus-bg: rgba(255, 255, 255, 1);
+        --skeleton-bg: #e5e7eb;
+        --skeleton-highlight: #f3f4f6;
+      }
+      
+      #tab-tahfizh .glass-card, .tahfizh-modal .glass-card {
+        background: var(--card-bg);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid var(--card-border);
+        box-shadow: 0 4px 20px 0 rgba(31, 38, 135, 0.04);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      #tab-tahfizh .glass-card:hover {
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.01);
+        transform: translateY(-2px);
+      }
+      
+      #tab-tahfizh .modern-input, .tahfizh-modal .modern-input {
+        background: rgba(255, 255, 255, 0.5);
+        border: 1px solid #e2e8f0;
+        transition: all 0.2s;
+      }
+      #tab-tahfizh .modern-input:focus, .tahfizh-modal .modern-input:focus {
+        background: #fff;
+        border-color: #f59e0b;
+        box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.1);
+        outline: none;
+      }
+      
+      #tab-tahfizh .glass-input {
+        background-color: var(--input-bg) !important;
+        border: 1px solid var(--input-border) !important;
+      }
+      #tab-tahfizh .glass-input:focus {
+        background-color: var(--input-focus-bg) !important;
+        border-color: var(--brand-focus) !important;
+        box-shadow: 0 0 0 2px var(--brand-focus-ring);
+      }
+      
+      #tab-tahfizh .accordion-panel {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.3s ease-out, padding 0.3s ease-out;
+        padding: 0;
+      }
+      
+      #tab-tahfizh .progress-ring-circle {
+        transition: stroke-dashoffset 0.8s ease-out;
+        transform: rotate(-90deg);
+        transform-origin: 50% 50%;
+      }
+      
+      #tab-tahfizh .sortable .sort-icon {
+        opacity: 0.5;
+        display: inline-block;
+        width: 1em;
+        text-align: center;
+        transition: opacity 0.2s;
+      }
+      #tab-tahfizh .sortable:hover .sort-icon,
+      #tab-tahfizh .sortable[data-sort-dir] .sort-icon {
+        opacity: 1;
+      }
+      
+      #tab-tahfizh .tab-peringkat.active {
+        background-color: #fff;
+        color: var(--brand-primary);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+      }
+      
+      #tab-tahfizh .stat-card-blue { background-image: linear-gradient(to right, #3b82f6, #2563eb); }
+      #tab-tahfizh .stat-card-green { background-image: linear-gradient(to right, #22c55e, #16a34a); }
+      #tab-tahfizh .stat-card-red   { background-image: linear-gradient(to right, #ef4444, #dc2626); }
+      
+      #tab-tahfizh .section-header {
+        font-size: 1.25rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        border-bottom: 1px solid var(--card-border);
+        padding-bottom: 0.5rem;
+        margin-bottom: 1rem;
+      }
+      #tab-tahfizh .section-header svg {
+        color: #4b5563;
+      }
+      
+      #tab-tahfizh .form-error, .tahfizh-modal .form-error {
+        color: #ef4444;
+        font-size: 0.75rem;
+        margin-top: 4px;
+        display: none;
+      }
+      
+      #tab-tahfizh .skeleton-container {
+        position: absolute;
+        inset: 0;
+        background: #f8fafc;
+        z-index: 20;
+        overflow: hidden;
+      }
+      #tab-tahfizh .skeleton {
+        background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+        background-size: 200% 100%;
+        animation: tahfizh-shimmer 1.5s infinite;
+      }
+      
+      @keyframes tahfizh-shimmer {
+        0% { background-position: 200% 0; }
+        100% { background-position: -200% 0; }
+      }
+      
+      @keyframes tahfizh-spin-slow {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+      }
+      @keyframes tahfizh-spin-reverse {
+        from { transform: rotate(360deg); }
+        to { transform: rotate(0deg); }
+      }
+      @keyframes tahfizh-pulse-glow {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.6; transform: scale(0.95); }
+      }
+      @keyframes tahfizh-shimmer-slide {
+        0% { transform: translateX(-100%); }
+        100% { transform: translateX(200%); }
+      }
+      
+      #tab-tahfizh .loader-spin-slow { animation: tahfizh-spin-slow 3s linear infinite; }
+      #tab-tahfizh .loader-spin-reverse { animation: tahfizh-spin-reverse 2s linear infinite; }
+      #tab-tahfizh .loader-pulse { animation: tahfizh-pulse-glow 2s ease-in-out infinite; }
+      #tab-tahfizh .loader-bar-slide { animation: tahfizh-shimmer-slide 1.5s infinite linear; }
     </style>
   </head>
   <body
@@ -678,6 +824,14 @@
           >
             <i data-lucide="home" class="w-5 h-5 flex-shrink-0"></i>
             <span>Dashboard</span>
+          </button>
+          <button
+            onclick="window.switchTab('tahfizh')"
+            data-target="tahfizh"
+            class="nav-btn sidebar-nav-btn"
+          >
+            <i data-lucide="book-open" class="w-5 h-5 flex-shrink-0"></i>
+            <span>Tahfizh</span>
           </button>
           <button
             onclick="window.switchTab('report')"
@@ -1588,6 +1742,1116 @@
           </div>
         </div>
       </div>
+
+<!-- Tab: Tahfizh (WARM ORANGE THEME) -->
+<div
+  id="tab-tahfizh"
+  class="tab-content hidden flex-1 overflow-y-auto pb-32 hide-scrollbar scroll-smooth p-4 sm:p-6 space-y-6 pt-safe"
+>
+  <!-- Header & Sub-Navigasi Tahfizh -->
+  <div class="mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-4 border-b border-amber-100 dark:border-amber-950/30">
+    <div>
+      <h1 class="text-3xl font-black text-slate-800 dark:text-white tracking-tight flex items-center gap-2">
+        Setor<span class="text-orange-500">.in</span>
+      </h1>
+      <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Sistem Tahfizh & Setoran Hafalan</p>
+    </div>
+    
+    <!-- Sub-Tab Navigation -->
+    <div class="flex flex-wrap gap-1 bg-slate-100 dark:bg-slate-800/60 p-1.5 rounded-2xl w-full md:w-auto" id="tahfizh-sub-nav">
+      <button onclick="window.switchTahfizhSubTab('beranda')" data-subtab="beranda" class="tahfizh-sub-nav-btn active flex-1 md:flex-none px-4 py-2.5 text-xs font-bold rounded-xl transition-all bg-white text-orange-600 shadow-sm">
+        Beranda
+      </button>
+      <button onclick="window.switchTahfizhSubTab('form')" data-subtab="form" class="tahfizh-sub-nav-btn flex-1 md:flex-none px-4 py-2.5 text-xs font-bold rounded-xl transition-all text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200">
+        Input Setoran
+      </button>
+      <button onclick="window.switchTahfizhSubTab('analisis')" data-subtab="analisis" class="tahfizh-sub-nav-btn flex-1 md:flex-none px-4 py-2.5 text-xs font-bold rounded-xl transition-all text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200">
+        Analisis Rapor
+      </button>
+      <button onclick="window.switchTahfizhSubTab('riwayat')" data-subtab="riwayat" class="tahfizh-sub-nav-btn flex-1 md:flex-none px-4 py-2.5 text-xs font-bold rounded-xl transition-all text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200">
+        Riwayat
+      </button>
+      <button onclick="window.switchTahfizhSubTab('rekap')" data-subtab="rekap" class="tahfizh-sub-nav-btn flex-1 md:flex-none px-4 py-2.5 text-xs font-bold rounded-xl transition-all text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200">
+        Rekap Kelas
+      </button>
+    </div>
+  </div>
+
+  <!-- Panel 1: BERANDA -->
+  <div id="tahfizh-page-beranda" class="tahfizh-page-content space-y-8 animate-[slideUp_0.4s_ease-out]">
+    
+    <!-- Validation Section (Setoran Masuk) -->
+    <section id="tahfizh-validation-section" class="hidden">
+      <div class="glass-card rounded-[2rem] border border-rose-100 dark:border-rose-950/20 bg-gradient-to-br from-white to-rose-50/50 dark:from-slate-900 dark:to-rose-950/10 shadow-xl shadow-rose-100/50 dark:shadow-none overflow-hidden relative group">
+        <div class="absolute top-0 right-0 w-64 h-64 bg-rose-200/30 dark:bg-rose-900/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none transition-transform group-hover:scale-110"></div>
+        <div class="relative z-10 px-6 py-5 border-b border-rose-100/60 dark:border-rose-950/20 bg-white/60 dark:bg-slate-900/60 backdrop-blur-md flex items-center justify-between">
+          <div class="flex items-center gap-4">
+            <div class="relative">
+              <span class="absolute inline-flex h-full w-full rounded-xl bg-rose-400 opacity-20 animate-ping"></span>
+              <div class="relative w-12 h-12 bg-rose-100 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 rounded-xl flex items-center justify-center shadow-sm border border-rose-200 dark:border-rose-900/50">
+                <i data-lucide="bell" class="w-6 h-6"></i>
+              </div>
+              <span class="absolute -top-1 -right-1 flex h-4 w-4">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-4 w-4 bg-red-500 border-2 border-white"></span>
+              </span>
+            </div>
+            <div>
+              <h3 class="text-lg font-black text-slate-800 dark:text-white tracking-tight">Setoran Masuk</h3>
+              <p class="text-xs font-semibold text-rose-500 uppercase tracking-wider">Menunggu Validasi Anda</p>
+            </div>
+          </div>
+          <div class="flex flex-col items-end">
+            <span class="text-3xl font-black text-rose-600 dark:text-rose-400 leading-none" id="tahfizh-validation-count">0</span>
+            <span class="text-[10px] font-bold text-slate-400">Permintaan</span>
+          </div>
+        </div>
+        <div id="tahfizh-validation-container" class="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"></div>
+      </div>
+    </section>
+
+    <!-- Statistik Umum -->
+    <section class="space-y-4">
+      <h3 class="text-xl font-bold text-slate-800 dark:text-white flex items-center gap-3">
+        <span class="flex items-center justify-center w-8 h-8 bg-orange-100 dark:bg-orange-950/40 rounded-lg text-orange-600 dark:text-orange-400">
+          <i data-lucide="bar-chart-3" class="w-5 h-5"></i>
+        </span>
+        Statistik Umum
+      </h3>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
+        <div class="glass-card bg-white/60 dark:bg-slate-900/40 p-6 rounded-3xl border border-white dark:border-slate-800 flex items-center gap-5 transition-all hover:-translate-y-1 hover:shadow-lg hover:border-orange-200 dark:hover:border-orange-950/50 group">
+          <div class="w-14 h-14 bg-orange-50 dark:bg-orange-950/40 text-orange-500 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-sm">
+            <i data-lucide="users" class="w-7 h-7"></i>
+          </div>
+          <div>
+            <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Santri Aktif</p>
+            <p id="tahfizh-stats-santri-aktif" class="text-3xl font-black text-slate-800 dark:text-white">0</p>
+          </div>
+        </div>
+        <div class="glass-card bg-white/60 dark:bg-slate-900/40 p-6 rounded-3xl border border-white dark:border-slate-800 flex items-center gap-5 transition-all hover:-translate-y-1 hover:shadow-lg hover:border-emerald-200 dark:hover:border-emerald-950/50 group">
+          <div class="w-14 h-14 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-500 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-sm">
+            <i data-lucide="check-circle" class="w-7 h-7"></i>
+          </div>
+          <div>
+            <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Sudah Tuntas</p>
+            <p id="tahfizh-stats-santri-tuntas" class="text-3xl font-black text-slate-800 dark:text-white">0</p>
+          </div>
+        </div>
+        <div class="glass-card bg-white/60 dark:bg-slate-900/40 p-6 rounded-3xl border border-white dark:border-slate-800 flex items-center gap-5 transition-all hover:-translate-y-1 hover:shadow-lg hover:border-rose-200 dark:hover:border-rose-950/50 group">
+          <div class="w-14 h-14 bg-rose-50 dark:bg-rose-950/40 text-rose-500 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-sm">
+            <i data-lucide="alert-circle" class="w-7 h-7"></i>
+          </div>
+          <div>
+            <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Belum Tuntas</p>
+            <p id="tahfizh-stats-santri-belum-tuntas" class="text-3xl font-black text-slate-800 dark:text-white">0</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Jadwal Perpulangan -->
+    <section id="tahfizh-jadwal-perpulangan-section" class="space-y-4"></section>
+
+    <!-- Target Ketuntasan -->
+    <section id="tahfizh-target-ketuntasan-section" class="space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 class="text-xl font-bold text-slate-800 dark:text-white flex items-center gap-3">
+          <span class="flex items-center justify-center w-8 h-8 bg-sky-100 dark:bg-sky-950/40 rounded-lg text-sky-600 dark:text-sky-400">
+            <i data-lucide="target" class="w-5 h-5"></i>
+          </span>
+          Target Ketuntasan
+        </h3>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- Mutqin 30 Juz -->
+        <div id="tahfizh-mutqin-unggulan-progress-container" class="hidden group relative overflow-hidden glass-card bg-gradient-to-br from-white to-sky-50/50 dark:from-slate-900 dark:to-sky-950/10 p-1 rounded-[2.5rem] transition-all duration-300 hover:shadow-xl hover:-translate-y-1 hover:shadow-sky-100/30">
+          <div class="absolute top-0 right-0 w-32 h-32 bg-sky-100/50 dark:bg-sky-900/10 rounded-full blur-3xl -mr-10 -mt-10 transition-transform group-hover:scale-150"></div>
+          <div class="bg-white/40 dark:bg-slate-900/40 backdrop-blur-sm p-6 sm:p-8 rounded-[2.3rem] h-full flex flex-col items-center text-center relative z-10 border border-white/50 dark:border-slate-800">
+            <div class="w-12 h-12 mb-4 bg-sky-100 dark:bg-sky-950/40 text-sky-600 dark:text-sky-400 rounded-2xl flex items-center justify-center shadow-sm group-hover:rotate-12 transition-transform">
+              <i data-lucide="sparkles" class="w-6 h-6"></i>
+            </div>
+            <h4 class="font-black text-slate-700 dark:text-slate-200 text-lg mb-1">Mutqin 30 Juz</h4>
+            <p class="text-[10px] font-bold text-sky-500 uppercase tracking-widest mb-6 bg-sky-50 dark:bg-sky-950/30 px-3 py-1 rounded-full border border-sky-100/30">Program Unggulan</p>
+            <div class="relative flex items-center justify-center">
+              <div id="tahfizh-mutqin-unggulan-circle" class="relative w-44 h-44 drop-shadow-sm transform transition-transform group-hover:scale-105"></div>
+            </div>
+            <p id="tahfizh-mutqin-unggulan-details" class="mt-6 text-xs font-bold text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 shadow-sm px-4 py-2 rounded-xl w-full"></p>
+          </div>
+        </div>
+
+        <!-- Mutqin Juz 30 -->
+        <div id="tahfizh-mutqin-juz30-progress-container" class="hidden group relative overflow-hidden glass-card bg-gradient-to-br from-white to-green-50/50 dark:from-slate-900 dark:to-green-950/10 p-1 rounded-[2.5rem] transition-all duration-300 hover:shadow-xl hover:-translate-y-1 hover:shadow-green-100/30">
+          <div class="absolute top-0 right-0 w-32 h-32 bg-green-100/50 dark:bg-green-900/10 rounded-full blur-3xl -mr-10 -mt-10 transition-transform group-hover:scale-150"></div>
+          <div class="bg-white/40 dark:bg-slate-900/40 backdrop-blur-sm p-6 sm:p-8 rounded-[2.3rem] h-full flex flex-col items-center text-center relative z-10 border border-white/50 dark:border-slate-800">
+            <div class="w-12 h-12 mb-4 bg-green-100 dark:bg-green-950/40 text-green-600 dark:text-green-400 rounded-2xl flex items-center justify-center shadow-sm group-hover:rotate-12 transition-transform">
+              <i data-lucide="book-open" class="w-6 h-6"></i>
+            </div>
+            <h4 class="font-black text-slate-700 dark:text-slate-200 text-lg mb-1">Mutqin Juz 30</h4>
+            <p class="text-[10px] font-bold text-green-600 dark:text-green-400 uppercase tracking-widest mb-6 bg-green-50 dark:bg-green-950/30 px-3 py-1 rounded-full border border-green-100/30">Program Tahfizh</p>
+            <div class="relative flex items-center justify-center">
+              <div id="tahfizh-mutqin-juz30-circle" class="relative w-44 h-44 drop-shadow-sm transform transition-transform group-hover:scale-105"></div>
+            </div>
+            <p id="tahfizh-mutqin-juz30-details" class="mt-6 text-xs font-bold text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 shadow-sm px-4 py-2 rounded-xl w-full"></p>
+          </div>
+        </div>
+
+        <!-- Mutqin Juz 29 -->
+        <div id="tahfizh-mutqin-juz29-progress-container" class="hidden group relative overflow-hidden glass-card bg-gradient-to-br from-white to-amber-50/50 dark:from-slate-900 dark:to-amber-950/10 p-1 rounded-[2.5rem] transition-all duration-300 hover:shadow-xl hover:-translate-y-1 hover:shadow-amber-100/30">
+          <div class="absolute top-0 right-0 w-32 h-32 bg-amber-100/50 dark:bg-amber-900/10 rounded-full blur-3xl -mr-10 -mt-10 transition-transform group-hover:scale-150"></div>
+          <div class="bg-white/40 dark:bg-slate-900/40 backdrop-blur-sm p-6 sm:p-8 rounded-[2.3rem] h-full flex flex-col items-center text-center relative z-10 border border-white/50 dark:border-slate-800">
+            <div class="w-12 h-12 mb-4 bg-amber-100 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 rounded-2xl flex items-center justify-center shadow-sm group-hover:rotate-12 transition-transform">
+              <i data-lucide="bookmark" class="w-6 h-6"></i>
+            </div>
+            <h4 class="font-black text-slate-700 dark:text-slate-200 text-lg mb-1">Mutqin Juz 29</h4>
+            <p class="text-[10px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-widest mb-6 bg-amber-50 dark:bg-amber-950/30 px-3 py-1 rounded-full border border-amber-100/30">Program Tahfizh</p>
+            <div class="relative flex items-center justify-center">
+              <div id="tahfizh-mutqin-juz29-circle" class="relative w-44 h-44 drop-shadow-sm transform transition-transform group-hover:scale-105"></div>
+            </div>
+            <p id="tahfizh-mutqin-juz29-details" class="mt-6 text-xs font-bold text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 shadow-sm px-4 py-2 rounded-xl w-full"></p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tracking Progress Kelas (Accordion) -->
+    <section class="space-y-4">
+      <h3 class="text-xl font-bold text-slate-800 dark:text-white flex items-center gap-3">
+        <span class="flex items-center justify-center w-8 h-8 bg-purple-100 dark:bg-purple-950/40 rounded-lg text-purple-600 dark:text-purple-400">
+          <i data-lucide="folder-check" class="w-5 h-5"></i>
+        </span>
+        Kemajuan per Kelas
+      </h3>
+      <div id="tahfizh-tuntas-tracking-accordion" class="space-y-4"></div>
+    </section>
+
+    <!-- Papan Peringkat & Tahfizh Tuntas Tracking -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      <!-- Leaderboard -->
+      <section id="tahfizh-peringkat-section" class="lg:col-span-6 space-y-4"></section>
+      
+      <!-- Detail Santri per Juz (Tahfizh) -->
+      <section id="tahfizh-tuntas-tracking-section" class="lg:col-span-6 space-y-4"></section>
+    </div>
+  </div>
+
+  <!-- Panel 2: FORM INPUT SETORAN -->
+  <div id="tahfizh-page-form" class="tahfizh-page-content hidden max-w-3xl mx-auto space-y-8 animate-[slideUp_0.4s_ease-out]">
+    <div class="glass-card rounded-[2.5rem] p-8 bg-gradient-to-br from-white to-orange-50/50 dark:from-slate-900 dark:to-orange-950/10 border border-orange-100 dark:border-orange-950/20 relative overflow-hidden shadow-md">
+      <div class="absolute top-0 right-0 w-40 h-40 bg-orange-100/50 dark:bg-orange-900/10 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
+      <div class="relative z-10 flex justify-between items-start">
+        <div>
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-100 dark:bg-orange-950/40 border border-orange-200 dark:border-orange-900/50 mb-4 shadow-sm">
+            <span class="relative flex h-2 w-2">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-2 w-2 bg-orange-500"></span>
+            </span>
+            <span class="text-[10px] font-bold text-orange-700 dark:text-orange-400 uppercase tracking-widest">Pencatatan Baru</span>
+          </div>
+          <h2 class="text-3xl font-black text-slate-800 dark:text-white tracking-tight">Input Setoran</h2>
+          <p class="text-sm text-slate-500 dark:text-slate-400 mt-2 font-medium max-w-md leading-relaxed" id="tahfizh-form-subtitle">Catat perkembangan hafalan santri secara akurat dan real-time.</p>
+        </div>
+        <button id="tahfizh-help-button" class="group bg-white dark:bg-slate-800 p-3 rounded-2xl border border-slate-100 dark:border-slate-700 hover:border-orange-200 dark:hover:border-orange-950 transition-all duration-300">
+          <i data-lucide="help-circle" class="w-6 h-6 text-slate-400 group-hover:text-orange-500"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Antrean Queue Pengiriman (Jika Ada) -->
+    <div id="tahfizh-queue-container" class="hidden glass-card p-6 rounded-[2rem] border-orange-200 dark:border-orange-950/50 bg-gradient-to-r from-orange-50/50 to-amber-50/30 dark:from-slate-900 dark:to-orange-950/5 space-y-4">
+      <div class="flex justify-between items-center border-b border-orange-100 dark:border-orange-950/20 pb-3">
+        <h4 class="font-black text-slate-700 dark:text-slate-200 text-sm flex items-center gap-2">
+          <i data-lucide="list-ordered" class="w-5 h-5 text-orange-500"></i>
+          Antrean Kirim (<span id="tahfizh-queue-count">0</span>)
+        </h4>
+      </div>
+      <div id="tahfizh-queue-list" class="space-y-2 max-h-48 overflow-y-auto pr-1"></div>
+    </div>
+
+    <form id="tahfizh-setoranForm" class="space-y-6">
+      <!-- Data Awal -->
+      <div class="glass-card bg-white dark:bg-slate-900/60 p-6 sm:p-8 rounded-[2rem] border border-slate-100 dark:border-slate-800 shadow-sm space-y-6">
+        <h3 class="text-sm font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800/80 pb-4 mb-6">Data Awal</h3>
+        <div>
+          <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Waktu Setoran</label>
+          <div class="flex gap-3">
+            <div class="relative flex-grow">
+              <input type="datetime-local" id="tahfizh-tanggal" name="tanggal" class="modern-input w-full p-4 pl-12 rounded-2xl text-sm font-bold text-slate-700 dark:text-slate-200 bg-slate-50 dark:bg-slate-800 border-transparent focus:bg-white dark:focus:bg-slate-900 focus:border-orange-300 focus:ring-4 focus:ring-orange-100 dark:focus:ring-orange-950/20 transition-all" required>
+              <i data-lucide="calendar" class="w-5 h-5 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+            </div>
+            <button type="button" id="tahfizh-nowBtn" class="bg-orange-50 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400 px-6 py-2 rounded-2xl font-bold hover:bg-orange-100 dark:hover:bg-orange-900/50 hover:shadow-md transition-all text-xs uppercase tracking-wide border border-orange-100 dark:border-orange-900/50 flex items-center gap-2">
+              <i data-lucide="clock" class="w-4 h-4"></i>
+              <span>Saat Ini</span>
+            </button>
+          </div>
+          <p class="form-error text-xs text-red-500 font-bold hidden bg-red-50 p-2 rounded-lg mt-2"></p>
+        </div>
+
+        <div>
+          <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Musyrif Penerima</label>
+          <div class="relative group">
+            <select id="tahfizh-musyrif" name="musyrif" class="modern-input w-full p-4 pl-12 pr-10 rounded-2xl appearance-none font-medium cursor-pointer bg-slate-50 dark:bg-slate-800 border-transparent focus:bg-white dark:focus:bg-slate-900 focus:border-orange-300 focus:ring-4 focus:ring-orange-100 dark:focus:ring-orange-950/20 transition-all" required></select>
+            <i data-lucide="user-check" class="w-5 h-5 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none group-hover:text-orange-500 transition-colors"></i>
+            <div class="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-slate-400">
+              <i data-lucide="chevron-down" class="w-4 h-4"></i>
+            </div>
+          </div>
+          <p class="form-error text-xs text-red-500 hidden mt-2"></p>
+        </div>
+      </div>
+
+      <!-- Identitas Santri -->
+      <div class="glass-card bg-white dark:bg-slate-900/60 p-6 sm:p-8 rounded-[2rem] border border-slate-100 dark:border-slate-800 shadow-sm space-y-6">
+        <h3 class="text-sm font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800/80 pb-4 mb-6">Identitas Santri</h3>
+        <div>
+          <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Nama Santri</label>
+          <div class="relative group">
+            <select id="tahfizh-namaSantri" class="modern-input w-full p-4 pl-12 pr-10 rounded-2xl appearance-none font-medium disabled:opacity-60 disabled:bg-slate-100 cursor-pointer bg-slate-50 dark:bg-slate-800 border-transparent focus:bg-white dark:focus:bg-slate-900 focus:border-orange-300 focus:ring-4 focus:ring-orange-100 dark:focus:ring-orange-950/20 transition-all" required></select>
+            <i data-lucide="user" class="w-5 h-5 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none group-hover:text-orange-500 transition-colors"></i>
+            <div class="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-slate-400">
+              <i data-lucide="chevron-down" class="w-4 h-4"></i>
+            </div>
+          </div>
+          <p class="form-error text-xs text-red-500 hidden mt-2"></p>
+          <input type="hidden" id="tahfizh-santriId" name="santriId">
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div class="bg-slate-50 dark:bg-slate-800/40 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-400 shadow-sm">
+              <i data-lucide="home" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <label class="block text-[10px] text-slate-400 uppercase tracking-widest font-bold">Kelas</label>
+              <input type="text" id="tahfizh-kelas" name="kelas" class="w-full bg-transparent font-black text-slate-700 dark:text-slate-200 text-lg outline-none p-0 border-none focus:ring-0" readonly tabindex="-1" placeholder="-">
+            </div>
+          </div>
+          <div class="bg-slate-50 dark:bg-slate-800/40 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-400 shadow-sm">
+              <i data-lucide="book-open" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <label class="block text-[10px] text-slate-400 uppercase tracking-widest font-bold">Program</label>
+              <input type="text" id="tahfizh-program" name="program" class="w-full bg-transparent font-black text-orange-600 dark:text-orange-400 text-lg outline-none p-0 border-none focus:ring-0" readonly tabindex="-1" placeholder="-">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Detail Hafalan -->
+      <div class="glass-card bg-white dark:bg-slate-900/60 p-6 sm:p-8 rounded-[2rem] border border-slate-100 dark:border-slate-800 shadow-sm space-y-6">
+        <h3 class="text-sm font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800/80 pb-4 mb-6">Detail Hafalan</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="space-y-2">
+            <label class="block text-sm font-bold text-slate-700 dark:text-slate-300">Jenis Setoran</label>
+            <div class="relative">
+              <select id="tahfizh-jenis" name="jenis" class="modern-input w-full p-4 pr-10 rounded-2xl appearance-none font-medium disabled:opacity-60 disabled:bg-slate-100 cursor-pointer bg-slate-50 dark:bg-slate-800 border-transparent focus:bg-white dark:focus:bg-slate-900 focus:border-orange-300 focus:ring-4 focus:ring-orange-100 dark:focus:ring-orange-950/20 transition-all" required disabled></select>
+              <div class="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-slate-400">
+                <i data-lucide="chevron-down" class="w-4 h-4"></i>
+              </div>
+            </div>
+            <p class="form-error text-xs text-red-500 hidden mt-2"></p>
+          </div>
+          <div class="space-y-2">
+            <label class="block text-sm font-bold text-slate-700 dark:text-slate-300">Juz</label>
+            <div class="relative">
+              <select id="tahfizh-juz" name="juz" class="modern-input w-full p-4 pr-10 rounded-2xl appearance-none font-medium disabled:opacity-60 disabled:bg-slate-100 cursor-pointer bg-slate-50 dark:bg-slate-800 border-transparent focus:bg-white dark:focus:bg-slate-900 focus:border-orange-300 focus:ring-4 focus:ring-orange-100 dark:focus:ring-orange-950/20 transition-all" required disabled></select>
+              <div class="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-slate-400">
+                <i data-lucide="chevron-down" class="w-4 h-4"></i>
+              </div>
+            </div>
+            <p class="form-error text-xs text-red-500 hidden mt-2"></p>
+          </div>
+        </div>
+
+        <!-- Halaman Input Container (Ziyadah/Muraja'ah Halaman / Mutqin Juz) -->
+        <div id="tahfizh-halaman-container" class="hidden animate-slide-up bg-slate-50 dark:bg-slate-800/40 p-6 rounded-2xl border border-slate-100 dark:border-slate-800">
+          <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
+            <i data-lucide="file-text" class="w-5 h-5 text-slate-400"></i>
+            Jumlah Halaman
+          </label>
+          <div class="relative">
+            <input type="number" step="0.1" id="tahfizh-halaman" name="halaman" class="modern-input w-full p-4 pl-4 pr-20 rounded-2xl text-2xl font-black text-slate-800 dark:text-white bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 focus:border-orange-300 focus:ring-4 focus:ring-orange-100 dark:focus:ring-orange-950/20" placeholder="0.0">
+            <div class="absolute inset-y-0 right-0 flex items-center px-6 pointer-events-none text-slate-400 font-bold bg-slate-100/50 dark:bg-slate-800/60 rounded-r-2xl border-l border-slate-100 dark:border-slate-700">
+              Hlm
+            </div>
+          </div>
+          <div class="mt-3 flex items-start gap-2 p-3 bg-blue-50 dark:bg-blue-950/20 rounded-xl border border-blue-100 dark:border-blue-900/50">
+            <i data-lucide="info" class="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0"></i>
+            <p class="text-xs font-medium text-blue-700 dark:text-blue-400 leading-relaxed">Gunakan tanda titik (.) untuk pecahan desimal.<br>Contoh: <strong>2.5</strong> untuk dua setengah halaman.</p>
+          </div>
+        </div>
+
+        <!-- Surat Checklist Container (Ziyadah/Muraja'ah Surat) -->
+        <div id="tahfizh-surat-container" class="hidden animate-slide-up space-y-3">
+          <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between">
+            <span>Pilih Surat</span>
+            <span class="text-[10px] text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-lg">Bisa pilih banyak</span>
+          </label>
+          <div id="tahfizh-surat-checklist-area" class="bg-slate-50 dark:bg-slate-800/30 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 h-64 overflow-y-auto space-y-2 shadow-inner custom-scrollbar relative">
+            <div class="absolute inset-0 flex items-center justify-center text-slate-400 italic text-sm">
+              <div class="text-center">
+                <i data-lucide="list-plus" class="w-10 h-10 mx-auto mb-2 opacity-30"></i>
+                Pilih Juz terlebih dahulu...
+              </div>
+            </div>
+          </div>
+          <p class="form-error text-xs text-red-500 hidden mt-2"></p>
+        </div>
+      </div>
+
+      <input type="hidden" id="tahfizh-kualitas" name="kualitas" value="Lancar">
+
+      <!-- Submit Button -->
+      <button type="submit" id="tahfizh-submit-button" class="w-full group relative overflow-hidden bg-gradient-to-r from-orange-600 to-amber-600 text-white font-bold py-5 rounded-[1.5rem] shadow-xl shadow-orange-500/20 hover:shadow-2xl hover:shadow-orange-500/30 hover:-translate-y-1 transition-all duration-300 flex items-center justify-center gap-3 text-lg">
+        <div class="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-[tahfizh-shimmer_1.5s_infinite]"></div>
+        <span id="tahfizh-submit-spinner" class="hidden animate-spin h-6 w-6 border-3 border-white border-t-transparent rounded-full"></span>
+        <span id="tahfizh-submit-button-text" class="relative z-10 tracking-wide">Simpan Setoran</span>
+        <i id="tahfizh-submit-button-icon" data-lucide="arrow-right" class="w-6 h-6 group-hover:translate-x-1 transition-transform relative z-10"></i>
+      </button>
+    </form>
+  </div>
+
+  <!-- Panel 3: ANALISIS RAPOR SANTRI -->
+  <div id="tahfizh-page-analisis" class="tahfizh-page-content hidden max-w-6xl mx-auto space-y-8 animate-[slideUp_0.4s_ease-out]">
+    <!-- Sticky Search Box -->
+    <div class="glass-card p-4 rounded-[2rem] bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/40 dark:shadow-none flex flex-col md:flex-row justify-between items-center gap-6 sticky top-4 z-30">
+      <div class="flex items-center gap-4 w-full md:w-auto pl-2">
+        <div class="flex-shrink-0 w-14 h-14 bg-gradient-to-br from-orange-500 to-amber-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-orange-500/20">
+          <i data-lucide="user-search" class="w-7 h-7"></i>
+        </div>
+        <div>
+          <h2 class="text-2xl font-black text-slate-800 dark:text-white tracking-tight leading-none">Rapor Santri</h2>
+          <p class="text-sm font-medium text-slate-500 dark:text-slate-400 mt-1">Analisis kemajuan setoran individual.</p>
+        </div>
+      </div>
+      <div class="relative w-full md:w-80 group">
+        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-orange-500 transition-colors">
+          <i data-lucide="search" class="w-5 h-5"></i>
+        </div>
+        <select id="tahfizh-santri-select-analisis" class="w-full py-4 pl-12 pr-10 bg-slate-50 dark:bg-slate-800 border-transparent rounded-xl font-bold text-slate-700 dark:text-white cursor-pointer focus:ring-4 focus:ring-orange-100 dark:focus:ring-orange-950/20 focus:bg-white dark:focus:bg-slate-900 transition-all appearance-none text-sm"></select>
+        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-400">
+          <i data-lucide="chevron-down" class="w-5 h-5"></i>
+        </div>
+      </div>
+    </div>
+
+    <!-- Analisis Content Container (Dashboard Rapor Santri) -->
+    <div id="tahfizh-analisis-content-container" class="min-h-[500px]"></div>
+  </div>
+
+  <!-- Panel 4: RIWAYAT SETORAN -->
+  <div id="tahfizh-page-riwayat" class="tahfizh-page-content hidden max-w-7xl mx-auto space-y-6 animate-[slideUp_0.4s_ease-out]">
+    <div class="flex flex-col md:flex-row justify-between items-end gap-6 pb-2 border-b border-slate-200/60 dark:border-slate-850">
+      <div>
+        <h2 class="text-3xl font-black text-slate-800 dark:text-white tracking-tight flex items-center gap-3">
+          <span class="flex items-center justify-center w-12 h-12 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-orange-600 dark:text-orange-400 shadow-sm">
+            <i data-lucide="history" class="w-6 h-6"></i>
+          </span>
+          Riwayat Setoran
+        </h2>
+        <p class="text-slate-500 dark:text-slate-400 mt-2 text-base font-medium ml-1">Arsip data hafalan santri yang telah terekam.</p>
+      </div>
+      <div class="bg-white dark:bg-slate-900 px-5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-3">
+        <span class="relative flex h-3 w-3">
+          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+          <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+        </span>
+        <div class="flex flex-col">
+          <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">Menampilkan</span>
+          <span class="text-sm font-black text-slate-800 dark:text-white leading-tight">50 Data Terakhir</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filters Row -->
+    <div class="sticky top-4 z-30">
+      <div class="glass-card bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl p-2 rounded-[1.5rem] border border-slate-200 dark:border-slate-800 shadow-xl shadow-slate-200/40 dark:shadow-none flex flex-col lg:flex-row gap-2">
+        <div class="relative flex-grow group">
+          <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-orange-500 transition-colors">
+            <i data-lucide="search" class="w-5 h-5"></i>
+          </div>
+          <input type="text" id="tahfizh-search-riwayat" placeholder="Cari nama santri..." class="w-full pl-11 pr-4 py-3 bg-transparent border-none rounded-xl text-sm font-bold text-slate-700 dark:text-white focus:ring-2 focus:ring-orange-500 focus:bg-slate-50 dark:focus:bg-slate-800 transition-all placeholder:font-medium placeholder:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 outline-none">
+          <div id="tahfizh-suggestions-container" class="absolute z-25 left-0 right-0 mt-2 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl shadow-2xl hidden max-h-60 overflow-y-auto p-2"></div>
+        </div>
+
+        <div class="hidden lg:block w-px bg-slate-200 dark:bg-slate-800 my-2"></div>
+
+        <div class="flex flex-wrap lg:flex-nowrap gap-2 p-1 lg:p-0">
+          <div class="flex items-center bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-850 px-2 h-[46px] flex-grow lg:flex-grow-0">
+            <div class="text-slate-400 px-2">
+              <i data-lucide="calendar" class="w-4 h-4"></i>
+            </div>
+            <input type="date" id="tahfizh-filter-tanggal-mulai" class="bg-transparent border-none text-xs font-bold text-slate-600 dark:text-slate-300 focus:ring-0 cursor-pointer w-28 p-0" title="Mulai Tanggal">
+            <span class="text-slate-300 dark:text-slate-700 font-bold px-1">-</span>
+            <input type="date" id="tahfizh-filter-tanggal-akhir" class="bg-transparent border-none text-xs font-bold text-slate-600 dark:text-slate-300 focus:ring-0 cursor-pointer w-28 p-0" title="Sampai Tanggal">
+          </div>
+
+          <div class="relative min-w-[140px] flex-grow lg:flex-grow-0">
+            <select id="tahfizh-filter-program" class="w-full h-[46px] appearance-none bg-slate-50 dark:bg-slate-850 border border-slate-100 dark:border-slate-800 text-slate-600 dark:text-slate-300 text-xs font-bold rounded-xl pl-4 pr-10 focus:ring-2 focus:ring-orange-500 focus:bg-white dark:focus:bg-slate-900 cursor-pointer transition-all">
+              <option value="Semua">Semua Program</option>
+              <option value="Tahfizh">Tahfizh</option>
+              <option value="Unggulan">Unggulan</option>
+            </select>
+            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-400">
+              <i data-lucide="chevron-down" class="w-4 h-4"></i>
+            </div>
+          </div>
+
+          <div class="relative min-w-[130px] flex-grow lg:flex-grow-0">
+            <select id="tahfizh-filter-kelas" class="w-full h-[46px] appearance-none bg-slate-50 dark:bg-slate-850 border border-slate-100 dark:border-slate-800 text-slate-600 dark:text-slate-300 text-xs font-bold rounded-xl pl-4 pr-10 focus:ring-2 focus:ring-orange-500 focus:bg-white dark:focus:bg-slate-900 cursor-pointer transition-all">
+              <option value="Semua">Semua Kelas</option>
+            </select>
+            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-400">
+              <i data-lucide="chevron-down" class="w-4 h-4"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Table Container -->
+    <div class="bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden relative min-h-[400px]">
+      <div class="absolute top-0 left-0 right-0 h-14 bg-slate-50 dark:bg-slate-850 border-b border-slate-200 dark:border-slate-800 z-0"></div>
+      <div class="overflow-x-auto relative z-10 custom-scrollbar max-h-[70vh]">
+        <table class="w-full text-left border-collapse">
+          <thead class="sticky top-0 z-20">
+            <tr class="text-slate-400 text-[10px] uppercase tracking-wider font-extrabold bg-slate-50/95 dark:bg-slate-850/95 backdrop-blur-sm shadow-sm border-b border-slate-200 dark:border-slate-800">
+              <th class="p-5 pl-8">Nama Santri & Info</th>
+              <th class="p-5">Detail Hafalan</th>
+              <th class="p-5">Waktu Setor</th>
+              <th class="p-5 pr-8 text-center action-col">Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="tahfizh-setoranTableBody" class="divide-y divide-slate-100 dark:divide-slate-800 text-sm bg-white dark:bg-slate-900">
+            <tr>
+              <td colspan="4" class="p-12 text-center text-slate-400 italic">
+                <div class="flex flex-col items-center justify-center gap-3">
+                  <span class="animate-spin h-6 w-6 border-3 border-orange-500 border-t-transparent rounded-full"></span>
+                  <p>Memuat data riwayat...</p>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Panel 5: REKAP KELAS -->
+  <div id="tahfizh-page-rekap" class="tahfizh-page-content hidden max-w-7xl mx-auto space-y-8 animate-[slideUp_0.4s_ease-out]">
+    <!-- Sticky Header -->
+    <div class="sticky top-4 z-30">
+      <div class="glass-card p-4 rounded-[2rem] bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/40 dark:shadow-none flex flex-col md:flex-row justify-between items-center gap-6 transition-all">
+        <div class="flex items-center gap-4 w-full md:w-auto pl-2">
+          <div class="flex-shrink-0 w-14 h-14 bg-gradient-to-br from-orange-500 to-amber-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-orange-500/20">
+            <i data-lucide="file-spreadsheet" class="w-7 h-7"></i>
+          </div>
+          <div>
+            <h2 class="text-2xl font-black text-slate-800 dark:text-white tracking-tight leading-none">Rekapitulasi</h2>
+            <p class="text-sm font-medium text-slate-500 dark:text-slate-400 mt-1">Laporan lengkap per kelompok.</p>
+          </div>
+        </div>
+        <div class="relative w-full md:w-80 group">
+          <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-orange-500 transition-colors">
+            <i data-lucide="users" class="w-5 h-5"></i>
+          </div>
+          <select id="tahfizh-rekap-select" class="w-full py-4 pl-12 pr-10 bg-slate-50 dark:bg-slate-800 border-transparent rounded-xl font-bold text-slate-700 dark:text-white cursor-pointer focus:ring-4 focus:ring-orange-100 dark:focus:ring-orange-950/20 focus:bg-white dark:focus:bg-slate-900 transition-all appearance-none text-sm"></select>
+          <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-400">
+            <i data-lucide="chevron-down" class="w-5 h-5"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Rekap Content Container -->
+    <div id="tahfizh-rekap-content-container" class="min-h-[500px]"></div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- TEMPLATES DI DALAM TAB TAHFIZH -->
+  <!-- ========================================== -->
+
+  <!-- Template: Validation Item Card -->
+  <template id="tahfizh-tpl-validation-item">
+    <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-lg hover:border-rose-200 dark:hover:border-rose-950/50 transition-all duration-300 group relative overflow-hidden">
+      <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-rose-500"></div>
+      <div class="flex justify-between items-start mb-3 pl-3">
+        <div>
+          <h4 class="font-bold text-slate-800 dark:text-slate-200 text-base val-nama line-clamp-1"></h4>
+          <div class="flex items-center gap-1 mt-1">
+            <i data-lucide="graduation-cap" class="w-3.5 h-3.5 text-slate-400"></i>
+            <p class="text-xs font-bold text-slate-500 val-info"></p>
+          </div>
+        </div>
+        <div class="bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 px-2 py-1 rounded-lg text-[10px] font-extrabold uppercase tracking-wide border border-rose-100 dark:border-rose-900/30">
+          Baru
+        </div>
+      </div>
+      <div class="bg-slate-50 dark:bg-slate-800/40 p-3 rounded-xl mb-4 border border-slate-100 dark:border-slate-800 pl-3">
+        <p class="text-sm font-bold text-slate-700 dark:text-slate-300 val-detail flex items-center gap-2">
+          <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+          <span class="truncate">Detail Hafalan</span>
+        </p>
+        <p class="text-[10px] text-slate-400 font-mono mt-1.5 flex items-center gap-1 val-date">
+          <i data-lucide="clock" class="w-3 h-3"></i>
+          Waktu
+        </p>
+      </div>
+      <div class="flex gap-3 pl-2">
+        <button class="btn-reject flex-1 py-2.5 rounded-xl text-xs font-bold text-slate-500 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-red-50 dark:hover:bg-red-950/30 hover:text-red-600 hover:border-red-200 dark:hover:border-red-900/50 transition-colors flex items-center justify-center gap-2" data-id="">
+          <i data-lucide="x" class="w-4 h-4"></i>
+          Tolak
+        </button>
+        <button class="btn-approve flex-[2] py-2.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 shadow-md shadow-emerald-500/20 transition-all transform hover:-translate-y-0.5 flex items-center justify-center gap-2" data-id="">
+          <i data-lucide="check" class="w-4 h-4"></i>
+          Verifikasi
+        </button>
+      </div>
+    </div>
+  </template>
+
+  <!-- Template: History Row Table -->
+  <template id="tahfizh-history-row-template">
+    <tr class="group border-b border-slate-100 dark:border-slate-800 last:border-0 hover:bg-slate-50/80 dark:hover:bg-slate-850/50 transition-all duration-200">
+      <td class="p-5 pl-8 align-middle">
+        <div class="flex flex-col gap-1.5">
+          <div class="font-bold text-slate-800 dark:text-slate-200 text-sm md:text-base data-nama leading-tight"></div>
+          <div class="flex items-center gap-2 opacity-90">
+            <span class="data-program-icon flex-shrink-0 scale-95 origin-left"></span>
+            <span class="data-kelas-icon flex-shrink-0 scale-95 origin-left"></span>
+          </div>
+        </div>
+      </td>
+      <td class="p-5 align-middle">
+        <div class="flex flex-col items-start gap-1.5">
+          <div class="data-jenis text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-lg bg-orange-50 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400 border border-orange-100 dark:border-orange-900/30 shadow-sm"></div>
+          <div class="text-sm font-bold text-slate-700 dark:text-slate-300 data-juz-text"></div>
+          <div class="flex items-center gap-1.5 text-xs text-slate-400 font-medium bg-slate-100/50 dark:bg-slate-800/40 px-2 py-1 rounded-md border border-slate-100 dark:border-slate-800">
+            <i data-lucide="book" class="w-3.5 h-3.5 text-slate-400"></i>
+            <span class="data-unit font-mono"></span>
+          </div>
+        </div>
+      </td>
+      <td class="p-5 align-middle">
+        <div class="flex flex-col gap-1.5">
+          <div class="flex items-center gap-2 text-slate-600 dark:text-slate-455">
+            <i data-lucide="calendar" class="w-4 h-4 text-slate-400"></i>
+            <span class="data-tanggal text-xs font-bold font-mono"></span>
+          </div>
+          <div class="data-status"></div>
+        </div>
+      </td>
+      <td class="p-5 pr-8 text-center align-middle action-cell">
+        <button class="delete-btn group/btn relative p-2.5 rounded-xl text-slate-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all duration-300 focus:outline-none" title="Hapus Data">
+          <i data-lucide="trash-2" class="w-5 h-5 transition-transform duration-300 group-hover/btn:scale-110"></i>
+        </button>
+      </td>
+    </tr>
+  </template>
+
+  <!-- Template: Rekap Content Wrapper -->
+  <template id="tahfizh-rekap-content-template">
+    <div class="rekap-tab-content space-y-6 animate-fadeIn">
+      <div class="glass-card p-8 rounded-[2.5rem] relative overflow-hidden bg-white dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800 shadow-sm group">
+        <div class="absolute top-0 right-0 w-80 h-80 bg-gradient-to-br from-orange-100/30 to-amber-100/20 dark:from-orange-900/10 dark:to-transparent rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none"></div>
+        <div class="relative z-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
+          <div class="space-y-4 flex-1">
+            <div class="inline-flex items-center gap-3 pl-1 pr-4 py-1 rounded-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-slate-600 transition-colors group/badge w-fit">
+              <div class="w-8 h-8 rounded-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 flex items-center justify-center shadow-sm text-orange-600 dark:text-orange-400">
+                <i data-lucide="user" class="w-4 h-4"></i>
+              </div>
+              <div class="flex flex-col">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 leading-none mb-0.5">Musyrif</span>
+                <span class="text-sm font-bold data-musyrif leading-none text-slate-700 dark:text-slate-350"></span>
+              </div>
+            </div>
+            <div>
+              <h3 class="text-3xl sm:text-4xl font-black text-slate-800 dark:text-white tracking-tight leading-tight data-title mb-2"></h3>
+              <div class="h-1.5 w-24 bg-gradient-to-r from-orange-500 to-amber-500 rounded-full"></div>
+            </div>
+          </div>
+          <div class="flex flex-col items-start md:items-end gap-3 w-full md:w-auto">
+            <div class="flex items-center gap-2 text-xs font-bold text-slate-400 bg-white/50 dark:bg-slate-900/40 px-3 py-1.5 rounded-lg border border-slate-100 dark:border-slate-800 backdrop-blur-sm self-start md:self-end">
+              <i data-lucide="clock" class="w-4 h-4"></i>
+              <span class="data-timestamp font-mono"></span>
+            </div>
+            <button class="export-pdf-btn group/btn relative overflow-hidden bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 px-6 py-3.5 rounded-xl text-sm font-bold hover:border-orange-200 dark:hover:border-orange-950 hover:text-orange-600 dark:hover:text-orange-400 shadow-sm transition-all active:scale-95 flex items-center gap-3 w-full md:w-auto justify-center">
+              <div class="relative flex items-center gap-2">
+                <span class="p-1.5 bg-red-50 dark:bg-red-950/40 text-red-500 rounded-lg border border-red-100 dark:border-red-900/30">
+                  <i data-lucide="download" class="w-5 h-5"></i>
+                </span>
+                <span>Download Laporan PDF</span>
+              </div>
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <div class="glass-card rounded-[2rem] overflow-hidden border border-white/50 dark:border-slate-800 shadow-sm bg-white/60 dark:bg-slate-900/40">
+        <div class="overflow-x-auto max-h-[60vh]">
+          <table class="w-full text-left text-sm">
+            <thead class="bg-slate-100/80 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 backdrop-blur-md sticky top-0 z-10">
+              <tr>
+                <th class="px-6 py-4 font-bold text-slate-500 uppercase text-xs tracking-wider">No</th>
+                <th class="px-6 py-4 font-bold text-slate-500 uppercase text-xs tracking-wider cursor-pointer sortable group hover:text-orange-500" data-sort="nama">
+                  Nama Santri <span class="sort-icon inline-block ml-1"></span>
+                </th>
+                <th class="px-6 py-4 font-bold text-slate-500 uppercase text-xs tracking-wider text-center cursor-pointer sortable group hover:text-orange-500" data-sort="nilai">
+                  Nilai <span class="sort-icon inline-block ml-1"></span>
+                </th>
+                <th class="px-6 py-4 font-bold text-slate-500 uppercase text-xs tracking-wider text-center cursor-pointer sortable group hover:text-orange-500" data-sort="ziyadah">
+                  Ziyadah <span class="sort-icon inline-block ml-1"></span>
+                </th>
+                <th class="px-6 py-4 font-bold text-slate-500 uppercase text-xs tracking-wider text-center cursor-pointer sortable group hover:text-orange-500" data-sort="keterangan">
+                  Status <span class="sort-icon inline-block ml-1"></span>
+                </th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 dark:divide-slate-800 data-table-body bg-white/40 dark:bg-slate-900/20"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <!-- Template: Jadwal Perpulangan Wrapper -->
+  <template id="tahfizh-tpl-jadwal-perpulangan">
+    <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6 border-b border-orange-100 dark:border-orange-950/30 pb-4">
+      <div>
+        <h3 class="text-2xl font-black text-slate-800 dark:text-white tracking-tight flex items-center gap-3">
+          <span class="flex items-center justify-center w-10 h-10 rounded-2xl bg-orange-500 text-white shadow-lg shadow-orange-200">
+            <i data-lucide="plane-takeoff" class="w-5 h-5"></i>
+          </span>
+          Jadwal Perpulangan
+        </h3>
+        <p class="text-slate-500 dark:text-slate-400 mt-1 ml-14 text-sm font-medium">Hitung mundur waktu penjemputan santri berikutnya.</p>
+      </div>
+      <div class="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-orange-50 dark:bg-orange-950/40 rounded-lg border border-orange-100 dark:border-orange-900/30 self-start sm:self-center">
+        <span class="relative flex h-2 w-2">
+          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
+          <span class="relative inline-flex rounded-full h-2 w-2 bg-orange-500"></span>
+        </span>
+        <span class="text-[10px] font-bold text-orange-700 dark:text-orange-400 uppercase tracking-widest">Live Countdown</span>
+      </div>
+    </div>
+    <div id="tahfizh-jadwal-content-container" class="relative z-10"></div>
+  </template>
+
+  <!-- Template: Accordion Item -->
+  <template id="tahfizh-tpl-accordion-item">
+    <div class="glass-card rounded-2xl overflow-hidden bg-white dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-md transition-all duration-300 group">
+      <h2 class="accordion-header">
+        <button type="button" class="accordion-button w-full text-left transition-colors hover:bg-slate-50/80 dark:hover:bg-slate-800/40">
+          <div class="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-3 mb-2">
+                <span class="text-lg font-black text-slate-800 dark:text-slate-200 data-group-name truncate"></span>
+                <span class="text-xs font-bold text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-950/30 px-2 py-0.5 rounded-md border border-orange-100 dark:border-orange-900/30 data-percentage-text"></span>
+              </div>
+              <div class="w-full max-w-md bg-slate-100 dark:bg-slate-800 rounded-full h-2 overflow-hidden border border-slate-200/50 dark:border-slate-700/50">
+                <div class="bg-gradient-to-r from-emerald-400 to-emerald-500 h-full rounded-full data-progress-bar shadow-sm transition-all duration-1000 ease-out" style="width: 0%"></div>
+              </div>
+            </div>
+            <div class="flex items-center justify-between sm:justify-end gap-3">
+              <div class="flex gap-2">
+                <div class="flex flex-col items-center bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-100 dark:border-emerald-900/30 px-3 py-1.5 rounded-xl min-w-[70px]">
+                  <span class="text-[10px] font-bold text-emerald-400 uppercase">Tuntas</span>
+                  <span class="text-sm font-black text-emerald-700 dark:text-emerald-400 data-tuntas-badge-count leading-none mt-0.5" id="badge-tuntas-val">0</span>
+                  <span class="hidden data-tuntas-badge"></span>
+                </div>
+                <div class="flex flex-col items-center bg-rose-50 dark:bg-rose-950/30 border border-rose-100 dark:border-rose-900/30 px-3 py-1.5 rounded-xl min-w-[70px]">
+                  <span class="text-[10px] font-bold text-rose-400 uppercase">Belum</span>
+                  <span class="hidden data-belum-badge"></span>
+                  <span class="text-sm font-black text-rose-700 dark:text-rose-400 data-belum-badge-count leading-none mt-0.5" id="badge-belum-val">0</span>
+                </div>
+              </div>
+              <div class="w-8 h-8 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center shadow-sm group-hover:border-orange-300 dark:group-hover:border-orange-950 transition-colors">
+                <i data-lucide="chevron-down" class="accordion-chevron w-4 h-4 text-slate-400 transition-transform"></i>
+              </div>
+            </div>
+          </div>
+        </button>
+      </h2>
+      <div class="accordion-panel">
+        <div class="p-5 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/20 grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="space-y-3">
+            <h4 class="font-bold text-xs uppercase tracking-wider text-slate-400 label-tuntas">Sudah Tuntas</h4>
+            <ul class="list-tuntas text-sm text-slate-600 dark:text-slate-400 space-y-1 pl-4 list-disc"></ul>
+          </div>
+          <div class="space-y-3">
+            <h4 class="font-bold text-xs uppercase tracking-wider text-slate-400 label-belum">Belum Tuntas</h4>
+            <ul class="list-belum text-sm text-slate-600 dark:text-slate-400 space-y-1 pl-4 list-disc"></ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <!-- Template: Peringkat Leaderboard Section -->
+  <template id="tahfizh-tpl-peringkat-section">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 border-b border-orange-100 dark:border-orange-950/30 pb-4">
+      <h3 class="text-xl font-bold text-slate-800 dark:text-white flex items-center gap-3">
+        <span class="flex items-center justify-center w-8 h-8 bg-amber-100 dark:bg-amber-950/40 rounded-lg text-amber-600 dark:text-amber-400">
+          <i data-lucide="award" class="w-5 h-5"></i>
+        </span>
+        Papan Peringkat
+      </h3>
+      <div class="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+        <button class="tab-peringkat active px-3 py-1.5 text-xs font-bold rounded-lg transition-all" data-program="Tahfizh">Tahfizh</button>
+        <button class="tab-peringkat px-3 py-1.5 text-xs font-bold rounded-lg transition-all text-slate-500" data-program="Unggulan">Unggulan</button>
+      </div>
+    </div>
+    <div id="peringkat-content" class="bg-white dark:bg-slate-900/60 p-6 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm min-h-[300px]"></div>
+  </template>
+
+  <!-- Template: Peringkat Leaderboard Item -->
+  <template id="tahfizh-tpl-peringkat-item">
+    <li class="group relative overflow-hidden bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm transition-all duration-300 hover:shadow-lg hover:border-amber-200 dark:hover:border-amber-950 hover:-translate-y-0.5 flex items-center justify-between gap-4">
+      <div class="flex items-center gap-4 min-w-0">
+        <span class="medal-bg flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-black text-white shadow-sm"></span>
+        <div class="min-w-0">
+          <h4 class="font-bold text-slate-800 dark:text-slate-200 text-sm sm:text-base item-nama truncate"></h4>
+          <p class="text-xs text-slate-400 item-kelas font-semibold mt-0.5"></p>
+        </div>
+      </div>
+      <div class="flex items-baseline gap-1 text-right flex-shrink-0">
+        <span class="text-xl font-black text-slate-800 dark:text-white item-score leading-none tracking-tight"></span>
+        <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider item-unit"></span>
+      </div>
+    </li>
+  </template>
+
+  <!-- Template: Tahfizh Juz Section -->
+  <template id="tahfizh-tpl-tahfizh-section">
+    <div class="flex items-center justify-between mb-6 border-b border-orange-100 dark:border-orange-950/30 pb-4">
+      <h3 class="text-xl font-bold text-slate-800 dark:text-white flex items-center gap-3">
+        <span class="flex items-center justify-center w-8 h-8 bg-emerald-100 dark:bg-emerald-950/40 rounded-lg text-emerald-600 dark:text-emerald-400">
+          <i data-lucide="check-square" class="w-5 h-5"></i>
+        </span>
+        Ketuntasan Juz
+      </h3>
+      <div class="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+        <button class="tahfizh-tab px-3 py-1.5 text-xs font-bold rounded-lg transition-all text-slate-500" data-target="30">Juz 30</button>
+        <button class="tahfizh-tab px-3 py-1.5 text-xs font-bold rounded-lg transition-all text-slate-500" data-target="29">Juz 29</button>
+        <button class="tahfizh-tab px-3 py-1.5 text-xs font-bold rounded-lg transition-all text-slate-500" data-target="juz30_setengah">1/2 Juz 30</button>
+      </div>
+    </div>
+    <div id="tahfizh-content" class="bg-white dark:bg-slate-900/60 p-6 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm min-h-[300px]"></div>
+  </template>
+
+  <!-- Template: Tahfizh Juz Content (Inside section) -->
+  <template id="tahfizh-tpl-tahfizh-content">
+    <div class="animate-fadeIn space-y-8">
+      <div class="space-y-3">
+        <div class="flex justify-between items-center text-xs font-bold text-slate-500">
+          <span class="text-progress-label"></span>
+          <span class="text-percentage text-orange-600"></span>
+        </div>
+        <div class="w-full bg-slate-100 dark:bg-slate-850 rounded-full h-2.5 overflow-hidden border border-slate-200/50 dark:border-slate-800">
+          <div class="progress-bar bg-gradient-to-r from-orange-500 to-amber-500 h-full rounded-full transition-all duration-1000 ease-out" style="width: 0%"></div>
+        </div>
+      </div>
+      <div class="relative group">
+        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+          <i data-lucide="search" class="w-4 h-4"></i>
+        </div>
+        <input type="text" placeholder="Cari nama..." class="tahfizh-search w-full pl-10 pr-4 py-3 bg-slate-50 dark:bg-slate-850 border-none rounded-xl text-xs font-bold focus:ring-2 focus:ring-orange-500 outline-none placeholder:text-slate-400">
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="space-y-3">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+            <h4 class="font-bold text-xs uppercase tracking-wider text-slate-400">Sudah Tuntas (<span class="count-tuntas"></span>)</h4>
+          </div>
+          <ul class="list-tuntas text-sm text-slate-600 dark:text-slate-400 space-y-1 pl-4 list-disc max-h-48 overflow-y-auto custom-scrollbar"></ul>
+        </div>
+        <div class="space-y-3">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-slate-300"></span>
+            <h4 class="font-bold text-xs uppercase tracking-wider text-slate-400">Belum Tuntas (<span class="count-belum"></span>)</h4>
+          </div>
+          <ul class="list-belum text-sm text-slate-600 dark:text-slate-400 space-y-1 pl-4 list-disc max-h-48 overflow-y-auto custom-scrollbar"></ul>
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <!-- Template: Juz Block Visual -->
+  <template id="tahfizh-tpl-juz-block">
+    <div class="group relative overflow-hidden rounded-[1.5rem] bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-5 shadow-sm transition-all duration-300 hover:shadow-lg hover:border-blue-200">
+      <div class="flex items-center justify-between mb-4 border-b border-slate-50 dark:border-slate-800 pb-3">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-500 rounded-xl flex items-center justify-center shadow-sm">
+            <i data-lucide="book-open" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h4 class="text-sm font-bold text-slate-700 dark:text-slate-200 block-title leading-tight"></h4>
+            <p class="text-[10px] font-medium text-slate-400">Visualisasi Halaman</p>
+          </div>
+        </div>
+        <span class="block-stats rounded-lg bg-slate-50 dark:bg-slate-800 px-3 py-1.5 text-xs font-bold text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 shadow-sm"></span>
+      </div>
+      <div class="block-grid grid grid-cols-10 gap-2 p-1"></div>
+    </div>
+  </template>
+
+  <!-- Template: Rekap Row Table -->
+  <template id="tahfizh-tpl-rekap-row">
+    <tr class="group border-b border-slate-50 dark:border-slate-850 hover:bg-slate-50/80 dark:hover:bg-slate-850/50 transition-colors duration-200 last:border-0">
+      <td class="px-6 py-4 whitespace-nowrap w-16 text-center">
+        <span class="col-no inline-flex h-8 w-8 items-center justify-center rounded-full bg-slate-50 dark:bg-slate-800 text-xs font-black text-slate-400 group-hover:bg-white dark:group-hover:bg-slate-900 group-hover:text-orange-500 transition-all"></span>
+      </td>
+      <td class="px-6 py-4">
+        <div class="flex items-center h-full relative">
+          <div class="absolute -left-4 top-1/2 -translate-y-1/2 h-8 w-1 bg-orange-500 rounded-r-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+          <span class="detail-santri-text font-bold text-slate-700 dark:text-slate-300 text-sm group-hover:text-slate-900 dark:group-hover:text-white transition-colors cursor-pointer"></span>
+        </div>
+      </td>
+      <td class="px-6 py-4 text-center">
+        <span class="col-nilai font-black text-slate-800 dark:text-white text-lg tracking-tight"></span>
+      </td>
+      <td class="px-6 py-4 text-center">
+        <span class="col-ziyadah font-bold text-slate-500 dark:text-slate-400 text-xs font-mono bg-slate-100/50 dark:bg-slate-800/60 px-2.5 py-1 rounded-md border border-slate-100 dark:border-slate-800 group-hover:border-slate-200 group-hover:bg-white dark:group-hover:bg-slate-900 transition-all"></span>
+      </td>
+      <td class="px-6 py-4 text-center col-status"></td>
+    </tr>
+  </template>
+
+  <!-- Template: Analisis Dashboard (Rapor Santri) -->
+  <template id="tahfizh-analisis-dashboard-template">
+    <div class="space-y-6 animate-slide-up">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="lg:col-span-2 glass-card rounded-[2rem] bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-slate-850 p-6 sm:p-8 shadow-sm flex flex-col sm:flex-row items-center sm:items-start gap-6 relative overflow-hidden group">
+          <div class="absolute top-0 right-0 w-32 h-32 bg-orange-50/50 dark:bg-orange-900/10 rounded-bl-[3rem] -mr-4 -mt-4 transition-transform group-hover:scale-110"></div>
+          <div class="relative z-10 flex-shrink-0">
+            <div class="w-24 h-24 rounded-2xl bg-slate-900 dark:bg-slate-850 text-white flex items-center justify-center shadow-lg">
+              <i data-lucide="user" class="w-10 h-10"></i>
+            </div>
+          </div>
+          <div class="relative z-10 flex-grow text-center sm:text-left">
+            <div class="flex flex-col sm:flex-row sm:items-center gap-2 mb-2 justify-center sm:justify-start">
+              <h3 class="font-black text-2xl sm:text-3xl text-slate-800 dark:text-white tracking-tight" data-name>Nama Santri</h3>
+              <i data-lucide="check-circle-2" class="w-5 h-5 text-orange-500"></i>
+            </div>
+            <div class="flex flex-wrap justify-center sm:justify-start gap-2 mb-4">
+              <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-xs font-bold text-slate-600 dark:text-slate-350 border border-slate-200 dark:border-slate-700">
+                <i data-lucide="home" class="w-3.5 h-3.5 text-slate-400"></i>
+                <span data-kelas-text></span>
+              </span>
+              <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-xs font-bold text-slate-600 dark:text-slate-350 border border-slate-200 dark:border-slate-700">
+                <i data-lucide="book-open" class="w-3.5 h-3.5 text-slate-400"></i>
+                <span data-program-text></span>
+              </span>
+            </div>
+            <div class="flex justify-center sm:justify-start gap-4">
+              <div>
+                <p class="text-[10px] uppercase tracking-widest text-slate-400 font-bold mb-1">Status</p>
+                <div data-status-badge class="text-xs font-bold px-3 py-1 rounded-md border shadow-sm"></div>
+              </div>
+              <div>
+                <p class="text-[10px] uppercase tracking-widest text-slate-400 font-bold mb-1">Perpulangan</p>
+                <div data-perpulangan-badge class="text-xs font-bold px-3 py-1 rounded-md border shadow-sm"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="glass-card rounded-[2rem] bg-gradient-to-br from-slate-900 to-slate-800 dark:from-slate-950 dark:to-slate-900 p-6 sm:p-8 text-white flex flex-col justify-center items-center shadow-xl relative overflow-hidden">
+          <p class="text-xs font-bold text-slate-400 uppercase tracking-[0.2em] mb-2 relative z-10">Skor Hafalan</p>
+          <div class="flex items-baseline gap-1 relative z-10">
+            <span class="text-6xl font-black tracking-tighter" data-nilai>0</span>
+            <span class="text-xl text-slate-500 font-bold">/100</span>
+          </div>
+          <div class="absolute -bottom-10 -right-10 w-32 h-32 border-4 border-white/5 rounded-full"></div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-4">
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-850 p-5 rounded-3xl flex items-center justify-between shadow-sm">
+          <div>
+            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Total Setoran</p>
+            <p class="text-2xl font-black text-slate-800 dark:text-white" data-total-setoran>0</p>
+          </div>
+          <div class="w-10 h-10 bg-orange-50 dark:bg-orange-950/40 text-orange-600 rounded-full flex items-center justify-center">
+            <i data-lucide="check-square" class="w-5 h-5"></i>
+          </div>
+        </div>
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-850 p-5 rounded-3xl flex items-center justify-between shadow-sm">
+          <div>
+            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Halaman Ziyadah</p>
+            <p class="text-2xl font-black text-slate-800 dark:text-white" data-ziyadah>0</p>
+          </div>
+          <div class="w-10 h-10 bg-blue-50 dark:bg-blue-950/40 text-blue-600 rounded-full flex items-center justify-center">
+            <i data-lucide="book-open" class="w-5 h-5"></i>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-slate-100 dark:bg-slate-800/80 p-1.5 rounded-2xl flex" id="tahfizh-analisis-tabs">
+        <button class="analisis-tab flex-1 py-3 text-sm font-bold rounded-xl transition-all shadow-sm bg-white text-slate-800" data-target="tahfizh-analisis-ringkasan">
+          Ringkasan
+        </button>
+        <button class="analisis-tab flex-1 py-3 text-sm font-bold rounded-xl transition-all text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200" data-target="tahfizh-analisis-aktivitas">
+          Aktivitas
+        </button>
+      </div>
+
+      <div class="relative min-h-[500px]">
+        <div id="tahfizh-analisis-ringkasan" class="analisis-tab-content fade-in space-y-6">
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <div class="lg:col-span-8 space-y-6">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-850 rounded-[2rem] p-6 flex flex-col items-center text-center shadow-sm">
+                  <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-6 w-full text-left flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span> Fokus Hafalan
+                  </h4>
+                  <div id="focus-juz-container" class="relative flex-1 flex flex-col items-center justify-center w-full min-h-[160px]">
+                    <p class="text-slate-300 dark:text-slate-650 font-bold italic text-sm">Tidak ada juz aktif</p>
+                  </div>
+                </div>
+                <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-850 rounded-[2rem] p-6 flex flex-col shadow-sm">
+                  <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-6 w-full text-left flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-blue-500"></span> Komposisi
+                  </h4>
+                  <div class="relative flex-1 flex items-center justify-center min-h-[160px]">
+                    <canvas id="compositionChart"></canvas>
+                  </div>
+                </div>
+              </div>
+              <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-850 rounded-[2rem] p-6 shadow-sm">
+                <div class="flex justify-between items-center mb-6">
+                  <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                    <i data-lucide="map" class="w-4 h-4"></i>
+                    Peta Juz (1-30)
+                  </h4>
+                  <span class="text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-500 px-2 py-1 rounded font-bold">Terisi</span>
+                </div>
+                <div id="dynamic-juz-grid" class="grid grid-cols-1 xl:grid-cols-2 gap-4"></div>
+              </div>
+            </div>
+            <div class="lg:col-span-4 space-y-6">
+              <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-850 rounded-[2rem] p-6 shadow-sm h-full">
+                <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                  <i data-lucide="check-square" class="w-4 h-4"></i>
+                  Target Wajib
+                </h4>
+                <div class="space-y-3" data-progres-juz></div>
+                <div data-ziyadah-section class="hidden mt-8 pt-6 border-t border-slate-100 dark:border-slate-800">
+                  <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Detail Ziyadah</h4>
+                  <div class="space-y-4 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar" data-progres-ziyadah></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div id="tahfizh-analisis-aktivitas" class="analisis-tab-content hidden fade-in">
+          <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-850 rounded-[2rem] overflow-hidden shadow-sm">
+            <div class="p-6 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-850/50">
+              <h4 class="font-bold text-slate-700 dark:text-slate-200">Riwayat Setoran Terbaru</h4>
+            </div>
+            <div class="max-h-[600px] overflow-y-auto">
+              <table class="min-w-full text-left">
+                <thead class="bg-slate-50 dark:bg-slate-800 text-xs font-bold text-slate-400 uppercase tracking-wider">
+                  <tr>
+                    <th class="px-6 py-4">Detail</th>
+                    <th class="px-6 py-4 text-right">Waktu</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-800 text-sm" data-aktivitas-terkini></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <!-- Template: Analisis Prompt (Initial screen) -->
+  <template id="tahfizh-analisis-prompt-template">
+    <div class="flex flex-col items-center justify-center text-center py-24 px-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-850 rounded-[3rem] shadow-sm fade-in">
+      <div class="w-24 h-24 bg-orange-50 dark:bg-orange-950/40 rounded-full flex items-center justify-center mb-6 shadow-inner">
+        <i data-lucide="search" class="w-10 h-10 text-orange-500"></i>
+      </div>
+      <h3 class="text-2xl font-black text-slate-800 dark:text-white tracking-tight mb-2">Mulai Analisis</h3>
+      <p class="text-slate-500 dark:text-slate-400 max-w-sm mx-auto font-medium text-base">
+        Pilih nama santri pada kolom pencarian di atas untuk melihat rapor hafalan lengkap.
+      </p>
+    </div>
+  </template>
+</div>
+
+<!-- ========================================== -->
+<!-- MODALS KHUSUS TAHFIZH -->
+<!-- ========================================== -->
+
+<!-- Modal: Detail Rapor Santri (Chart + Blok Juz) -->
+<div id="tahfizhStudentDetailModal" class="tahfizh-modal modal hidden fixed inset-0 z-50 flex items-center justify-center p-4">
+  <div class="modal-backdrop absolute inset-0 bg-slate-900/60 dark:bg-slate-950/80 backdrop-blur-sm" onclick="window.closeModal('tahfizhStudentDetailModal')"></div>
+  <div class="modal-content relative bg-slate-50 dark:bg-slate-900 rounded-[2.5rem] max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-2xl flex flex-col border border-white dark:border-slate-800">
+    <div class="sticky top-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md z-10 p-6 sm:p-8 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center">
+      <div>
+        <h3 id="tahfizh-detail-nama" class="text-2xl font-black text-slate-800 dark:text-white tracking-tight">Nama Santri</h3>
+        <p id="tahfizh-detail-info" class="text-sm font-bold text-orange-600 dark:text-orange-400 mt-1"></p>
+      </div>
+      <button onclick="window.closeModal('tahfizhStudentDetailModal')" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 bg-slate-100 dark:bg-slate-850 p-3 rounded-full transition-colors">
+        <i data-lucide="x" class="w-6 h-6"></i>
+      </button>
+    </div>
+    <div class="p-6 sm:p-8 space-y-8">
+      <div class="bg-white dark:bg-slate-950 p-6 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-800">
+        <h4 class="font-bold text-slate-800 dark:text-slate-200 mb-6 flex items-center gap-2 uppercase text-sm tracking-widest">
+          <span class="w-1.5 h-6 bg-orange-500 rounded-full"></span> Grafik Progres Hafalan
+        </h4>
+        <div class="h-72 w-full">
+          <canvas id="tahfizh-progressChart"></canvas>
+        </div>
+      </div>
+      <div class="bg-white dark:bg-slate-950 p-6 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-800">
+        <h4 class="font-bold text-slate-800 dark:text-slate-200 mb-6 flex items-center gap-2 uppercase text-sm tracking-widest">
+          <span class="w-1.5 h-6 bg-blue-500 rounded-full"></span> Visualisasi Blok (Juz)
+        </h4>
+        <div id="tahfizh-juz-visual-container" class="space-y-6"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Panduan Input Setoran -->
+<div id="tahfizhHelpModal" class="tahfizh-modal modal hidden fixed inset-0 z-50 flex items-center justify-center p-4">
+  <div class="modal-backdrop absolute inset-0 bg-slate-900/40 dark:bg-slate-950/60 backdrop-blur-sm" onclick="window.closeModal('tahfizhHelpModal')"></div>
+  <div class="modal-content bg-white dark:bg-slate-900 rounded-[2rem] max-w-md w-full p-8 shadow-2xl relative border border-slate-200 dark:border-slate-800">
+    <div class="w-14 h-14 bg-orange-50 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400 rounded-2xl flex items-center justify-center mb-6 shadow-sm border border-orange-100 dark:border-orange-900/50">
+      <i data-lucide="help-circle" class="w-7 h-7"></i>
+    </div>
+    <h3 class="text-xl font-black text-slate-800 dark:text-white mb-4">Panduan Input Setoran</h3>
+    <div class="space-y-4 text-sm text-slate-600 dark:text-slate-400">
+      <div class="flex gap-4 p-3 bg-green-50 dark:bg-green-950/20 rounded-xl border border-green-100 dark:border-green-900/30">
+        <div class="min-w-[4px] bg-green-500 rounded-full"></div>
+        <p>Pilih <strong class="text-green-700 dark:text-green-400">Mutqin</strong> jika santri menyetorkan hafalan penuh <strong>1 Juz</strong> atau <strong>Setengah Juz 30</strong> (Ujian Kelancaran).</p>
+      </div>
+      <div class="flex gap-4 p-3 bg-blue-50 dark:bg-blue-950/20 rounded-xl border border-blue-100 dark:border-blue-900/30">
+        <div class="min-w-[4px] bg-blue-500 rounded-full"></div>
+        <p>Pilih <strong class="text-blue-700 dark:text-blue-400">Ziyadah / Murajaah</strong> untuk setoran harian biasa (per halaman atau per surat).</p>
+      </div>
+    </div>
+    <button onclick="window.closeModal('tahfizhHelpModal')" class="w-full mt-8 bg-slate-900 dark:bg-slate-850 hover:bg-slate-800 dark:hover:bg-slate-800 text-white font-bold py-4 rounded-xl transition-colors shadow-lg">Mengerti, Lanjutkan</button>
+  </div>
+</div>
+
+<!-- Modal: Konfirmasi Hapus Setoran -->
+<div id="tahfizhConfirmModal" class="tahfizh-modal modal hidden fixed inset-0 z-50 flex items-center justify-center p-4">
+  <div class="modal-backdrop absolute inset-0 bg-slate-900/40 dark:bg-slate-950/65 backdrop-blur-sm" onclick="window.closeModal('tahfizhConfirmModal')"></div>
+  <div class="modal-content bg-white dark:bg-slate-900 rounded-[2rem] max-w-sm w-full p-8 shadow-2xl relative border border-slate-200 dark:border-slate-800">
+    <div class="w-16 h-16 bg-red-50 dark:bg-red-950/30 text-red-500 rounded-full flex items-center justify-center mb-6 mx-auto border border-red-100 dark:border-red-900/30">
+      <i data-lucide="alert-triangle" class="w-8 h-8"></i>
+    </div>
+    <h3 class="text-xl font-black text-slate-800 dark:text-white text-center mb-2">Konfirmasi Hapus</h3>
+    <p class="text-slate-500 dark:text-slate-400 text-sm text-center mb-6 font-medium">Apakah Anda yakin ingin menghapus data setoran ini? Tindakan ini tidak dapat dibatalkan.</p>
+    <div class="flex gap-3">
+      <button onclick="window.closeModal('tahfizhConfirmModal')" class="flex-1 px-4 py-3.5 text-slate-600 dark:text-slate-350 font-bold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-750 rounded-xl transition-colors">Batal</button>
+      <button id="tahfizh-confirmDeleteBtn" class="flex-1 px-4 py-3.5 bg-red-500 hover:bg-red-600 text-white font-bold rounded-xl shadow-lg shadow-red-500/20 transition-colors">Hapus</button>
+    </div>
+  </div>
+</div>
 
       <!-- Tab: Report -->
       <div
@@ -2856,6 +4120,20 @@
             </button>
 
             <button
+              onclick="window.switchTab('tahfizh')"
+              data-target="tahfizh"
+              class="nav-btn group relative flex flex-col items-center justify-center py-3 rounded-2xl transition-all duration-300"
+            >
+              <div
+                class="absolute inset-0 bg-orange-500/10 dark:bg-orange-500/20 rounded-2xl scale-0 group-[.active]:scale-100 transition-transform duration-300"
+              ></div>
+              <i
+                data-lucide="book-open"
+                class="w-6 h-6 text-slate-400 group-[.active]:text-orange-500 transition-colors relative z-10"
+              ></i>
+            </button>
+
+            <button
               onclick="window.switchTab('report')"
               data-target="report"
               class="nav-btn group relative flex flex-col items-center justify-center py-3 rounded-2xl transition-all duration-300"
@@ -3859,6 +5137,7 @@
     <script src="permit-manager.js"></script>
     <script src="analysis-manager.js"></script>
     <script src="export-manager.js"></script>
+    <script src="tahfizh-manager.js"></script>
     <script src="script.js"></script>
 
     <script>
