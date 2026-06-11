@@ -447,6 +447,37 @@ window.updateDashboard = function () {
   const elGreet = document.getElementById("dash-greeting");
   if (elGreet) elGreet.textContent = greet;
 
+  // Dynamic Title Greeting (Islamic Arabic Greetings)
+  const elTitleGreet = document.getElementById("dash-title-greeting");
+  if (elTitleGreet) {
+    let arabicGreet = "Shobahul Khair";
+    if (h >= 11 && h < 15) {
+      arabicGreet = "Kaifa Haluk";
+    } else if (h >= 15 || h < 3) {
+      arabicGreet = "Masa'ul Khair";
+    }
+
+    let displayName = "Ustadz";
+    if (appState.selectedClass && typeof MASTER_KELAS !== "undefined" && MASTER_KELAS[appState.selectedClass]) {
+      const musyrifName = MASTER_KELAS[appState.selectedClass].musyrif;
+      if (musyrifName && musyrifName !== "-") {
+        // Bersihkan prefix gelar "Ustadz", "Ustad", "Ust.", "Ust"
+        const cleanName = musyrifName.replace(/^(ustadz|ustad|ust\.|ust\b)/i, "").trim();
+        const words = cleanName.split(/\s+/).filter(w => w.length > 0);
+        if (words.length > 0) {
+          const firstWord = words[0].toLowerCase();
+          const prefixes = ["muhammad", "mohammad", "muhamad", "ahmad", "m.", "m", "moh.", "moh"];
+          let targetName = words[0];
+          if (prefixes.includes(firstWord) && words.length > 1) {
+            targetName = words[1];
+          }
+          displayName = "Ustadz " + targetName;
+        }
+      }
+    }
+    elTitleGreet.innerHTML = `${arabicGreet}, <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-500 to-teal-400 font-black">${displayName}!</span>`;
+  }
+
   // 2. Main Card Logic
   const isToday = appState.date === window.getLocalDateStr();
   const mainCard = document.getElementById("dash-main-card");
@@ -605,9 +636,11 @@ window.updateLocationStatus = function () {
 
       if (isInside) {
         // Tampilan HIJAU (Aman)
-        elBadge.textContent = "AMAN";
-        elBadge.className =
-          "px-2 py-0.5 rounded-md text-[10px] font-black uppercase bg-emerald-100 text-emerald-600 border border-emerald-200";
+        if (elBadge) {
+          elBadge.textContent = "AMAN";
+          elBadge.className =
+            "px-1.5 py-0.5 rounded text-[9px] font-black uppercase bg-emerald-100 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/30 shrink-0";
+        }
 
         elMessage.innerHTML = `<span class="text-emerald-600 flex items-center gap-1"><i data-lucide="check" class="w-3 h-3"></i> Posisi sesuai. Silakan isi presensi.</span>`;
 
@@ -623,9 +656,11 @@ window.updateLocationStatus = function () {
         elIconBg.classList.add("bg-emerald-100");
       } else {
         // Tampilan MERAH (Jauh)
-        elBadge.textContent = "JAUH";
-        elBadge.className =
-          "px-2 py-0.5 rounded-md text-[10px] font-black uppercase bg-red-100 text-red-600 border border-red-200";
+        if (elBadge) {
+          elBadge.textContent = "JAUH";
+          elBadge.className =
+            "px-1.5 py-0.5 rounded text-[9px] font-black uppercase bg-red-100 dark:bg-red-500/10 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800/30 shrink-0";
+        }
 
         const selisih = Math.round(nearestDist - GEO_CONFIG.maxRadiusMeters);
         elMessage.innerHTML = `<span class="text-red-500 flex items-center gap-1"><i data-lucide="alert-circle" class="w-3 h-3"></i> Terlalu jauh ${selisih}m dari batas radius.</span>`;
@@ -6244,10 +6279,10 @@ window.updatePrayerCountdown = function () {
       const timeEl = countdownEl.querySelector(".countdown-time");
       
       if (labelEl && timeEl) {
-        labelEl.textContent = `Menuju ${nextName}`;
+        labelEl.textContent = `Ke ${nextName}`;
         timeEl.textContent = `${pad(hours)}:${pad(mins)}:${pad(secs)}`;
       } else {
-        countdownEl.textContent = `${pad(hours)}:${pad(mins)}:${pad(secs)} Menuju ${nextName}`;
+        countdownEl.textContent = `${pad(hours)}:${pad(mins)}:${pad(secs)} Ke ${nextName}`;
       }
       
       countdownEl.classList.remove("hidden");

@@ -786,173 +786,130 @@
         class="tab-content flex-1 overflow-y-auto pb-32 hide-scrollbar scroll-smooth p-6 space-y-6 pt-safe"
       >
         <!-- Header -->
-        <header
-          class="flex justify-between items-start animate-slide-up relative z-20"
-          style="animation-delay: 0.1s"
-        >
+        <header class="flex justify-between items-center gap-4 animate-slide-up relative z-20" style="animation-delay: 0.1s">
+          
           <div class="flex flex-col gap-1">
-            <div class="flex flex-wrap items-center gap-2.5 mb-1">
-              <div
-                class="px-2 py-1 rounded-full bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 backdrop-blur-sm flex items-center gap-2"
-              >
-                <span class="flex h-2 w-2 relative">
-                  <span
-                    class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"
-                  ></span>
-                  <span
-                    class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"
-                  ></span>
-                </span>
-                <p
-                  class="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider"
-                  id="dash-greeting"
-                >
-                  Selamat Datang
-                </p>
-              </div>
-
-              <!-- Header Prayer Countdown -->
-              <div id="header-prayer-countdown" class="hidden flex items-center gap-1.5 text-[9px] font-bold px-2.5 py-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-full border border-emerald-500/20 shadow-sm backdrop-blur-sm animate-pulse">
-                <span class="countdown-label opacity-90 font-bold uppercase tracking-wider text-[8px]">Menuju -</span>
-                <span class="countdown-time tracking-wider font-extrabold text-[9px]">--:--:--</span>
-              </div>
-            </div>
-
             <h1
-              class="text-3xl font-black text-slate-800 dark:text-white leading-tight tracking-tight"
+              id="dash-title-greeting"
+              class="text-2xl sm:text-3xl font-black text-slate-800 dark:text-white tracking-tight leading-none"
             >
-              Dashboard<br />
-              <span
-                class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-500 to-teal-400"
-                >Presensi</span
-              >
+              Shobahul Khair, <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-500 to-teal-400 font-black">Ustadz!</span>
             </h1>
-          </div>
+            
+            <div class="flex flex-wrap items-center gap-2 mt-1">
 
-          <div class="flex flex-col items-end gap-3">
-            <div
-              class="glass-card px-3 py-1.5 rounded-xl flex items-center gap-2 shadow-sm border border-slate-100 dark:border-slate-700/60"
-            >
-              <i data-lucide="clock" class="w-3.5 h-3.5 text-emerald-500"></i>
-              <div class="flex items-baseline gap-1">
-                <p
-                  class="text-lg font-black text-slate-700 dark:text-slate-200 tabular-nums leading-none"
-                  id="dash-clock"
-                >
-                  --:--
-                </p>
-                <p
-                  class="text-[9px] font-bold text-slate-400"
-                  id="dash-clock-sec"
-                >
-                  WIB
-                </p>
-              </div>
-            </div>
-
-            <div class="flex items-center gap-2">
-              <button
-                onclick="window.requestNotificationPermission()"
-                class="w-10 h-10 rounded-full bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 flex items-center justify-center text-slate-400 hover:text-emerald-500 hover:border-emerald-200 transition-all shadow-sm active:scale-95 relative group"
-              >
-                <i data-lucide="bell" class="w-5 h-5"></i>
-                <span
-                  id="notif-badge"
-                  class="hidden absolute top-2 right-2.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white dark:border-slate-800"
-                ></span>
-              </button>
-
-              <div
-                onclick="switchTab('profile')"
-                class="flex items-center gap-2 pl-1 pr-1 py-1 rounded-full bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 shadow-sm cursor-pointer hover:border-emerald-200 transition-all active:scale-95"
-              >
-                <div class="text-right px-2 hidden sm:block">
-                  <p
-                    class="text-[10px] font-bold text-slate-800 dark:text-white leading-none"
-                    id="header-user-name"
-                  >
-                    Admin
-                  </p>
-                  <p
-                    class="text-[8px] font-bold text-emerald-500 leading-none mt-0.5"
-                    id="profile-role"
-                  >
-                    Musyrif
-                  </p>
-                </div>
-                <div
-                  class="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white font-bold text-xs shadow-md ring-2 ring-white dark:ring-slate-800"
-                  id="header-avatar"
-                >
-                  <i data-lucide="user" class="w-4 h-4"></i>
-                </div>
+              <div id="header-prayer-countdown" class="hidden flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-800/30 text-emerald-600 dark:text-emerald-400 backdrop-blur-sm">
+                <span class="countdown-label opacity-80 text-[10px] sm:text-xs font-bold uppercase tracking-wider">Ke -</span>
+                <span class="countdown-time text-[10px] sm:text-xs font-black tracking-wider">--:--:--</span>
               </div>
             </div>
           </div>
+
+          <div class="flex items-center gap-1 sm:gap-2 p-1.5 rounded-2xl bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50 shadow-sm">
+            
+            <div class="hidden sm:flex items-center gap-1.5 px-2 py-1">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-emerald-500"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v6l4 2"></path></svg>
+              <div class="flex items-baseline gap-0.5 tabular-nums">
+                <p id="dash-clock" class="text-sm font-black text-slate-700 dark:text-slate-200 leading-none">--:--</p>
+                <p id="dash-clock-sec" class="text-[10px] font-bold text-slate-400 leading-none">--</p>
+              </div>
+            </div>
+
+            <div class="hidden sm:block w-px h-6 bg-slate-200 dark:bg-slate-700/80 mx-1"></div>
+
+            <button onclick="window.requestNotificationPermission()" class="relative p-2 rounded-xl text-slate-400 hover:text-emerald-500 hover:bg-white dark:hover:bg-slate-700 transition-all active:scale-95 group">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.268 21a2 2 0 0 0 3.464 0"></path><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"></path></svg>
+              <span id="notif-badge" class="hidden absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white dark:border-slate-800"></span>
+            </button>
+
+            <button onclick="switchTab('profile')" class="flex items-center gap-2 pl-1 pr-2 sm:pr-3 py-1 rounded-xl hover:bg-white dark:hover:bg-slate-700 transition-all active:scale-95 text-left">
+              <div id="header-avatar" class="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white font-bold text-xs shadow-md">AA</div>
+              <div class="hidden sm:block">
+                <p id="header-user-name" class="text-[11px] font-bold text-slate-800 dark:text-white leading-none">Admin</p>
+                <p id="profile-role" class="text-[9px] font-bold text-emerald-500 mt-0.5 uppercase tracking-wider">Musyrif</p>
+              </div>
+            </button>
+          </div>
+          
         </header>
 
-        <!-- Date Navigator -->
+        <!-- GPS Location Status Banner (Compact) -->
         <div
-          class="glass-card p-2 rounded-2xl flex items-center gap-2 animate-slide-up shadow-sm border border-slate-100 dark:border-slate-700 bg-white/80 dark:bg-slate-800/80 backdrop-blur-md"
-          style="animation-delay: 0.15s"
+          id="location-status-card"
+          class="hidden animate-slide-up !mt-4"
+          style="animation-delay: 0.12s"
         >
-          <div class="relative group shrink-0">
-            <button
-              class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 shadow-sm border border-indigo-100 dark:border-indigo-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-all active:scale-95"
-            >
-              <i data-lucide="calendar-days" class="w-5 h-5 sm:w-6 sm:h-6"></i>
-            </button>
-            <input
-              type="date"
-              id="date-picker-input"
-              class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-              onchange="handleDateChange(this.value)"
-            />
-          </div>
-
           <div
-            class="flex-1 flex items-center justify-between bg-slate-50 dark:bg-slate-700/30 rounded-xl p-1 border border-slate-100 dark:border-slate-700"
+            class="p-3 rounded-2xl bg-white/60 dark:bg-slate-800/60 shadow-sm border border-slate-200/50 dark:border-slate-700/50 backdrop-blur-md flex items-center justify-between gap-3 text-xs"
           >
-            <button
-              onclick="changeDateView(-1)"
-              class="w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-white dark:hover:bg-slate-600 transition-all active:scale-90"
-            >
-              <i data-lucide="chevron-left" class="w-5 h-5"></i>
-            </button>
-
-            <div
-              class="flex flex-col items-center justify-center px-1 sm:px-4 overflow-hidden"
-            >
-              <h3
-                class="font-black text-slate-800 dark:text-white text-xs sm:text-sm md:text-base leading-tight truncate text-center"
-                id="current-date-display"
+            <div class="flex items-center gap-2 min-w-0 flex-1">
+              <div
+                id="loc-icon-bg"
+                class="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-700 flex items-center justify-center flex-shrink-0 transition-all duration-500"
               >
-                Memuat...
-              </h3>
+                <i
+                  id="loc-icon"
+                  data-lucide="map-pin"
+                  class="w-4 h-4 text-slate-400 transition-colors duration-500"
+                ></i>
+              </div>
+
+              <!-- State 1: Loading -->
+              <div
+                id="loc-loading"
+                class="flex items-center gap-1.5 text-slate-500 dark:text-slate-400 truncate"
+              >
+                <span class="w-1.5 h-1.5 rounded-full bg-slate-400 animate-pulse"></span>
+                <span>Mencari koordinat GPS...</span>
+              </div>
+
+              <!-- State 2: Error -->
+              <div
+                id="loc-error"
+                class="hidden flex items-center gap-1.5 text-red-500 truncate"
+              >
+                <!-- Injected dynamically by JS -->
+              </div>
+
+              <!-- State 3: Details (Compact single line) -->
+              <div
+                id="loc-details"
+                class="hidden flex items-center gap-2 min-w-0 flex-1 flex-wrap sm:flex-nowrap"
+              >
+                <span class="text-slate-400 dark:text-slate-500 font-medium shrink-0">Lokasi:</span>
+                <span
+                  id="loc-nearest-name"
+                  class="font-bold text-slate-700 dark:text-slate-200 truncate"
+                >
+                  Menghitung...
+                </span>
+                <span
+                  id="loc-distance"
+                  class="font-black text-slate-800 dark:text-white shrink-0"
+                >
+                  0m
+                </span>
+
+                <span
+                  id="loc-message"
+                  class="hidden sm:inline text-[10px] text-slate-400 dark:text-slate-500 truncate border-l border-slate-200 dark:border-slate-700 pl-2"
+                >
+                  Pastikan berada dalam radius absen.
+                </span>
+              </div>
             </div>
 
             <button
-              onclick="changeDateView(1)"
-              class="w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-white dark:hover:bg-slate-600 transition-all active:scale-90"
+              onclick="window.updateLocationStatus()"
+              class="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-150 dark:hover:bg-slate-700 transition-all active:scale-90 flex-shrink-0"
             >
-              <i data-lucide="chevron-right" class="w-5 h-5"></i>
+              <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
             </button>
           </div>
-
-          <button
-            onclick="goToToday()"
-            class="w-10 h-10 sm:w-12 sm:h-12 shrink-0 rounded-xl flex items-center justify-center bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 shadow-sm border border-slate-100 dark:border-slate-700 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:text-emerald-600 dark:hover:text-emerald-400 hover:border-emerald-200 transition-all active:scale-95 group"
-            title="Hari Ini"
-          >
-            <i
-              data-lucide="calendar-check-2"
-              class="w-5 h-5 sm:w-6 sm:h-6 group-hover:rotate-12 transition-transform"
-            ></i>
-          </button>
         </div>
 
         <!-- Dashboard Grid Layout on Desktop -->
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start !mt-4">
           
           <!-- LEFT COLUMN: Sesi Utama & Jadwal -->
           <div class="lg:col-span-7 space-y-6">
@@ -1147,6 +1104,8 @@
           </div>
         </div>
 
+
+
         <!-- All Slots List (Jadwal Lengkap) -->
         <div class="animate-slide-up pb-safe" style="animation-delay: 0.5s">
           <h3
@@ -1155,6 +1114,67 @@
             <i data-lucide="list-todo" class="w-4 h-4 text-slate-400"></i>
             Jadwal Lengkap
           </h3>
+
+          <!-- Date Navigator -->
+          <div
+            class="glass-card p-2 rounded-2xl flex items-center gap-2 animate-slide-up shadow-sm border border-slate-100 dark:border-slate-700 bg-white/80 dark:bg-slate-800/80 backdrop-blur-md mb-4"
+            style="animation-delay: 0.15s"
+          >
+            <div class="relative group shrink-0">
+              <button
+                class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 shadow-sm border border-indigo-100 dark:border-indigo-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-all active:scale-95"
+              >
+                <i data-lucide="calendar-days" class="w-5 h-5 sm:w-6 sm:h-6"></i>
+              </button>
+              <input
+                type="date"
+                id="date-picker-input"
+                class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                onchange="handleDateChange(this.value)"
+              />
+            </div>
+
+            <div
+              class="flex-1 flex items-center justify-between bg-slate-50 dark:bg-slate-700/30 rounded-xl p-1 border border-slate-100 dark:border-slate-700"
+            >
+              <button
+                onclick="changeDateView(-1)"
+                class="w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-white dark:hover:bg-slate-600 transition-all active:scale-90"
+              >
+                <i data-lucide="chevron-left" class="w-5 h-5"></i>
+              </button>
+
+              <div
+                class="flex flex-col items-center justify-center px-1 sm:px-4 overflow-hidden"
+              >
+                <h3
+                  class="font-black text-slate-800 dark:text-white text-xs sm:text-sm md:text-base leading-tight truncate text-center"
+                  id="current-date-display"
+                >
+                  Memuat...
+                </h3>
+              </div>
+
+              <button
+                onclick="changeDateView(1)"
+                class="w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-white dark:hover:bg-slate-600 transition-all active:scale-90"
+              >
+                <i data-lucide="chevron-right" class="w-5 h-5"></i>
+              </button>
+            </div>
+
+            <button
+              onclick="goToToday()"
+              class="w-10 h-10 sm:w-12 sm:h-12 shrink-0 rounded-xl flex items-center justify-center bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 shadow-sm border border-slate-100 dark:border-slate-700 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:text-emerald-600 dark:hover:bg-emerald-400 hover:border-emerald-200 transition-all active:scale-95 group"
+              title="Hari Ini"
+            >
+              <i
+                data-lucide="calendar-check-2"
+                class="w-5 h-5 sm:w-6 sm:h-6 group-hover:rotate-12 transition-transform"
+              ></i>
+            </button>
+          </div>
+
           <div id="dash-other-slots" class="space-y-3">
             <!-- Slot Items injected by JS -->
           </div>
@@ -1231,98 +1251,6 @@
               <span class="prayer-time text-sm font-black text-slate-800 dark:text-slate-100">--:--</span>
             </div>
 
-          </div>
-        </div>
-
-        <div
-          id="location-status-card"
-          class="mb-4 hidden animate-slide-up"
-          style="animation-delay: 0.2s"
-        >
-          <div
-            class="p-5 rounded-[2rem] bg-white dark:bg-slate-800 shadow-sm border border-slate-100 dark:border-slate-700 relative overflow-hidden"
-          >
-            <div class="flex items-start gap-4">
-              <div
-                id="loc-icon-bg"
-                class="w-14 h-14 rounded-2xl bg-slate-100 dark:bg-slate-700 flex items-center justify-center flex-shrink-0 transition-all duration-500"
-              >
-                <i
-                  id="loc-icon"
-                  data-lucide="map-pin"
-                  class="w-7 h-7 text-slate-400 transition-colors duration-500"
-                ></i>
-              </div>
-
-              <div class="flex-1 min-w-0">
-                <div class="flex justify-between items-start">
-                  <h4
-                    class="font-black text-slate-800 dark:text-white text-base"
-                  >
-                    Lokasi Anda
-                  </h4>
-                  <button
-                    onclick="window.updateLocationStatus()"
-                    class="p-1.5 -mr-1 -mt-1 rounded-full text-slate-300 hover:text-indigo-500 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all"
-                  >
-                    <i data-lucide="refresh-cw" class="w-4 h-4"></i>
-                  </button>
-                </div>
-
-                <div
-                  id="loc-loading"
-                  class="text-xs text-slate-500 mt-2 flex items-center gap-2"
-                >
-                  <div
-                    class="w-2 h-2 bg-slate-400 rounded-full animate-bounce"
-                  ></div>
-                  Mencari koordinat GPS...
-                </div>
-
-                <div
-                  id="loc-error"
-                  class="hidden mt-2 p-2 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-100 dark:border-red-800/30"
-                >
-                  <p class="text-[10px] font-bold text-red-500 leading-tight">
-                    GPS tidak aktif / Izin ditolak.
-                  </p>
-                </div>
-
-                <div id="loc-details" class="hidden mt-1">
-                  <p
-                    class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5"
-                  >
-                    Titik Terdekat
-                  </p>
-                  <p
-                    id="loc-nearest-name"
-                    class="text-sm font-bold text-slate-700 dark:text-slate-200 truncate"
-                  >
-                    Menghitung...
-                  </p>
-
-                  <div class="flex items-center gap-2 mt-2">
-                    <span
-                      id="loc-distance"
-                      class="text-2xl font-black text-slate-800 dark:text-white tracking-tight"
-                      >0m</span
-                    >
-                    <span
-                      id="loc-badge"
-                      class="px-2 py-0.5 rounded-md text-[10px] font-black uppercase bg-slate-100 text-slate-500 border border-slate-200 dark:border-slate-600"
-                      >Check</span
-                    >
-                  </div>
-
-                  <p
-                    id="loc-message"
-                    class="text-[10px] text-slate-400 mt-2 leading-tight font-medium border-t border-slate-100 dark:border-slate-700 pt-2"
-                  >
-                    Pastikan berada dalam radius absen.
-                  </p>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
 
