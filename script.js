@@ -124,14 +124,17 @@ window.initBottomNavScroll = function () {
   if (!bottomNav) return;
 
   const handleScroll = (e) => {
-    const scrollTop = e.target.scrollTop;
+    const container = e.currentTarget || e.target;
+    if (!container) return;
+    const scrollTop = container.scrollTop;
+
     if (scrollTop > 20) {
       bottomNav.classList.add("nav-expanded");
     } else {
       bottomNav.classList.remove("nav-expanded");
     }
 
-    if (e.target.id === "main-content") {
+    if (container.id === "main-content") {
       const heroCard = document.getElementById("dash-main-card");
       if (heroCard) {
         if (scrollTop > 80) {
@@ -461,9 +464,100 @@ window.handleLogout = function () {
   location.reload();
 };
 
-// ==========================================
-// 3. DASHBOARD LOGIC
-// ==========================================
+const GREETING_TRANSLATIONS = {
+  "صباح الخير": "Selamat Pagi ☀️",
+  "صباح النور": "Selamat Pagi (Penuh Cahaya) ✨",
+  "صباح الورد": "Selamat Pagi (Penuh Bunga) 🌹",
+  "صباح الياسمين": "Selamat Pagi (Penuh Melati) 🌼",
+  "طاب صباحك": "Semoga Pagimu Menyenangkan ☕",
+  "أهلاً وسهلاً": "Selamat Datang 👋",
+  "السلام عليكم": "Semoga Keselamatan Menyertaimu 🤝",
+  "مرحباً بك": "Selamat Datang 🌟",
+  "كيف حالك": "Bagaimana Kabarmu? 😊",
+  "طاب يومك": "Semoga Harimu Menyenangkan ☀️",
+  "مساء الورد": "Selamat Sore/Malam (Penuh Bunga) 🌹",
+  "مساء النور": "Selamat Sore/Malam (Penuh Cahaya) ✨",
+  "مساء الخير": "Selamat Sore/Malam 🌙",
+  "طابت ليلتك": "Semoga Malammu Menyenangkan 🌌",
+  "ليلة سعيدة": "Semoga Malammu Bahagia 😴"
+};
+
+window.startGreetingLoop = function () {
+  const el = document.getElementById("dash-title-sub-greeting");
+  if (!el) return;
+
+  if (window.greetingIntervalId) {
+    clearTimeout(window.greetingIntervalId);
+  }
+
+  let showTranslation = true;
+
+  function runStep() {
+    const arabic = window.currentSessionGreeting || "صباح الخير";
+    const translation = GREETING_TRANSLATIONS[arabic] || "Selamat Pagi ☀️";
+
+    // 1. Fade out
+    el.classList.add("opacity-0");
+
+    window.greetingIntervalId = setTimeout(() => {
+      // Reset translation/scroll styles
+      el.style.transition = "";
+      el.style.transform = "";
+
+      if (showTranslation) {
+        // Set translation content
+        el.textContent = translation;
+        el.style.fontFamily = "";
+        
+        // Measure sizes
+        const textWidth = el.scrollWidth;
+        const parentWidth = el.parentElement.clientWidth || 150;
+
+        // Fade back in
+        el.classList.remove("opacity-0");
+
+        if (textWidth > parentWidth) {
+          // If translation is longer than the wrapper width, scroll it
+          const distance = textWidth - parentWidth;
+          const speed = 35; // Pixels per second
+          const duration = distance / speed;
+
+          // Wait 1 second of pause before starting to scroll
+          window.greetingIntervalId = setTimeout(() => {
+            el.style.transition = `transform ${duration}s linear`;
+            el.style.transform = `translateX(-${distance}px)`;
+
+            // Wait until the scroll finishes + 1.5 seconds pause at the end, then switch back to Arabic
+            window.greetingIntervalId = setTimeout(() => {
+              showTranslation = false;
+              runStep();
+            }, (duration + 1.5) * 1000);
+          }, 1000);
+        } else {
+          // Shorter translations stay static for 4 seconds
+          window.greetingIntervalId = setTimeout(() => {
+            showTranslation = false;
+            runStep();
+          }, 4000);
+        }
+      } else {
+        // Show Arabic greeting
+        el.textContent = arabic;
+        el.style.fontFamily = "'Rubik', sans-serif";
+
+        // Fade back in
+        el.classList.remove("opacity-0");
+
+        window.greetingIntervalId = setTimeout(() => {
+          showTranslation = true;
+          runStep();
+        }, 4000);
+      }
+    }, 500);
+  }
+
+  runStep();
+};
 
 window.updateDashboard = function () {
   // 1. Greeting
@@ -527,6 +621,8 @@ window.updateDashboard = function () {
 
   if (elTitleSubGreet) {
     elTitleSubGreet.textContent = arabicGreet;
+    elTitleSubGreet.style.fontFamily = "'Rubik', sans-serif";
+    window.startGreetingLoop();
   }
 
   if (elTitleGreet) {
@@ -544,7 +640,7 @@ window.updateDashboard = function () {
         }
       }
     }
-    elTitleGreet.innerHTML = `<span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-800 to-teal-700 dark:from-emerald-400 dark:to-teal-300 font-black">${displayName}!</span>`;
+    elTitleGreet.innerHTML = `<span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-700 to-teal-500 dark:from-emerald-400 dark:to-teal-300 font-black">${displayName}!</span>`;
   }
 
   // 2. Main Card Logic
@@ -974,12 +1070,19 @@ window.renderSlotList = function () {
         progressTextEl.textContent = `${timeProgressPercent}%`;
       }
 
+      const isCurrentRunningSlot = isToday && s.id === window.determineCurrentSlot();
       if (stats.isFilled) {
         badge.innerHTML = `<span class="flex items-center gap-1">
           <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check text-current"><path d="M20 6 9 17l-5-5"/></svg>
           Selesai
         </span>`;
         badge.className = "slot-status-badge text-[9px] font-black px-2 py-0.5 rounded-full bg-white/90 text-emerald-950 border border-white/30 shadow-sm";
+      } else if (isCurrentRunningSlot) {
+        badge.innerHTML = `<span class="flex items-center gap-1">
+          <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-unlock text-current"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>
+          Terbuka
+        </span>`;
+        badge.className = "slot-status-badge text-[9px] font-black px-2 py-0.5 rounded-full bg-emerald-500 text-white border border-emerald-400 shadow-md";
       } else {
         badge.innerHTML = `<span class="flex items-center gap-1">
           <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x text-current"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
@@ -1365,6 +1468,16 @@ window.openAttendance = async function () {
 
   const slot = SLOT_WAKTU[appState.currentSlotId];
   document.getElementById("att-slot-title").textContent = slot.label;
+  
+  const dateDisplay = document.getElementById("att-date-display");
+  if (dateDisplay) {
+    dateDisplay.textContent = window.formatDate(appState.date);
+  }
+  
+  if (window.updateConnectionStatusUI) {
+    window.updateConnectionStatusUI();
+  }
+
   window.renderAttendanceList();
 };
 
@@ -2499,16 +2612,30 @@ window.saveData = function () {
         window.showToast("Data hampir penuh. Pertimbangkan export.", "warning");
       }
 
-      localStorage.setItem(APP_CONFIG.storageKey, dataStr);
 
-      if (appState.settings.autoSave) {
-        const indicator = document.getElementById("save-indicator");
-        if (indicator) {
-          indicator.innerHTML =
-            '<i data-lucide="check" class="w-5 h-5 text-emerald-500"></i>';
-          window.refreshIcons();
-          setTimeout(() => (indicator.innerHTML = ""), 1000);
-        }
+
+
+      const indicator = document.getElementById("save-indicator");
+      if (appState.settings.autoSave && indicator) {
+        indicator.innerHTML = '<span class="relative flex h-1.5 w-1.5 shrink-0"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span><span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-amber-500"></span></span>';
+        
+        setTimeout(() => {
+          try {
+            localStorage.setItem(APP_CONFIG.storageKey, dataStr);
+            if (indicator) {
+              indicator.innerHTML = '<span class="relative flex h-1.5 w-1.5 shrink-0"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span><span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span></span>';
+              setTimeout(() => {
+                if (indicator) {
+                  indicator.innerHTML = '<span class="relative flex h-1.5 w-1.5 shrink-0"><span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-slate-300 dark:bg-slate-600"></span></span>';
+                }
+              }, 1500);
+            }
+          } catch (innerErr) {
+            console.error("Inner save error:", innerErr);
+          }
+        }, 500);
+      } else {
+        localStorage.setItem(APP_CONFIG.storageKey, dataStr);
       }
     } catch (e) {
       if (e.name === "QuotaExceededError") {
@@ -4514,7 +4641,7 @@ window.getCachedLocation = function () {
   try {
     const cache = JSON.parse(localStorage.getItem(GPS_CACHE_KEY));
 
-    if (!cache) return null;
+    if (!cache || cache.distance === undefined) return null;
 
     const age = Date.now() - cache.timestamp;
 
@@ -4585,8 +4712,26 @@ window.verifyLocation = function () {
         });
 
         if (isInside) {
+          localStorage.setItem(
+            GPS_CACHE_KEY,
+            JSON.stringify({
+              timestamp: Date.now(),
+              distance: nearestDist,
+              locationName: nearestName,
+              isInside: isInside,
+            }),
+          );
           resolve(true);
         } else {
+          localStorage.setItem(
+            GPS_CACHE_KEY,
+            JSON.stringify({
+              timestamp: Date.now(),
+              distance: nearestDist,
+              locationName: nearestName,
+              isInside: isInside,
+            }),
+          );
           reject(
             `Lokasi Anda terlalu jauh (${Math.round(nearestDist)}m dari ${nearestName}). Radius maksimal: ${GEO_CONFIG.maxRadiusMeters}m.`,
           );
@@ -6487,19 +6632,11 @@ window.getDayCompletionStatus = function (dateStr) {
 window.verifyLocationCached = async function () {
   const cache = JSON.parse(localStorage.getItem(GPS_CACHE_KEY) || "null");
 
-  if (cache && Date.now() - cache.timestamp < GPS_CACHE_DURATION) {
+  if (cache && cache.distance !== undefined && Date.now() - cache.timestamp < GPS_CACHE_DURATION) {
     return true;
   }
 
   await window.verifyLocation();
-
-  localStorage.setItem(
-    GPS_CACHE_KEY,
-    JSON.stringify({
-      timestamp: Date.now(),
-    }),
-  );
-
   return true;
 };
 

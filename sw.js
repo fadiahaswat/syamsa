@@ -1,8 +1,8 @@
-const CACHE_NAME = "musyrif-app-v118";
+const CACHE_NAME = "musyrif-app-v150";
 const ASSETS_TO_CACHE = [
   "./",
   "./index.html",
-  "./output.css", // PERBAIKAN: Ganti style.css menjadi output.css
+  "./output.css",
   "./config.js",
   "./script.js",
   "./santri-manager.js",
@@ -13,6 +13,7 @@ const ASSETS_TO_CACHE = [
 
 // 1. Install Service Worker & Cache File
 self.addEventListener("install", (event) => {
+  self.skipWaiting(); // FORCE ACTIVATE IMMEDIATELY
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll(ASSETS_TO_CACHE);
@@ -31,7 +32,9 @@ self.addEventListener("activate", (event) => {
           }
         }),
       );
-    }),
+    }).then(() => {
+      return self.clients.claim(); // TAKE CONTROL IMMEDIATELY
+    })
   );
 });
 
