@@ -1,4 +1,4 @@
-const CACHE_NAME = "musyrif-app-v150";
+const CACHE_NAME = "musyrif-app-v166-smooth-gps-bypass";
 const ASSETS_TO_CACHE = [
   "./",
   "./index.html",
