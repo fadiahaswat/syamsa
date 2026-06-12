@@ -37,7 +37,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Rubik:ital,wght@0,300..900;1,300..900&display=swap"
       rel="stylesheet"
     />
 
@@ -86,6 +86,17 @@
       input:focus-visible {
         outline: 2px solid var(--color-brand);
         outline-offset: 2px;
+      }
+
+      /* Running text animation for location */
+      @keyframes marquee-text {
+        0% { transform: translateX(100%); }
+        100% { transform: translateX(-100%); }
+      }
+      .animate-marquee-text {
+        display: inline-block;
+        white-space: nowrap;
+        animation: marquee-text 8s linear infinite;
       }
 
       /* Cohesive Input Focus States */
@@ -178,16 +189,16 @@
       }
       .blob-1 {
         top: -10%;
-        left: -20%;
-        width: 70vw;
-        height: 70vw;
+        right: -20%;
+        width: 160px;
+        height: 160px;
         background: #34d399;
       }
       .blob-2 {
         bottom: -10%;
-        right: -20%;
-        width: 70vw;
-        height: 70vw;
+        left: -20%;
+        width: 160px;
+        height: 160px;
         background: #60a5fa;
         animation-delay: -5s;
       }
@@ -198,6 +209,12 @@
       .dark .blob-2 {
         background: #2563eb;
         opacity: 0.15;
+      }
+      @media (min-width: 640px) {
+        .blob-1, .blob-2 {
+          width: 50vw;
+          height: 50vw;
+        }
       }
 
       /* --- Utilities --- */
@@ -786,49 +803,62 @@
         class="tab-content flex-1 overflow-y-auto pb-32 hide-scrollbar scroll-smooth p-6 space-y-6 pt-safe"
       >
         <!-- Header -->
-        <header class="flex justify-between items-center gap-4 animate-slide-up relative z-20" style="animation-delay: 0.1s">
+        <header class="flex justify-between items-center gap-4 animate-slide-up relative z-20 mt-3 sm:mt-4" style="animation-delay: 0.1s">
           
-          <div class="flex flex-col gap-1">
-            <h1
-              id="dash-title-greeting"
-              class="text-2xl sm:text-3xl font-black text-slate-800 dark:text-white tracking-tight leading-none"
-            >
-              Shobahul Khair, <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-500 to-teal-400 font-black">Ustadz!</span>
-            </h1>
+          <div class="flex items-center gap-2 min-w-0">
+            <!-- Profile on the far left (Circular) -->
+            <button onclick="switchTab('profile')" class="flex items-center rounded-full hover:bg-slate-100/50 dark:hover:bg-slate-800/50 p-0.5 transition-all active:scale-95 shrink-0">
+              <div id="header-avatar" class="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white font-extrabold text-xs shadow-md transition-all duration-300">AA</div>
+            </button>
             
-            <div class="flex flex-wrap items-center gap-2 mt-1">
-
-              <div id="header-prayer-countdown" class="hidden flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-800/30 text-emerald-600 dark:text-emerald-400 backdrop-blur-sm">
-                <span class="countdown-label opacity-80 text-[10px] sm:text-xs font-bold uppercase tracking-wider">Ke -</span>
-                <span class="countdown-time text-[10px] sm:text-xs font-black tracking-wider">--:--:--</span>
+            <!-- Greeting & Name -->
+            <div class="flex flex-col min-w-0">
+              <span
+                id="dash-title-sub-greeting"
+                class="text-sm sm:text-base font-semibold text-slate-400 dark:text-slate-500 leading-none mb-1"
+                style="font-family: 'Rubik', sans-serif;"
+              >
+                صباح الخير
+              </span>
+              <h1
+                id="dash-title-greeting"
+                class="text-base sm:text-lg font-black text-slate-800 dark:text-white tracking-tight leading-none mt-0.5 truncate"
+              >
+                Ustadz!
+              </h1>
+              
+              <!-- Countdown Salat -->
+              <div id="header-prayer-countdown" class="flex items-center gap-1 mt-1 px-1.5 py-0.5 rounded bg-gradient-to-r from-emerald-500/10 to-teal-500/10 text-emerald-600 dark:text-emerald-400 text-[9px] w-fit">
+                <span class="countdown-label opacity-90 font-bold uppercase tracking-widest">Dzuhur</span>
+                <span class="countdown-time font-black tracking-wider">00:53:48</span>
               </div>
             </div>
           </div>
 
-          <div class="flex items-center gap-1 sm:gap-2 p-1.5 rounded-2xl bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50 shadow-sm">
+          <div class="flex items-center gap-1 p-1 rounded-full bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50 shadow-sm shrink-0">
             
-            <div class="hidden sm:flex items-center gap-1.5 px-2 py-1">
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-emerald-500"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v6l4 2"></path></svg>
+            <div class="hidden sm:flex items-center gap-1 px-1.5 py-0.5">
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-emerald-500"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v6l4 2"></path></svg>
               <div class="flex items-baseline gap-0.5 tabular-nums">
-                <p id="dash-clock" class="text-sm font-black text-slate-700 dark:text-slate-200 leading-none">--:--</p>
-                <p id="dash-clock-sec" class="text-[10px] font-bold text-slate-400 leading-none">--</p>
+                <p id="dash-clock" class="text-xs font-black text-slate-700 dark:text-slate-200 leading-none">--:--</p>
+                <p id="dash-clock-sec" class="text-[9px] font-bold text-slate-400 leading-none">--</p>
               </div>
             </div>
 
-            <div class="hidden sm:block w-px h-6 bg-slate-200 dark:bg-slate-700/80 mx-1"></div>
+            <div class="hidden sm:block w-px h-4 bg-slate-200 dark:bg-slate-700/80 mx-0.5"></div>
 
-            <button onclick="window.requestNotificationPermission()" class="relative p-2 rounded-xl text-slate-400 hover:text-emerald-500 hover:bg-white dark:hover:bg-slate-700 transition-all active:scale-95 group">
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.268 21a2 2 0 0 0 3.464 0"></path><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"></path></svg>
-              <span id="notif-badge" class="hidden absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white dark:border-slate-800"></span>
+            <button onclick="window.requestNotificationPermission()" class="relative p-1.5 rounded-full text-slate-400 hover:text-emerald-500 hover:bg-white dark:hover:bg-slate-700 transition-all active:scale-95 group">
+              <i data-lucide="bell" class="w-4 h-4"></i>
+              <span id="notif-badge" class="hidden absolute top-1 right-1 w-1.5 h-1.5 bg-red-500 rounded-full border border-white dark:border-slate-800"></span>
             </button>
 
-            <button onclick="switchTab('profile')" class="flex items-center gap-2 pl-1 pr-2 sm:pr-3 py-1 rounded-xl hover:bg-white dark:hover:bg-slate-700 transition-all active:scale-95 text-left">
-              <div id="header-avatar" class="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white font-bold text-xs shadow-md">AA</div>
-              <div class="hidden sm:block">
-                <p id="header-user-name" class="text-[11px] font-bold text-slate-800 dark:text-white leading-none">Admin</p>
-                <p id="profile-role" class="text-[9px] font-bold text-emerald-500 mt-0.5 uppercase tracking-wider">Musyrif</p>
-              </div>
+            <button onclick="window.showToast ? window.showToast('Fitur pesan sedang dikembangkan', 'info') : alert('Fitur pesan sedang dikembangkan')" class="relative p-1.5 rounded-full text-slate-400 hover:text-emerald-500 hover:bg-white dark:hover:bg-slate-700 transition-all active:scale-95 group">
+              <i data-lucide="message-square" class="w-4 h-4"></i>
             </button>
+
+            <!-- Hidden placeholders to maintain compatibility with script.js selectors if needed -->
+            <span id="header-user-name" class="hidden">Admin</span>
+            <span id="profile-role" class="hidden">Musyrif</span>
           </div>
           
         </header>
@@ -836,86 +866,67 @@
         <!-- GPS Location Status Banner (Compact) -->
         <div
           id="location-status-card"
-          class="hidden animate-slide-up !mt-4"
+          class="hidden animate-slide-up !mt-5"
           style="animation-delay: 0.12s"
         >
-          <div
-            class="p-3 rounded-2xl bg-white/60 dark:bg-slate-800/60 shadow-sm border border-slate-200/50 dark:border-slate-700/50 backdrop-blur-md flex items-center justify-between gap-3 text-xs"
-          >
-            <div class="flex items-center gap-2 min-w-0 flex-1">
-              <div
-                id="loc-icon-bg"
-                class="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-700 flex items-center justify-center flex-shrink-0 transition-all duration-500"
-              >
-                <i
-                  id="loc-icon"
-                  data-lucide="map-pin"
-                  class="w-4 h-4 text-slate-400 transition-colors duration-500"
-                ></i>
+          <div class="flex items-center justify-between gap-2 px-3 py-1.5 rounded-xl bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl border border-white/60 dark:border-slate-700/50 shadow-sm w-full max-w-full">
+            
+            <!-- Kiri: Status GPS -->
+            <div class="flex items-center gap-2 min-w-0">
+              <!-- Ikon GPS -->
+              <div id="loc-icon-bg" class="w-6 h-6 shrink-0 rounded-full bg-emerald-100/80 dark:bg-emerald-900/50 flex items-center justify-center text-emerald-500 dark:text-emerald-400 transition-colors duration-500">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" id="loc-icon"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"></path><circle cx="12" cy="10" r="3"></circle></svg>
               </div>
 
               <!-- State 1: Loading -->
-              <div
-                id="loc-loading"
-                class="flex items-center gap-1.5 text-slate-500 dark:text-slate-400 truncate"
-              >
-                <span class="w-1.5 h-1.5 rounded-full bg-slate-400 animate-pulse"></span>
-                <span>Mencari koordinat GPS...</span>
+              <div id="loc-loading" class="hidden items-center gap-1.5 text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 truncate">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span>Mencari GPS...</span>
               </div>
 
               <!-- State 2: Error -->
-              <div
-                id="loc-error"
-                class="hidden flex items-center gap-1.5 text-red-500 truncate"
-              >
-                <!-- Injected dynamically by JS -->
+              <div id="loc-error" class="hidden items-center gap-1.5 text-[11px] sm:text-xs text-red-500 truncate">
+                <!-- Pesan error di-inject via JS -->
               </div>
 
-              <!-- State 3: Details (Compact single line) -->
-              <div
-                id="loc-details"
-                class="hidden flex items-center gap-2 min-w-0 flex-1 flex-wrap sm:flex-nowrap"
-              >
-                <span class="text-slate-400 dark:text-slate-500 font-medium shrink-0">Lokasi:</span>
-                <span
-                  id="loc-nearest-name"
-                  class="font-bold text-slate-700 dark:text-slate-200 truncate"
-                >
-                  Menghitung...
-                </span>
-                <span
-                  id="loc-distance"
-                  class="font-black text-slate-800 dark:text-white shrink-0"
-                >
-                  0m
-                </span>
-
-                <span
-                  id="loc-message"
-                  class="hidden sm:inline text-[10px] text-slate-400 dark:text-slate-500 truncate border-l border-slate-200 dark:border-slate-700 pl-2"
-                >
-                  Pastikan berada dalam radius absen.
-                </span>
+              <!-- State 3: Details (Compact) -->
+              <div id="loc-details" class="flex items-center gap-1.5 min-w-0 text-[11px] sm:text-xs">
+                <div class="overflow-hidden whitespace-nowrap w-[90px] sm:w-[130px] shrink-0">
+                  <div class="animate-marquee-text">
+                    <span id="loc-nearest-name" class="font-bold text-slate-700 dark:text-slate-200">Masjid Jami' Mu'allimin</span>
+                  </div>
+                </div>
+                <span id="loc-distance" class="font-black text-emerald-600 dark:text-emerald-400 shrink-0 px-1.5 py-0.5 rounded bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100/50 dark:border-emerald-800/30">31m</span>
               </div>
             </div>
 
-            <button
-              onclick="window.updateLocationStatus()"
-              class="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-150 dark:hover:bg-slate-700 transition-all active:scale-90 flex-shrink-0"
-            >
-              <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
-            </button>
+            <!-- Kanan: Waktu & Aksi -->
+            <div class="flex items-center gap-2 shrink-0">
+              <!-- Info Tanggal (Sangat Singkat) -->
+              <div id="gps-date-info" class="flex items-center gap-1.5 text-[10px] sm:text-xs font-semibold text-slate-500 dark:text-slate-400">
+                <span id="gps-hijri-date">26 Dzul</span>
+              </div>
+
+              <!-- Garis Pemisah -->
+              <div class="w-px h-3.5 bg-slate-300 dark:bg-slate-600"></div>
+
+              <!-- Tombol Refresh -->
+              <button onclick="window.updateLocationStatus()" class="w-6 h-6 flex items-center justify-center rounded text-slate-400 hover:text-emerald-500 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all active:scale-90 shrink-0 ml-1">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-refresh-cw"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path><path d="M21 3v5h-5"></path><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path><path d="M8 16H3v5"></path></svg>
+              </button>
+            </div>
           </div>
         </div>
 
         <!-- Dashboard Grid Layout on Desktop -->
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start !mt-4">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start !mt-5">
           
           <!-- LEFT COLUMN: Sesi Utama & Jadwal -->
           <div class="lg:col-span-7 space-y-6">
 
         <div
           id="kbm-active-banner"
+          hidden
           class="hidden mb-4 relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800 border border-teal-100 dark:border-teal-900/30 p-4 shadow-sm transition-all"
         >
           <div class="flex items-center justify-between gap-3">
@@ -964,7 +975,7 @@
         <!-- Main Action Card (Current Slot) -->
         <div
           id="dash-main-card"
-          class="bg-slate-900 dark:bg-black rounded-[2.5rem] p-6 sm:p-8 text-white shadow-2xl shadow-slate-900/20 relative overflow-hidden group animate-slide-up"
+          class="bg-slate-950 rounded-[2.5rem] p-6 sm:p-8 text-white shadow-2xl shadow-slate-900/20 relative overflow-hidden group animate-slide-up"
           style="animation-delay: 0.2s"
         >
           <div
@@ -982,9 +993,10 @@
                     class="px-2.5 py-1 rounded-full bg-white/10 border border-white/5 text-[10px] font-bold backdrop-blur-md uppercase tracking-wider flex items-center gap-1.5"
                   >
                     <span
+                      id="dash-card-badge-dot"
                       class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"
                     ></span>
-                    Saat Ini
+                    <span id="dash-card-badge-text">Saat Ini</span>
                   </span>
                 </div>
                 <h2
@@ -1108,74 +1120,48 @@
 
         <!-- All Slots List (Jadwal Lengkap) -->
         <div class="animate-slide-up pb-safe" style="animation-delay: 0.5s">
-          <h3
-            class="font-bold text-slate-800 dark:text-white mb-4 flex items-center gap-2 px-1 text-sm"
-          >
-            <i data-lucide="list-todo" class="w-4 h-4 text-slate-400"></i>
-            Jadwal Lengkap
-          </h3>
-
-          <!-- Date Navigator -->
-          <div
-            class="glass-card p-2 rounded-2xl flex items-center gap-2 animate-slide-up shadow-sm border border-slate-100 dark:border-slate-700 bg-white/80 dark:bg-slate-800/80 backdrop-blur-md mb-4"
-            style="animation-delay: 0.15s"
-          >
-            <div class="relative group shrink-0">
-              <button
-                class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 shadow-sm border border-indigo-100 dark:border-indigo-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-all active:scale-95"
-              >
-                <i data-lucide="calendar-days" class="w-5 h-5 sm:w-6 sm:h-6"></i>
-              </button>
-              <input
-                type="date"
-                id="date-picker-input"
-                class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                onchange="handleDateChange(this.value)"
-              />
+          <div class="flex items-center justify-between gap-2 p-1.5 sm:p-2 rounded-2xl bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl border border-white/60 dark:border-slate-700/50 shadow-sm mb-4 w-full">
+            
+            <!-- Bagian Kiri: Judul -->
+            <div class="flex items-center gap-1.5 px-1 shrink-0">
+              <div class="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center text-emerald-500 shrink-0">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-list-todo sm:w-3.5 sm:h-3.5"><path d="M13 5h8"></path><path d="M13 12h8"></path><path d="M13 19h8"></path><path d="m3 17 2 2 4-4"></path><rect x="3" y="4" width="6" height="6" rx="1"></rect></svg>
+              </div>
+              <h3 class="font-bold text-slate-700 dark:text-slate-200 text-[11px] sm:text-sm tracking-tight">Jadwal Lengkap</h3>
             </div>
 
-            <div
-              class="flex-1 flex items-center justify-between bg-slate-50 dark:bg-slate-700/30 rounded-xl p-1 border border-slate-100 dark:border-slate-700"
-            >
-              <button
-                onclick="changeDateView(-1)"
-                class="w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-white dark:hover:bg-slate-600 transition-all active:scale-90"
-              >
-                <i data-lucide="chevron-left" class="w-5 h-5"></i>
+            <!-- Bagian Kanan: Navigasi Kapsul -->
+            <div class="flex items-center gap-0.5 sm:gap-1 bg-slate-100/80 dark:bg-slate-900/40 p-0.5 sm:p-1 rounded-xl border border-slate-200/50 dark:border-slate-700/50">
+              
+              <!-- Tombol Prev -->
+              <button onclick="changeDateView(-1)" class="w-6 h-6 sm:w-8 sm:h-8 flex shrink-0 items-center justify-center rounded-lg bg-transparent hover:bg-white dark:hover:bg-slate-700 text-slate-400 hover:text-slate-700 dark:hover:text-white hover:shadow-sm transition-all active:scale-90" title="Sebelumnya">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-left"><path d="m15 18-6-6 6-6"></path></svg>
               </button>
 
-              <div
-                class="flex flex-col items-center justify-center px-1 sm:px-4 overflow-hidden"
-              >
-                <h3
-                  class="font-black text-slate-800 dark:text-white text-xs sm:text-sm md:text-base leading-tight truncate text-center"
-                  id="current-date-display"
-                >
-                  Memuat...
-                </h3>
+              <!-- Teks Tanggal & Input Hidden -->
+              <div onclick="try { document.getElementById('date-picker-input').showPicker(); } catch(e) { console.log(e); }" class="relative flex justify-center items-center px-1 cursor-pointer group min-w-[85px] sm:min-w-[120px]">
+                <h3 id="current-date-display" class="font-black text-slate-800 dark:text-white text-[10px] sm:text-xs group-hover:text-emerald-500 dark:group-hover:text-emerald-400 transition-colors truncate">Jumat, 12 Jun 2026</h3>
+                <input type="date" id="date-picker-input" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer pointer-events-none z-10" onchange="handleDateChange(this.value)">
               </div>
 
-              <button
-                onclick="changeDateView(1)"
-                class="w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-white dark:hover:bg-slate-600 transition-all active:scale-90"
-              >
-                <i data-lucide="chevron-right" class="w-5 h-5"></i>
+              <!-- Tombol Next -->
+              <button onclick="changeDateView(1)" class="w-6 h-6 sm:w-8 sm:h-8 flex shrink-0 items-center justify-center rounded-lg bg-transparent hover:bg-white dark:hover:bg-slate-700 text-slate-400 hover:text-slate-700 dark:hover:text-white hover:shadow-sm transition-all active:scale-90" title="Berikutnya">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-right"><path d="m9 18 6-6-6-6"></path></svg>
               </button>
-            </div>
 
-            <button
-              onclick="goToToday()"
-              class="w-10 h-10 sm:w-12 sm:h-12 shrink-0 rounded-xl flex items-center justify-center bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 shadow-sm border border-slate-100 dark:border-slate-700 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:text-emerald-600 dark:hover:bg-emerald-400 hover:border-emerald-200 transition-all active:scale-95 group"
-              title="Hari Ini"
-            >
-              <i
-                data-lucide="calendar-check-2"
-                class="w-5 h-5 sm:w-6 sm:h-6 group-hover:rotate-12 transition-transform"
-              ></i>
-            </button>
+              <!-- Garis Pemisah Vertikal -->
+              <div class="w-px h-3.5 sm:h-4 bg-slate-300 dark:bg-slate-600 mx-0.5"></div>
+
+              <!-- Tombol Hari Ini -->
+              <button onclick="goToToday()" class="px-1.5 sm:px-2.5 h-6 sm:h-8 flex shrink-0 items-center gap-1 rounded-lg text-[9px] sm:text-xs font-bold bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 shadow-sm border border-slate-200 dark:border-slate-700 hover:text-emerald-600 dark:hover:text-emerald-400 hover:border-emerald-200 transition-all active:scale-95 group" title="Hari Ini">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-calendar-check-2 text-slate-400 group-hover:rotate-12 group-hover:text-emerald-500 transition-all sm:w-3.5 sm:h-3.5"><path d="M8 2v4"></path><path d="M16 2v4"></path><path d="M21 14V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h8"></path><path d="M3 10h18"></path><path d="m16 20 2 2 4-4"></path></svg>
+                <span class="hidden sm:inline">Hari Ini</span>
+              </button>
+              
+            </div>
           </div>
 
-          <div id="dash-other-slots" class="space-y-3">
+          <div id="dash-other-slots" class="grid grid-cols-2 gap-3 sm:gap-4 w-full auto-rows-max">
             <!-- Slot Items injected by JS -->
           </div>
         </div>
@@ -1186,174 +1172,67 @@
       <div class="lg:col-span-5 space-y-6">
 
         <!-- Widget Jadwal Salat & Hijriah -->
-        <!-- Widget Jadwal Salat & Hijriah -->
-        <div id="salat-hijri-widget" class="relative overflow-hidden p-6 rounded-[2.5rem] border border-white/60 dark:border-slate-700/50 shadow-2xl backdrop-blur-xl bg-gradient-to-br from-white/90 to-emerald-50/80 dark:from-slate-800/90 dark:to-emerald-950/80 transition-all duration-300 w-full max-w-3xl mx-auto group">
+        <div id="salat-hijri-widget" class="relative overflow-hidden p-3 rounded-2xl border border-white/60 dark:border-slate-700/50 shadow-md backdrop-blur-xl bg-gradient-to-br from-white/90 to-emerald-50/80 dark:from-slate-800/90 dark:to-emerald-950/80 transition-all duration-300 w-full max-w-3xl mx-auto group">
           
-          <div class="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 rounded-full bg-emerald-400/20 dark:bg-emerald-500/10 blur-3xl pointer-events-none"></div>
+          <div class="absolute top-0 right-0 -mr-16 -mt-16 w-32 h-32 rounded-full bg-emerald-400/10 dark:bg-emerald-500/5 blur-2xl pointer-events-none"></div>
 
-          <div class="relative flex flex-col sm:flex-row justify-between items-start sm:items-center gap-5 mb-8">
-            <div class="flex items-center gap-4">
-              <div class="p-3 bg-emerald-100 dark:bg-emerald-900/50 rounded-2xl text-emerald-600 dark:text-emerald-400 shadow-sm border border-emerald-200/50 dark:border-emerald-800/50">
-                <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v6l4 2"></path></svg>
-              </div>
-              <div>
-                <h3 class="font-extrabold text-slate-800 dark:text-white text-lg tracking-tight">
-                  Jadwal Salat
-                </h3>
-                <p id="widget-hijri-date" class="text-sm font-semibold text-emerald-600 dark:text-emerald-400 mt-0.5">
-                  Memuat tanggal Hijriah...
-                </p>
-              </div>
-            </div>
-
-            <div class="flex flex-col items-start sm:items-end gap-2.5 w-full sm:w-auto">
-              <div id="widget-location-label" class="flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest px-3 py-1.5 bg-slate-100/80 dark:bg-slate-700/80 text-slate-600 dark:text-slate-300 rounded-xl backdrop-blur-sm border border-slate-200/80 dark:border-slate-600/80">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"></path><circle cx="12" cy="10" r="3"></circle></svg>
-                Yogyakarta, ID
-              </div>
-            </div>
-          </div>
-
-          <div class="grid grid-cols-2 sm:grid-cols-5 gap-1.5 sm:gap-2.5 relative">
-            
-            <div id="prayer-Subuh" class="group/card flex flex-col items-center justify-center py-3 px-1 rounded-2xl bg-white/60 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60 hover:bg-white dark:hover:bg-slate-700 transition-all duration-300 hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-black/20 hover:-translate-y-1 relative overflow-hidden">
-              <div class="pattern-overlay absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4xNSkiLz48L3N2Zz4=')] opacity-60 hidden"></div>
-              <svg class="w-5 h-5 mb-2 text-slate-400 group-hover/card:text-emerald-500 transition-colors duration-300" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v8"/><path d="m4.93 10.93 1.41 1.41"/><path d="M2 18h2"/><path d="M20 18h2"/><path d="m19.07 10.93-1.41 1.41"/><path d="M22 22H2"/><path d="m8 6 4-4 4 4"/><path d="M16 18a4 4 0 0 0-8 0"/></svg>
-              <span class="block text-[9.5px] text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider mb-1">Subuh</span>
-              <span class="prayer-time text-sm font-black text-slate-800 dark:text-slate-100">--:--</span>
-            </div>
-
-            <div id="prayer-Dzuhur" class="group/card flex flex-col items-center justify-center py-3 px-1 rounded-2xl bg-white/60 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60 hover:bg-white dark:hover:bg-slate-700 transition-all duration-300 hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-black/20 hover:-translate-y-1 relative overflow-hidden">
-              <div class="pattern-overlay absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4xNSkiLz48L3N2Zz4=')] opacity-60 hidden"></div>
-              <svg class="w-5 h-5 mb-2 text-slate-400 group-hover/card:text-emerald-500 transition-colors duration-300" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
-              <span class="block text-[9.5px] text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider mb-1">Dzuhur</span>
-              <span class="prayer-time text-sm font-black text-slate-800 dark:text-slate-100">--:--</span>
-            </div>
-
-            <div id="prayer-Ashar" class="group/card flex flex-col items-center justify-center py-3 px-1 rounded-2xl bg-white/60 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60 hover:bg-white dark:hover:bg-slate-700 transition-all duration-300 hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-black/20 hover:-translate-y-1 relative overflow-hidden">
-              <div class="pattern-overlay absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4xNSkiLz48L3N2Zz4=')] opacity-60 hidden"></div>
-              <svg class="w-5 h-5 mb-2 text-slate-400 group-hover/card:text-emerald-500 transition-colors duration-300" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="M20 12h2"/><path d="m19.07 4.93-1.41 1.41"/><path d="M15.947 12.65a4 4 0 0 0-5.925-4.128"/><path d="M13 22H7a5 5 0 1 1 4.9-6H13a3 3 0 0 1 0 6Z"/></svg>
-              <span class="block text-[9.5px] text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider mb-1">Ashar</span>
-              <span class="prayer-time text-sm font-black text-slate-800 dark:text-slate-100">--:--</span>
-            </div>
-
-            <div id="prayer-Maghrib" class="group/card flex flex-col items-center justify-center py-3 px-1 rounded-2xl bg-white/60 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60 hover:bg-white dark:hover:bg-slate-700 transition-all duration-300 hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-black/20 hover:-translate-y-1 relative overflow-hidden">
-              <div class="pattern-overlay absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4xNSkiLz48L3N2Zz4=')] opacity-60 hidden"></div>
-              <svg class="w-5 h-5 mb-2 text-slate-400 group-hover/card:text-emerald-500 transition-colors duration-300" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 10V2"/><path d="m4.93 10.93 1.41-1.41"/><path d="M2 18h2"/><path d="M20 18h2"/><path d="m19.07 10.93-1.41-1.41"/><path d="M22 22H2"/><path d="m16 6-4 4-4-4"/><path d="M16 18a4 4 0 0 0-8 0"/></svg>
-              <span class="block text-[9.5px] text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider mb-1">Maghrib</span>
-              <span class="prayer-time text-sm font-black text-slate-800 dark:text-slate-100">--:--</span>
-            </div>
-
-            <div id="prayer-Isya" class="group/card flex flex-col items-center justify-center py-3 px-1 rounded-2xl bg-white/60 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60 hover:bg-white dark:hover:bg-slate-700 transition-all duration-300 hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-black/20 hover:-translate-y-1 relative overflow-hidden col-span-2 sm:col-span-1">
-              <div class="pattern-overlay absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4xNSkiLz48L3N2Zz4=')] opacity-60 hidden"></div>
-              <svg class="w-5 h-5 mb-2 text-slate-400 group-hover/card:text-emerald-500 transition-colors duration-300" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/><path d="M19 3v4"/><path d="M21 5h-4"/></svg>
-              <span class="block text-[9.5px] text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider mb-1">Isya</span>
-              <span class="prayer-time text-sm font-black text-slate-800 dark:text-slate-100">--:--</span>
-            </div>
-
-          </div>
-        </div>
-
-        <div
-          id="school-stats-widget"
-          class="glass-card p-5 rounded-[2rem] border border-cyan-100 dark:border-cyan-900/30 shadow-lg mb-6 animate-slide-up bg-gradient-to-br from-white to-cyan-50/50 dark:from-slate-800 dark:to-cyan-900/10"
-        >
-          <div class="flex justify-between items-center mb-4">
-            <div>
-              <h3
-                class="font-black text-slate-800 dark:text-white flex items-center gap-2"
-              >
-                <i
-                  data-lucide="graduation-cap"
-                  class="w-5 h-5 text-cyan-500"
-                ></i>
-                Kehadiran Sekolah
-              </h3>
-              <p class="text-[10px] text-slate-400">
-                Monitoring KBM Sekolah Hari Ini
+          <div class="relative flex items-center justify-between gap-2 mb-2 pb-1.5 border-b border-emerald-100/30 dark:border-slate-700/30">
+            <div class="flex items-center gap-1.5">
+              <svg class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v6l4 2"></path></svg>
+              <span class="text-[11px] font-black text-slate-800 dark:text-white uppercase tracking-wider">Jadwal Salat</span>
+              <span class="text-slate-300 dark:text-slate-600 text-[10px]">|</span>
+              <p id="widget-hijri-date" class="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 leading-none">
+                Memuat tanggal Hijriah...
               </p>
             </div>
-            <div
-              id="school-pct-badge"
-              class="px-2 py-1 rounded-lg bg-cyan-100 text-cyan-700 text-xs font-black"
-            >
-              0%
-            </div>
           </div>
 
-          <div
-            class="w-full h-3 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden mb-4"
-          >
-            <div
-              id="school-progress-bar"
-              class="h-full bg-cyan-500 rounded-full transition-all duration-1000"
-              style="width: 0%"
-            ></div>
+          <div class="grid grid-cols-6 gap-1 relative">
+            
+            <div id="prayer-Subuh" class="group/card flex flex-col items-center justify-center py-1.5 px-0.5 rounded-xl bg-white/60 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60 hover:bg-white dark:hover:bg-slate-700 transition-all duration-300 hover:shadow-sm relative overflow-hidden">
+              <svg class="w-3.5 h-3.5 mb-0.5 text-slate-400 group-hover/card:text-emerald-500 transition-colors duration-300" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v8"/><path d="m4.93 10.93 1.41 1.41"/><path d="M2 18h2"/><path d="M20 18h2"/><path d="m19.07 10.93-1.41 1.41"/><path d="M22 22H2"/><path d="m8 6 4-4 4 4"/><path d="M16 18a4 4 0 0 0-8 0"/></svg>
+              <span class="block text-[8px] text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider mb-0.5">Subuh</span>
+              <span class="prayer-time text-[10px] font-black text-slate-800 dark:text-slate-100">--:--</span>
+            </div>
+
+            <div id="prayer-Syuruq" class="group/card flex flex-col items-center justify-center py-1.5 px-0.5 rounded-xl bg-white/60 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60 hover:bg-white dark:hover:bg-slate-700 transition-all duration-300 hover:shadow-sm relative overflow-hidden">
+              <svg class="w-3.5 h-3.5 mb-0.5 text-slate-400 group-hover/card:text-emerald-500 transition-colors duration-300" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m8 22 4-4 4 4"/><path d="M12 18V2"/><path d="m17 7-5-5-5 5"/></svg>
+              <span class="block text-[8px] text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider mb-0.5">Syuruq</span>
+              <span class="prayer-time text-[10px] font-black text-slate-800 dark:text-slate-100">--:--</span>
+            </div>
+
+            <div id="prayer-Dzuhur" class="group/card flex flex-col items-center justify-center py-1.5 px-0.5 rounded-xl bg-white/60 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60 hover:bg-white dark:hover:bg-slate-700 transition-all duration-300 hover:shadow-sm relative overflow-hidden">
+              <svg class="w-3.5 h-3.5 mb-0.5 text-slate-400 group-hover/card:text-emerald-500 transition-colors duration-300" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+              <span class="block text-[8px] text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider mb-0.5">Dzuhur</span>
+              <span class="prayer-time text-[10px] font-black text-slate-800 dark:text-slate-100">--:--</span>
+            </div>
+
+            <div id="prayer-Ashar" class="group/card flex flex-col items-center justify-center py-1.5 px-0.5 rounded-xl bg-white/60 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60 hover:bg-white dark:hover:bg-slate-700 transition-all duration-300 hover:shadow-sm relative overflow-hidden">
+              <svg class="w-3.5 h-3.5 mb-0.5 text-slate-400 group-hover/card:text-emerald-500 transition-colors duration-300" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="M20 12h2"/><path d="m19.07 4.93-1.41 1.41"/><path d="M15.947 12.65a4 4 0 0 0-5.925-4.128"/><path d="M13 22H7a5 5 0 1 1 4.9-6H13a3 3 0 0 1 0 6Z"/></svg>
+              <span class="block text-[8px] text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider mb-0.5">Ashar</span>
+              <span class="prayer-time text-[10px] font-black text-slate-800 dark:text-slate-100">--:--</span>
+            </div>
+
+            <div id="prayer-Maghrib" class="group/card flex flex-col items-center justify-center py-1.5 px-0.5 rounded-xl bg-white/60 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60 hover:bg-white dark:hover:bg-slate-700 transition-all duration-300 hover:shadow-sm relative overflow-hidden">
+              <svg class="w-3.5 h-3.5 mb-0.5 text-slate-400 group-hover/card:text-emerald-500 transition-colors duration-300" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 10V2"/><path d="m4.93 10.93 1.41-1.41"/><path d="M2 18h2"/><path d="M20 18h2"/><path d="m19.07 10.93-1.41-1.41"/><path d="M22 22H2"/><path d="m16 6-4 4-4-4"/><path d="M16 18a4 4 0 0 0-8 0"/></svg>
+              <span class="block text-[8px] text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider mb-0.5">Maghrib</span>
+              <span class="prayer-time text-[10px] font-black text-slate-800 dark:text-slate-100">--:--</span>
+            </div>
+
+            <div id="prayer-Isya" class="group/card flex flex-col items-center justify-center py-1.5 px-0.5 rounded-xl bg-white/60 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60 hover:bg-white dark:hover:bg-slate-700 transition-all duration-300 hover:shadow-sm relative overflow-hidden">
+              <svg class="w-3.5 h-3.5 mb-0.5 text-slate-400 group-hover/card:text-emerald-500 transition-colors duration-300" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/><path d="M19 3v4"/><path d="M21 5h-4"/></svg>
+              <span class="block text-[8px] text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider mb-0.5">Isya</span>
+              <span class="prayer-time text-[10px] font-black text-slate-800 dark:text-slate-100">--:--</span>
+            </div>
+
           </div>
 
-          <div class="grid grid-cols-4 gap-2 text-center">
-            <div
-              class="p-2 rounded-xl bg-white/60 dark:bg-slate-700/50 border border-slate-100 dark:border-slate-600"
-            >
-              <span class="block text-[10px] text-slate-400 uppercase font-bold"
-                >Hadir</span
-              >
-              <span id="sch-stat-h" class="text-lg font-black text-cyan-600"
-                >0</span
-              >
-            </div>
-            <div
-              class="p-2 rounded-xl bg-white/60 dark:bg-slate-700/50 border border-slate-100 dark:border-slate-600"
-            >
-              <span class="block text-[10px] text-slate-400 uppercase font-bold"
-                >Sakit</span
-              >
-              <span id="sch-stat-s" class="text-lg font-black text-amber-500"
-                >0</span
-              >
-            </div>
-            <div
-              class="p-2 rounded-xl bg-white/60 dark:bg-slate-700/50 border border-slate-100 dark:border-slate-600"
-            >
-              <span class="block text-[10px] text-slate-400 uppercase font-bold"
-                >Izin</span
-              >
-              <span id="sch-stat-i" class="text-lg font-black text-blue-500"
-                >0</span
-              >
-            </div>
-            <div
-              class="p-2 rounded-xl bg-white/60 dark:bg-slate-700/50 border border-slate-100 dark:border-slate-600"
-            >
-              <span class="block text-[10px] text-slate-400 uppercase font-bold"
-                >Alpa</span
-              >
-              <span id="sch-stat-a" class="text-lg font-black text-red-500"
-                >0</span
-              >
-            </div>
-          </div>
+          <!-- Sunnah Fasting Reminder Banner -->
+          <div id="widget-fasting-reminder" class="hidden mt-2 px-2.5 py-1 rounded-xl bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-[9px] font-black items-center gap-1.5 select-none animate-pulse"></div>
 
-          <div
-            class="mt-3 pt-3 border-t border-slate-100 dark:border-slate-700/50"
-          >
-            <button
-              onclick="
-                document
-                  .getElementById('school-absent-list')
-                  .classList.toggle('hidden')
-              "
-              class="w-full text-center text-[10px] font-bold text-slate-400 hover:text-cyan-600 transition-colors flex items-center justify-center gap-1"
-            >
-              Lihat yang tidak hadir
-              <i data-lucide="chevron-down" class="w-3 h-3"></i>
-            </button>
-            <div
-              id="school-absent-list"
-              class="hidden mt-2 space-y-1 max-h-32 overflow-y-auto custom-scrollbar"
-            ></div>
-          </div>
         </div>
+
+
 
         <div class="animate-slide-up mb-6 mt-4" style="animation-delay: 0.25s">
           <div
@@ -3778,112 +3657,74 @@
 
     <!-- Templates -->
     <template id="tpl-slot-item">
-      <div
-        class="slot-item w-full p-5 rounded-[2rem] border border-slate-100 dark:border-slate-700/60 shadow-lg cursor-pointer transition-all duration-300 group relative overflow-hidden bg-gradient-to-br bg-white dark:bg-slate-800 hover:-translate-y-1"
-      >
-        <div
-          class="slot-decor absolute -top-10 -right-10 w-40 h-40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-2xl"
-        ></div>
+      <div class="slot-item col-span-1 flex flex-col p-3.5 sm:p-4 rounded-3xl border cursor-pointer transition-all duration-300 group relative overflow-hidden bg-white dark:bg-slate-800 hover:-translate-y-1 hover:shadow-lg">
+        <div class="slot-decor absolute -top-10 -right-10 w-24 h-24 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-700 blur-[30px] pointer-events-none"></div>
 
-        <div class="flex justify-between items-center mb-4 relative z-10">
-          <div class="flex items-center gap-4">
-            <div
-              class="slot-icon-bg w-14 h-14 rounded-2xl flex items-center justify-center transition-all shadow-sm shrink-0 border border-white/20 ring-1 ring-black/5"
-            >
-              <i class="slot-icon w-7 h-7 transition-colors"></i>
+        <div class="flex flex-col gap-2 relative z-10">
+          <div class="flex justify-between items-start">
+            <div class="slot-icon-bg w-10 h-10 rounded-xl flex items-center justify-center shadow-sm border group-hover:scale-105 transition-transform shrink-0">
+              <i class="slot-icon w-5 h-5 block text-current"></i>
             </div>
-            <div>
-              <h4
-                class="slot-label font-black text-xl leading-tight tracking-tight"
-              >
-                Label
-              </h4>
-              <div class="flex items-center gap-2 mt-1.5">
-                <div
-                  class="slot-status-badge text-[10px] font-bold px-2.5 py-0.5 rounded-lg inline-block bg-white/60 dark:bg-black/20 backdrop-blur-sm border border-black/5 shadow-sm"
-                >
-                  Menunggu
-                </div>
-                <span
-                  class="text-[10px] font-bold opacity-60 slot-time-range font-mono"
-                  >--:--</span
-                >
+            <span class="slot-status-badge text-[9px] font-bold px-1.5 py-0.5 rounded border">Menunggu</span>
+          </div>
+
+          <div>
+            <h4 class="slot-label font-black text-sm sm:text-base leading-tight tracking-tight">Label</h4>
+            <span class="slot-time-range text-[9px] sm:text-[10px] font-bold opacity-75 font-mono tracking-wide">--:--</span>
+          </div>
+
+          <!-- Sleek Time Duration-based Progress Bar -->
+          <div class="mt-1.5 w-full bg-black/20 dark:bg-black/40 rounded-full h-2 overflow-hidden p-[1px] border border-white/10 dark:border-slate-700/30">
+            <div class="slot-progress-bar h-full rounded-full bg-gradient-to-r from-white/70 to-white transition-all duration-500 shadow-[0_0_8px_rgba(255,255,255,0.8)]" style="width: 0%"></div>
+          </div>
+
+          <!-- Sleek supporting UI: Progress Info Row -->
+          <div class="flex justify-between items-center text-[8px] font-black tracking-wider mt-1 select-none">
+            <span class="slot-progress-status uppercase text-current opacity-75">Menunggu</span>
+            <span class="slot-progress-text font-mono text-current opacity-75">0%</span>
+          </div>
+
+          <!-- Mini Stats Row (Shown if has non-H stats) -->
+          <div class="slot-card-stats hidden mt-1"></div>
+        </div>
+
+        <div class="flex-grow"></div>
+      </div>
+    </template>
+
+    <template id="tpl-slot-item-wide">
+      <div class="slot-item col-span-2 lg:col-span-2 flex flex-col p-3.5 sm:p-4 rounded-3xl border cursor-pointer transition-all duration-300 group relative overflow-hidden bg-white dark:bg-slate-800 hover:-translate-y-1 hover:shadow-lg">
+        <div class="slot-decor absolute -top-10 -right-10 w-32 h-32 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-700 blur-[40px] pointer-events-none"></div>
+
+        <div class="flex flex-col gap-2 w-full relative z-10">
+          <div class="flex justify-between items-start w-full">
+            <div class="flex items-center gap-3">
+              <div class="slot-icon-bg w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center shadow-sm border group-hover:scale-105 transition-transform shrink-0">
+                 <i class="slot-icon w-5 h-5 block text-current"></i>
+              </div>
+              <div>
+                <h4 class="slot-label font-black text-base sm:text-lg leading-tight tracking-tight">Label</h4>
+                <span class="slot-time-range text-[9px] sm:text-[10px] font-bold opacity-75 font-mono tracking-wide">--:--</span>
               </div>
             </div>
+            <span class="slot-status-badge text-[9px] font-bold px-1.5 py-0.5 rounded border">Menunggu</span>
           </div>
 
-          <div
-            class="w-10 h-10 flex items-center justify-center rounded-full bg-white/40 dark:bg-black/20 backdrop-blur-md group-hover:bg-white group-hover:shadow-lg transition-all duration-300"
-          >
-            <i
-              data-lucide="arrow-right"
-              class="w-5 h-5 opacity-50 group-hover:opacity-100 group-hover:scale-110 transition-all text-current"
-            ></i>
-          </div>
-        </div>
-
-        <div
-          class="mb-4 relative z-10 bg-white/40 dark:bg-black/10 p-3 rounded-2xl border border-white/20 backdrop-blur-sm"
-        >
-          <div
-            class="flex justify-between text-[10px] font-bold opacity-70 mb-1.5 px-1"
-          >
-            <span>Tingkat Kehadiran</span>
-            <span class="slot-progress-text">0%</span>
-          </div>
-          <div
-            class="w-full h-2 bg-black/5 dark:bg-white/5 rounded-full overflow-hidden"
-          >
-            <div
-              class="slot-progress-bar h-full rounded-full w-0 transition-all duration-1000 ease-out relative opacity-80"
-            ></div>
-          </div>
-        </div>
-
-        <div
-          class="slot-stats-grid flex items-center justify-center gap-1.5 flex-wrap relative z-10"
-        >
-          <div
-            class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/50 dark:bg-black/20 border border-white/10 backdrop-blur-sm"
-          >
-            <span class="text-[9px] font-black opacity-60">H</span>
-            <span class="slot-stat-h text-[11px] font-black">0</span>
+          <!-- Sleek Time Duration-based Progress Bar -->
+          <div class="mt-1.5 w-full bg-black/20 dark:bg-black/40 rounded-full h-2 overflow-hidden p-[1px] border border-white/10 dark:border-slate-700/30">
+            <div class="slot-progress-bar h-full rounded-full bg-gradient-to-r from-white/70 to-white transition-all duration-500 shadow-[0_0_8px_rgba(255,255,255,0.8)]" style="width: 0%"></div>
           </div>
 
-          <div
-            class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/50 dark:bg-black/20 border border-white/10 backdrop-blur-sm"
-          >
-            <span class="text-[9px] font-black opacity-60">T</span>
-            <span class="slot-stat-t text-[11px] font-black">0</span>
+          <!-- Sleek supporting UI: Progress Info Row -->
+          <div class="flex justify-between items-center text-[8px] font-black tracking-wider mt-1 select-none">
+            <span class="slot-progress-status uppercase text-current opacity-75">Menunggu</span>
+            <span class="slot-progress-text font-mono text-current opacity-75">0%</span>
           </div>
 
-          <div
-            class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/50 dark:bg-black/20 border border-white/10 backdrop-blur-sm"
-          >
-            <span class="text-[9px] font-black opacity-60">I</span>
-            <span class="slot-stat-i text-[11px] font-black">0</span>
-          </div>
+          <!-- Mini Stats Row (Shown if has non-H stats) -->
+          <div class="slot-card-stats hidden mt-1"></div>
 
-          <div
-            class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/50 dark:bg-black/20 border border-white/10 backdrop-blur-sm"
-          >
-            <span class="text-[9px] font-black opacity-60">S</span>
-            <span class="slot-stat-s text-[11px] font-black">0</span>
-          </div>
-
-          <div
-            class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/50 dark:bg-black/20 border border-white/10 backdrop-blur-sm"
-          >
-            <span class="text-[9px] font-black opacity-60">P</span>
-            <span class="slot-stat-p text-[11px] font-black">0</span>
-          </div>
-
-          <div
-            class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/50 dark:bg-black/20 border border-white/10 backdrop-blur-sm"
-          >
-            <span class="text-[9px] font-black opacity-60">A</span>
-            <span class="slot-stat-a text-[11px] font-black">0</span>
-          </div>
+          <div class="flex-grow"></div>
         </div>
       </div>
     </template>
@@ -3951,6 +3792,71 @@
     </script>
 
     <!-- Tambahkan sebelum </body> -->
+    <!-- Popup Modal Detail Sesi Bento -->
+    <div id="bento-detail-modal" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-md hidden opacity-0 transition-opacity duration-300">
+      <div id="bento-modal-content" class="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-100 dark:border-slate-800/80 w-full max-w-sm overflow-hidden shadow-2xl transform scale-95 transition-transform duration-300 flex flex-col">
+        
+        <!-- Header: Gradient Background & Close Button -->
+        <div id="bento-modal-header" class="relative p-6 text-white flex flex-col justify-end min-h-[130px] bg-gradient-to-br from-emerald-600 to-teal-500">
+          <button onclick="window.closeBentoModal()" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-black/20 hover:bg-black/40 flex items-center justify-center text-white transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+          </button>
+          
+          <div class="flex items-center gap-3">
+            <div id="bento-modal-icon-bg" class="w-12 h-12 rounded-2xl flex items-center justify-center bg-white/20 backdrop-blur-md border border-white/10 text-white">
+              <i id="bento-modal-icon" class="w-6 h-6 block text-current"></i>
+            </div>
+            <div>
+              <h3 id="bento-modal-title" class="font-black text-xl tracking-tight leading-none mb-1">Shubuh</h3>
+              <span id="bento-modal-time" class="text-xs opacity-80 font-mono">04:00 - 06:00</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Body: Stats and Progress -->
+        <div class="p-6 space-y-4">
+          <!-- Status -->
+          <div class="flex justify-between items-center">
+            <span class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Status Kegiatan</span>
+            <span id="bento-modal-status" class="text-[10px] font-bold px-2.5 py-0.5 rounded-lg border">Menunggu</span>
+          </div>
+
+          <!-- Progress Kehadiran -->
+          <div class="bg-slate-50 dark:bg-slate-800/40 p-3 rounded-2xl border border-slate-100 dark:border-slate-800/50">
+            <div class="flex justify-between text-[10px] font-bold text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wider">
+              <span>Tingkat Kehadiran</span>
+              <span id="bento-modal-progress-text" class="font-black">0%</span>
+            </div>
+            <div class="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+              <div id="bento-modal-progress-bar" class="h-full rounded-full w-0 transition-all duration-500"></div>
+            </div>
+          </div>
+
+          <!-- Stats Grid H S I P A -->
+          <div>
+            <span class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-2">Statistik Kehadiran</span>
+            <div class="grid grid-cols-6 gap-1.5">
+              <div class="flex flex-col items-center py-2 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800/50"><span class="text-[9px] font-black text-emerald-500 dark:text-emerald-400">H</span><span id="bento-modal-h" class="text-xs font-black text-slate-700 dark:text-slate-200">0</span></div>
+              <div class="flex flex-col items-center py-2 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800/50"><span class="text-[9px] font-black text-amber-500 dark:text-amber-400">T</span><span id="bento-modal-t" class="text-xs font-black text-slate-700 dark:text-slate-200">0</span></div>
+              <div class="flex flex-col items-center py-2 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800/50"><span class="text-[9px] font-black text-indigo-500 dark:text-indigo-400">I</span><span id="bento-modal-i" class="text-xs font-black text-slate-700 dark:text-slate-200">0</span></div>
+              <div class="flex flex-col items-center py-2 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800/50"><span class="text-[9px] font-black text-red-500 dark:text-red-400">S</span><span id="bento-modal-s" class="text-xs font-black text-slate-700 dark:text-slate-200">0</span></div>
+              <div class="flex flex-col items-center py-2 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800/50"><span class="text-[9px] font-black text-purple-500 dark:text-purple-400">P</span><span id="bento-modal-p" class="text-xs font-black text-slate-700 dark:text-slate-200">0</span></div>
+              <div class="flex flex-col items-center py-2 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800/50"><span class="text-[9px] font-black text-slate-400">A</span><span id="bento-modal-a" class="text-xs font-black text-slate-700 dark:text-slate-200">0</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer: CTA Action Button -->
+        <div class="p-6 pt-0 mt-auto">
+          <button id="bento-modal-cta" class="w-full py-3.5 rounded-2xl font-bold text-sm bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white shadow-lg shadow-emerald-500/20 active:scale-95 transition-all flex items-center justify-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check-square"><path d="m9 11 3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+            <span>Isi Presensi</span>
+          </button>
+        </div>
+
+      </div>
+    </div>
+
     <div class="hidden">
       <!-- Force Tailwind CDN to include ring colors -->
       <span class="ring-emerald-500"></span>

@@ -449,14 +449,55 @@ window.updateDashboard = function () {
 
   // Dynamic Title Greeting (Islamic Arabic Greetings)
   const elTitleGreet = document.getElementById("dash-title-greeting");
-  if (elTitleGreet) {
-    let arabicGreet = "Shobahul Khair";
-    if (h >= 11 && h < 15) {
-      arabicGreet = "Kaifa Haluk";
-    } else if (h >= 15 || h < 3) {
-      arabicGreet = "Masa'ul Khair";
-    }
+  const elTitleSubGreet = document.getElementById("dash-title-sub-greeting");
 
+  if (!window.currentSessionGreeting || window.currentSessionGreetingHour !== h) {
+    // Determine greeting options based on the time range
+    let greetingOptions = [];
+    if (h >= 3 && h < 11) {
+      greetingOptions = [
+        "صباح الخير",
+        "صباح النور",
+        "صباح الورد",
+        "صباح الياسمين",
+        "طاب صباحك",
+        "أهلاً وسهلاً",
+        "السلام عليكم",
+        "مرحباً بك"
+      ];
+    } else if (h >= 11 && h < 18) {
+      greetingOptions = [
+        "كيف حالك",
+        "طاب يومك",
+        "أهلاً وسهلاً",
+        "السلام عليكم",
+        "مرحباً بك"
+      ];
+      if (h >= 15) {
+        greetingOptions.push("مساء الورد", "مساء النور");
+      }
+    } else {
+      greetingOptions = [
+        "مساء الخير",
+        "طابت ليلتك",
+        "ليلة سعيدة",
+        "أهلاً وسهلاً",
+        "السلام عليكم",
+        "مرحباً بك"
+      ];
+    }
+    const idx = Math.floor(Math.random() * greetingOptions.length);
+    window.currentSessionGreeting = greetingOptions[idx];
+    window.currentSessionGreetingHour = h;
+  }
+
+  let arabicGreet = window.currentSessionGreeting || "صباح الخير";
+
+  if (elTitleSubGreet) {
+    elTitleSubGreet.textContent = arabicGreet;
+  }
+
+  if (elTitleGreet) {
     let displayName = "Ustadz";
     if (appState.selectedClass && typeof MASTER_KELAS !== "undefined" && MASTER_KELAS[appState.selectedClass]) {
       const musyrifName = MASTER_KELAS[appState.selectedClass].musyrif;
@@ -475,17 +516,65 @@ window.updateDashboard = function () {
         }
       }
     }
-    elTitleGreet.innerHTML = `${arabicGreet}, <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-500 to-teal-400 font-black">${displayName}!</span>`;
+    elTitleGreet.innerHTML = `<span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-800 to-teal-700 dark:from-emerald-400 dark:to-teal-300 font-black">${displayName}!</span>`;
   }
 
   // 2. Main Card Logic
   const isToday = appState.date === window.getLocalDateStr();
   const mainCard = document.getElementById("dash-main-card");
 
-  if (isToday && mainCard) {
+  if (mainCard) {
     mainCard.classList.remove("hidden");
     const slot = SLOT_WAKTU[appState.currentSlotId];
     document.getElementById("dash-card-title").textContent = slot.label;
+
+    // Update badge dynamically based on whether it is today's date
+    const badgeDot = document.getElementById("dash-card-badge-dot");
+    const badgeText = document.getElementById("dash-card-badge-text");
+    if (badgeDot && badgeText) {
+      if (isToday) {
+        badgeDot.className = "w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse";
+        badgeText.textContent = "Saat Ini";
+      } else {
+        badgeDot.className = "w-1.5 h-1.5 rounded-full bg-amber-400";
+        badgeText.textContent = "Riwayat";
+      }
+    }
+
+    // Dynamic solid color mapping for the hero card depending on slot id (using deep/dark versions)
+    const solidMap = {
+      shubuh: ["bg-emerald-950"],
+      sekolah: ["bg-cyan-950"],
+      ashar: ["bg-orange-950"],
+      maghrib: ["bg-indigo-950"],
+      isya: ["bg-slate-950"]
+    };
+
+    // Remove any previous gradient/solid background classes
+    mainCard.classList.remove(
+      "bg-slate-900", "dark:bg-black", "bg-gradient-to-br",
+      "from-teal-800", "to-emerald-700", "dark:from-teal-950", "dark:to-emerald-900",
+      "from-cyan-800", "to-blue-700", "dark:from-cyan-950", "dark:to-blue-900",
+      "from-orange-700", "to-amber-600", "dark:from-orange-950", "dark:to-amber-900",
+      "from-indigo-800", "to-purple-700", "dark:from-indigo-950", "dark:to-purple-900",
+      "from-slate-800", "to-zinc-900", "dark:from-slate-950", "dark:to-black",
+      "from-slate-900", "to-black",
+      "from-slate-900", "via-teal-950/95", "to-emerald-950/90", "dark:from-black", "dark:via-teal-950/80", "dark:to-black",
+      "from-slate-900", "via-blue-950/95", "to-indigo-950/90", "dark:from-black", "dark:via-blue-950/80", "dark:to-black",
+      "from-slate-900", "via-orange-950/90", "to-amber-950/90", "dark:from-black", "dark:via-orange-950/80", "dark:to-black",
+      "from-slate-900", "via-indigo-950/95", "to-purple-950/90", "dark:from-black", "dark:via-indigo-950/80", "dark:to-black",
+      "from-slate-900", "via-slate-800/95", "to-zinc-900/90", "dark:from-black", "dark:via-slate-900/80", "dark:to-black",
+      "bg-emerald-900", "dark:bg-emerald-950",
+      "bg-blue-900", "dark:bg-blue-950",
+      "bg-orange-900", "dark:bg-orange-950",
+      "bg-indigo-900", "dark:bg-indigo-950",
+      "bg-slate-900", "dark:bg-slate-950",
+      "bg-emerald-950", "bg-cyan-950", "bg-orange-950", "bg-indigo-950", "bg-slate-950"
+    );
+
+    // Add current slot solid classes
+    const currentClasses = solidMap[appState.currentSlotId] || ["bg-slate-950"];
+    mainCard.classList.add(...currentClasses);
 
     const access = window.isSlotAccessible(
       appState.currentSlotId,
@@ -493,18 +582,26 @@ window.updateDashboard = function () {
     );
     const timeEl = document.getElementById("dash-card-time");
 
-    if (access.locked && access.reason === "wait") {
-      timeEl.innerHTML = `<i data-lucide="clock" class="w-3 h-3"></i> Belum Masuk Waktu`;
+    if (access.locked) {
       mainCard.classList.add("opacity-80", "grayscale");
-      mainCard.onclick = () =>
-        window.showToast("Belum masuk waktu " + slot.label, "warning");
+      if (access.reason === "wait") {
+        timeEl.innerHTML = `<i data-lucide="clock" class="w-3 h-3"></i> Belum Masuk Waktu`;
+        mainCard.onclick = () => window.showToast("Belum masuk waktu " + slot.label, "warning");
+      } else if (access.reason === "limit") {
+        timeEl.innerHTML = `<i data-lucide="lock" class="w-3 h-3"></i> Terkunci (Lampau)`;
+        mainCard.onclick = () => window.showToast("Data lampau (>3 hari) terkunci", "warning");
+      } else if (access.reason === "future") {
+        timeEl.innerHTML = `<i data-lucide="clock" class="w-3 h-3"></i> Belum Masuk Waktu`;
+        mainCard.onclick = () => window.showToast("Belum bisa mengisi tanggal masa depan", "warning");
+      } else {
+        timeEl.innerHTML = `<i data-lucide="lock" class="w-3 h-3"></i> Terkunci`;
+        mainCard.onclick = () => window.showToast("Akses dibatasi", "warning");
+      }
     } else {
       timeEl.innerHTML = `<i data-lucide="clock" class="w-3 h-3"></i> ${slot.subLabel}`;
       mainCard.classList.remove("opacity-80", "grayscale");
       mainCard.onclick = () => window.openAttendance();
     }
-  } else if (mainCard) {
-    mainCard.classList.add("hidden");
   }
 
   // 3. Render List Slot
@@ -542,21 +639,36 @@ window.updateLocationStatus = function () {
 
   if (cached) {
     const elLoading = document.getElementById("loc-loading");
-
     const elDetails = document.getElementById("loc-details");
-
     const elNearest = document.getElementById("loc-nearest-name");
-
     const elDistance = document.getElementById("loc-distance");
+    const elIcon = document.getElementById("loc-icon");
+    const elIconBg = document.getElementById("loc-icon-bg");
 
     if (elLoading) elLoading.classList.add("hidden");
-
     if (elDetails) elDetails.classList.remove("hidden");
-
     if (elNearest) elNearest.textContent = cached.locationName;
-
     if (elDistance) elDistance.textContent = Math.round(cached.distance) + "m";
 
+    if (cached.isInside) {
+      if (elIcon) {
+        elIcon.setAttribute("data-lucide", "map-pin");
+        elIcon.className = "text-emerald-500 dark:text-emerald-400 transition-colors duration-500";
+      }
+      if (elIconBg) {
+        elIconBg.className = "w-6 h-6 shrink-0 rounded-full bg-emerald-100/80 dark:bg-emerald-900/50 flex items-center justify-center text-emerald-500 dark:text-emerald-400 transition-colors duration-500";
+      }
+    } else {
+      if (elIcon) {
+        elIcon.setAttribute("data-lucide", "map-pin-off");
+        elIcon.className = "text-red-500 dark:text-red-400 transition-colors duration-500";
+      }
+      if (elIconBg) {
+        elIconBg.className = "w-6 h-6 shrink-0 rounded-full bg-red-100/80 dark:bg-red-900/50 flex items-center justify-center text-red-500 dark:text-red-400 transition-colors duration-500";
+      }
+    }
+
+    if (window.lucide) window.lucide.createIcons();
     return;
   }
 
@@ -642,18 +754,18 @@ window.updateLocationStatus = function () {
             "px-1.5 py-0.5 rounded text-[9px] font-black uppercase bg-emerald-100 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/30 shrink-0";
         }
 
-        elMessage.innerHTML = `<span class="text-emerald-600 flex items-center gap-1"><i data-lucide="check" class="w-3 h-3"></i> Posisi sesuai. Silakan isi presensi.</span>`;
+        if (elMessage) {
+          elMessage.innerHTML = `<span class="text-emerald-600 flex items-center gap-1"><i data-lucide="check" class="w-3 h-3"></i> Posisi sesuai. Silakan isi presensi.</span>`;
+        }
 
-        elIcon.setAttribute("data-lucide", "map-pin");
-        elIcon.classList.remove(
-          "text-slate-400",
-          "text-red-500",
-          "text-amber-500",
-        );
-        elIcon.classList.add("text-emerald-500");
+        if (elIcon) {
+          elIcon.setAttribute("data-lucide", "map-pin");
+          elIcon.className = "text-emerald-500 dark:text-emerald-400 transition-colors duration-500";
+        }
 
-        elIconBg.classList.remove("bg-slate-100", "bg-red-100", "bg-amber-100");
-        elIconBg.classList.add("bg-emerald-100");
+        if (elIconBg) {
+          elIconBg.className = "w-6 h-6 shrink-0 rounded-full bg-emerald-100/80 dark:bg-emerald-900/50 flex items-center justify-center text-emerald-500 dark:text-emerald-400 transition-colors duration-500";
+        }
       } else {
         // Tampilan MERAH (Jauh)
         if (elBadge) {
@@ -663,22 +775,18 @@ window.updateLocationStatus = function () {
         }
 
         const selisih = Math.round(nearestDist - GEO_CONFIG.maxRadiusMeters);
-        elMessage.innerHTML = `<span class="text-red-500 flex items-center gap-1"><i data-lucide="alert-circle" class="w-3 h-3"></i> Terlalu jauh ${selisih}m dari batas radius.</span>`;
+        if (elMessage) {
+          elMessage.innerHTML = `<span class="text-red-500 flex items-center gap-1"><i data-lucide="alert-circle" class="w-3 h-3"></i> Terlalu jauh ${selisih}m dari batas radius.</span>`;
+        }
 
-        elIcon.setAttribute("data-lucide", "map-pin-off");
-        elIcon.classList.remove(
-          "text-slate-400",
-          "text-emerald-500",
-          "text-amber-500",
-        );
-        elIcon.classList.add("text-red-500");
+        if (elIcon) {
+          elIcon.setAttribute("data-lucide", "map-pin-off");
+          elIcon.className = "text-red-500 dark:text-red-400 transition-colors duration-500";
+        }
 
-        elIconBg.classList.remove(
-          "bg-slate-100",
-          "bg-emerald-100",
-          "bg-amber-100",
-        );
-        elIconBg.classList.add("bg-red-100");
+        if (elIconBg) {
+          elIconBg.className = "w-6 h-6 shrink-0 rounded-full bg-red-100/80 dark:bg-red-900/50 flex items-center justify-center text-red-500 dark:text-red-400 transition-colors duration-500";
+        }
       }
 
       if (window.lucide) window.lucide.createIcons();
@@ -704,155 +812,188 @@ window.renderSlotList = function () {
 
   container.innerHTML = "";
   const tpl = document.getElementById("tpl-slot-item");
+  const tplWide = document.getElementById("tpl-slot-item-wide");
   const isToday = appState.date === window.getLocalDateStr();
   const fragment = document.createDocumentFragment();
 
-  Object.values(SLOT_WAKTU).forEach((s) => {
-    const clone = tpl.content.cloneNode(true);
+  // Custom ordering: Shubuh & Ashar side-by-side, Sekolah below, Maghrib & Isya side-by-side
+  const renderOrder = ["shubuh", "ashar", "sekolah", "maghrib", "isya"];
+
+  renderOrder.forEach((slotId) => {
+    const s = SLOT_WAKTU[slotId];
+    if (!s) return;
+
+    const activeTpl = (s.id === "sekolah" && tplWide) ? tplWide : tpl;
+    const clone = activeTpl.content.cloneNode(true);
     const item = clone.querySelector(".slot-item");
     const access = window.isSlotAccessible(s.id, appState.date);
     const stats = window.calculateSlotStats(s.id);
 
-    // 1. Terapkan Tema Unik per Sesi
-    // Hapus class default jika ada, lalu tambah gradient spesifik
-    item.classList.add(...s.style.gradient.split(" "));
-    item.classList.add(...s.style.border.split(" "));
-    item.classList.add(...s.style.text.split(" "));
-
-    // Set Warna Decorative Blob
-    const decor = clone.querySelector(".slot-decor");
-    if (decor) decor.classList.add(`bg-${s.theme}-400`); // emerald/orange/indigo/slate
-
-    // 2. Setup Icon Unik (Sun/Moon/etc)
     const iconContainer = clone.querySelector(".slot-icon-bg");
     const iconEl = clone.querySelector(".slot-icon");
+    const badge = clone.querySelector(".slot-status-badge");
+    const progressBar = clone.querySelector(".slot-progress-bar");
+    const progressStatusEl = clone.querySelector(".slot-progress-status");
+    const progressTextEl = clone.querySelector(".slot-progress-text");
 
-    if (iconContainer)
-      iconContainer.classList.add(...s.style.iconBg.split(" "));
-    if (iconEl) iconEl.setAttribute("data-lucide", s.style.icon);
-
-    // 3. Label & Data
+    // Populate the standard labels and static times
     clone.querySelector(".slot-label").textContent = s.label;
     const timeEl = clone.querySelector(".slot-time-range");
     if (timeEl) timeEl.textContent = s.subLabel;
 
-    clone.querySelector(".slot-stat-h").textContent = stats.h;
+    // Reset item classes using correct grid layout columns
+    item.className = "slot-item flex flex-col p-3.5 sm:p-4 rounded-3xl border cursor-pointer transition-all duration-300 group relative overflow-hidden " +
+      (s.id === "sekolah" ? "col-span-2" : "col-span-1");
 
-    const telatEl = clone.querySelector(".slot-stat-t");
-    if (telatEl) telatEl.textContent = stats.t;
+    // Calculate duration-based progress
+    let timeProgressPercent = 0;
+    const todayStr = window.getLocalDateStr();
+    if (appState.date < todayStr) {
+      timeProgressPercent = 100;
+    } else if (appState.date > todayStr) {
+      timeProgressPercent = 0;
+    } else {
+      const now = new Date();
+      const currentMinutes = now.getHours() * 60 + now.getMinutes();
+      const match = s.subLabel.match(/(\d{2}):(\d{2})\s*-\s*(\d{2}):(\d{2})/);
+      if (match) {
+        const startMins = parseInt(match[1]) * 60 + parseInt(match[2]);
+        const endMins = parseInt(match[3]) * 60 + parseInt(match[4]);
+        if (currentMinutes >= endMins) {
+          timeProgressPercent = 100;
+        } else if (currentMinutes >= startMins) {
+          const totalDuration = endMins - startMins;
+          const elapsed = currentMinutes - startMins;
+          timeProgressPercent = Math.max(0, Math.min(100, Math.round((elapsed / totalDuration) * 100)));
+        }
+      }
+    }
 
-    clone.querySelector(".slot-stat-s").textContent = stats.s;
-    clone.querySelector(".slot-stat-i").textContent = stats.i;
+    if (progressBar) {
+      progressBar.style.width = `${timeProgressPercent}%`;
+    }
 
-    const pulangEl = clone.querySelector(".slot-stat-p");
-    if (pulangEl) pulangEl.textContent = stats.p;
-
-    clone.querySelector(".slot-stat-a").textContent = stats.a;
-
-    // 4. Inisialisasi Elemen & Warna Progress Bar
-    const badge = clone.querySelector(".slot-status-badge");
-    const progressBar = clone.querySelector(".slot-progress-bar"); // Kembali gunakan nama aslinya
-    const progressText = clone.querySelector(".slot-progress-text");
-
-    // Peta warna Hex Tailwind (Mengatasi masalah class CSS yang tidak ter-compile)
-    const themeColors = {
-      emerald: "#10b981", // Shubuh
-      cyan: "#06b6d4", // Sekolah
-      orange: "#f97316", // Ashar
-      indigo: "#6366f1", // Maghrib
-      slate: "#64748b", // Isya
-    };
-
-    // 5. Logic Libur / Locked / Unlocked
     const isHoliday = window.isSlotHoliday(s.id, appState.date);
 
+    // Style according to state
     if (isHoliday) {
-      item.classList.remove(...s.style.gradient.split(" "));
-      item.classList.add(
-        "bg-slate-100",
-        "dark:bg-slate-800",
-        "grayscale",
-        "opacity-70",
-      );
-
-      badge.textContent = "Libur";
-      badge.className =
-        "slot-status-badge text-[10px] font-bold px-2.5 py-0.5 rounded-lg inline-block bg-slate-200 text-slate-500 border border-slate-300 dark:bg-slate-700 dark:text-slate-400 shadow-sm";
-
+      // 1. STATUS: LIBUR (Muted Gray Card)
+      item.classList.add("bg-slate-100/40", "dark:bg-slate-800/20", "border-slate-200/60", "dark:border-slate-800/40", "text-slate-400", "dark:text-slate-500", "grayscale", "opacity-70");
+      if (iconContainer) iconContainer.className = "slot-icon-bg w-10 h-10 rounded-xl flex items-center justify-center border border-slate-200/50 dark:border-slate-700/50 bg-slate-200/30 dark:bg-slate-700/30 text-slate-400 dark:text-slate-500 shrink-0";
       if (iconEl) iconEl.setAttribute("data-lucide", "calendar-x");
-
-      // Set Progress Bar ke 0 dan warna abu-abu
+      
+      badge.textContent = "Libur";
+      badge.className = "slot-status-badge text-[9px] font-bold px-2 py-0.5 rounded-md border border-slate-300 dark:border-slate-700 bg-slate-200/50 text-slate-500 dark:bg-slate-700/50 dark:text-slate-400";
+      
       if (progressBar) {
-        progressBar.style.width = "0%";
-        progressBar.style.backgroundColor = "#94a3b8";
+        progressBar.className = "slot-progress-bar h-full rounded-full bg-slate-300 dark:bg-slate-700 transition-all duration-500";
+        progressBar.style.backgroundColor = "";
       }
-      if (progressText) progressText.textContent = "-";
 
-      item.onclick = () =>
-        window.showToast(`Kegiatan ${s.label} libur pada hari ini.`, "info");
+      if (progressStatusEl) progressStatusEl.textContent = "Libur";
+      if (progressTextEl) progressTextEl.textContent = "0%";
+
     } else if (access.locked) {
-      item.classList.remove(...s.style.gradient.split(" "));
-      item.classList.add(
-        "bg-slate-100",
-        "dark:bg-slate-800",
-        "grayscale",
-        "opacity-75",
-      );
-
+      // 2. STATUS: TERKUNCI / MENUNGGU (Muted Faded Lock Card)
+      item.classList.add("bg-slate-100/60", "dark:bg-slate-800/40", "border-slate-200", "dark:border-slate-700/60", "text-slate-400", "dark:text-slate-500", "opacity-75");
+      if (iconContainer) iconContainer.className = "slot-icon-bg w-10 h-10 rounded-xl flex items-center justify-center border border-slate-200/50 dark:border-slate-700/50 bg-slate-200/50 dark:bg-slate-700/50 text-slate-400 dark:text-slate-500 shrink-0";
+      if (iconEl) iconEl.setAttribute("data-lucide", access.reason === "wait" ? s.style.icon : "lock");
+      
       let lockText = access.reason === "wait" ? "Menunggu" : "Terkunci";
       if (access.reason === "limit") lockText = "Expired";
-
+      
       badge.textContent = lockText;
-      if (iconEl) iconEl.setAttribute("data-lucide", "lock");
-
-      if (progressBar) progressBar.style.backgroundColor = "#94a3b8";
-
-      item.onclick = () =>
-        window.showToast(`🔒 Akses ${s.label} ${lockText}`, "error");
-    } else {
-      if (stats.isFilled) {
-        badge.textContent = "Selesai";
-        badge.className +=
-          " text-emerald-700 bg-emerald-100/80 border-emerald-200";
-      } else {
-        badge.textContent = "Belum Diisi";
-      }
-
-      let percent = 0;
-
-      const totalStatus =
-        stats.h + stats.t + stats.i + stats.s + stats.p + stats.a;
-
-      if (totalStatus > 0) {
-        percent = Math.round(((stats.h + stats.t) / totalStatus) * 100);
-      }
-
-      // Terapkan persentase DAN paksa suntikkan warna Hex Code-nya
+      badge.className = "slot-status-badge text-[9px] font-bold px-2 py-0.5 rounded-md border border-slate-300 dark:border-slate-700 bg-slate-200/50 text-slate-500 dark:bg-slate-700/50 dark:text-slate-400";
+      
       if (progressBar) {
-        progressBar.style.width = `${percent}%`;
-        progressBar.style.backgroundColor = themeColors[s.theme] || "#10b981";
+        progressBar.className = "slot-progress-bar h-full rounded-full bg-slate-400 dark:bg-slate-600 transition-all duration-500";
+        progressBar.style.backgroundColor = "";
       }
-      if (progressText) progressText.textContent = `${percent}%`;
 
-      item.onclick = () => {
-        appState.currentSlotId = s.id;
-        if (isToday && s.id === window.determineCurrentSlot()) {
-          window.updateDashboard();
-          document
-            .getElementById("main-content")
-            .scrollTo({ top: 0, behavior: "smooth" });
-        } else {
-          window.openAttendance();
-        }
+      if (progressStatusEl) progressStatusEl.textContent = lockText;
+      if (progressTextEl) progressTextEl.textContent = lockText === "Expired" ? "100%" : "0%";
+
+    } else {
+      // 3. STATUS: AKTIF (Rich Solid Session Background Theme)
+      const themeSolidClasses = {
+        emerald: "bg-gradient-to-br from-emerald-600 to-teal-700 dark:from-emerald-950 dark:to-teal-900/80 text-white border-emerald-500/30 shadow-[0_8px_25px_rgba(16,185,129,0.12)] hover:-translate-y-1 hover:shadow-[0_12px_30px_rgba(16,185,129,0.2)]",
+        cyan: "bg-gradient-to-br from-sky-500 to-indigo-600 dark:from-sky-950 dark:to-indigo-900/80 text-white border-sky-500/30 shadow-[0_8px_25px_rgba(14,165,233,0.12)] hover:-translate-y-1 hover:shadow-[0_12px_30px_rgba(14,165,233,0.2)]",
+        orange: "bg-gradient-to-br from-amber-500 to-orange-600 dark:from-amber-950 dark:to-orange-900/80 text-white border-amber-500/30 shadow-[0_8px_25px_rgba(245,158,11,0.12)] hover:-translate-y-1 hover:shadow-[0_12px_30px_rgba(245,158,11,0.2)]",
+        indigo: "bg-gradient-to-br from-indigo-500 to-purple-600 dark:from-indigo-950 dark:to-purple-900/80 text-white border-indigo-500/30 shadow-[0_8px_25px_rgba(99,102,241,0.12)] hover:-translate-y-1 hover:shadow-[0_12px_30px_rgba(99,102,241,0.2)]",
+        slate: "bg-gradient-to-br from-slate-600 to-slate-700 dark:from-slate-800 dark:to-slate-900 text-white border-slate-500/30 shadow-[0_8px_25px_rgba(100,116,139,0.12)] hover:-translate-y-1 hover:shadow-[0_12px_30px_rgba(100,116,139,0.2)]"
       };
+
+      item.classList.add(...(themeSolidClasses[s.theme] || themeSolidClasses.emerald).split(" "));
+
+      if (iconContainer) {
+        iconContainer.className = "slot-icon-bg w-10 h-10 rounded-xl flex items-center justify-center border border-white/20 bg-white/25 text-white group-hover:scale-105 transition-transform shrink-0";
+      }
+      if (iconEl) iconEl.setAttribute("data-lucide", s.style.icon);
+
+      if (progressStatusEl) {
+        if (timeProgressPercent === 100) {
+          progressStatusEl.textContent = "Selesai";
+        } else if (timeProgressPercent > 0) {
+          progressStatusEl.textContent = "Sesi Berjalan";
+        } else {
+          progressStatusEl.textContent = "Mulai";
+        }
+      }
+      if (progressTextEl) {
+        progressTextEl.textContent = `${timeProgressPercent}%`;
+      }
+
+      if (stats.isFilled) {
+        badge.innerHTML = `<span class="flex items-center gap-1">
+          <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check text-current"><path d="M20 6 9 17l-5-5"/></svg>
+          Selesai
+        </span>`;
+        badge.className = "slot-status-badge text-[9px] font-black px-2 py-0.5 rounded-full bg-white/90 text-emerald-950 border border-white/30 shadow-sm";
+      } else {
+        badge.innerHTML = `<span class="flex items-center gap-1">
+          <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x text-current"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+          Belum Diisi
+        </span>`;
+        badge.className = "slot-status-badge text-[9px] font-black px-2 py-0.5 rounded-full bg-red-600 text-white border border-red-500 shadow-md";
+      }
+
+      if (progressBar) {
+        progressBar.className = "slot-progress-bar h-full rounded-full bg-gradient-to-r from-white/70 to-white animate-pulse-subtle transition-all duration-500 shadow-[0_0_8px_rgba(255,255,255,0.8)]";
+        progressBar.style.backgroundColor = "";
+      }
+
+      // Conditional statistics: Display only if there is any status other than H
+      const hasNonHStats = (stats.t > 0 || stats.s > 0 || stats.i > 0 || stats.p > 0 || stats.a > 0);
+      const statsContainer = clone.querySelector(".slot-card-stats");
+      if (statsContainer) {
+        if (hasNonHStats) {
+          statsContainer.innerHTML = `
+            <div class="flex flex-wrap gap-1 mt-1.5 bg-black/10 dark:bg-black/25 p-1 rounded-xl w-full justify-between text-[8px] font-bold text-white/95">
+              ${stats.t > 0 ? `<div class="flex items-center gap-0.5 px-1 bg-amber-500/40 rounded text-amber-100"><span>T:</span><span>${stats.t}</span></div>` : ''}
+              ${stats.s > 0 ? `<div class="flex items-center gap-0.5 px-1 bg-red-500/40 rounded text-red-100"><span>S:</span><span>${stats.s}</span></div>` : ''}
+              ${stats.i > 0 ? `<div class="flex items-center gap-0.5 px-1 bg-indigo-500/40 rounded text-indigo-100"><span>I:</span><span>${stats.i}</span></div>` : ''}
+              ${stats.p > 0 ? `<div class="flex items-center gap-0.5 px-1 bg-purple-500/40 rounded text-purple-100"><span>P:</span><span>${stats.p}</span></div>` : ''}
+              ${stats.a > 0 ? `<div class="flex items-center gap-0.5 px-1 bg-slate-500/40 rounded text-slate-100"><span>A:</span><span>${stats.a}</span></div>` : ''}
+            </div>
+          `;
+          statsContainer.classList.remove("hidden");
+        } else {
+          statsContainer.innerHTML = "";
+          statsContainer.classList.add("hidden");
+        }
+      }
     }
+
+    // Always open Bento Detail modal when any slot card is clicked
+    item.onclick = () => {
+      window.openBentoModal(s, access, stats);
+    };
 
     fragment.appendChild(clone);
   });
 
   container.appendChild(fragment);
 };
-
 window.updateProfileInfo = function () {
   const elHeaderName = document.getElementById("header-user-name");
   const elHeaderRole = document.getElementById("profile-role");
@@ -5182,9 +5323,11 @@ window.renderKBMBanner = function () {
     // Default kita pakai book-open di HTML
 
     banner.classList.remove("hidden");
+    banner.removeAttribute("hidden");
   } else {
     // Tidak ada KBM saat ini
     banner.classList.add("hidden");
+    banner.setAttribute("hidden", "");
   }
 
   if (window.lucide) window.lucide.createIcons();
@@ -6074,8 +6217,15 @@ window.switchReportView = function (view) {
 // Widget Salat & Hijriah
 window.initSalatHijriWidget = async function () {
   const hijriEl = document.getElementById("widget-hijri-date");
-  const locLabelEl = document.getElementById("widget-location-label");
   if (!hijriEl) return;
+
+  // Set tanggal masehi lokal segera di widget GPS
+  const gpsGregorianEl = document.getElementById("gps-gregorian-date");
+  if (gpsGregorianEl) {
+    const now = new Date();
+    const options = { day: 'numeric', month: 'long', year: 'numeric' };
+    gpsGregorianEl.textContent = now.toLocaleDateString('id-ID', options);
+  }
 
   // Koordinat Default (Masjid Jami' Mu'allimin Yogyakarta)
   let lat = -7.807757;
@@ -6099,7 +6249,7 @@ window.initSalatHijriWidget = async function () {
   const [year, month, day] = todayStr.split("-");
   const formattedDate = `${day}-${month}-${year}`;
 
-  const apiUrl = `https://api.aladhan.com/v1/timings/${formattedDate}?latitude=${lat}&longitude=${lng}&method=5`;
+  const apiUrl = `https://api.aladhan.com/v1/timings/${formattedDate}?latitude=${lat}&longitude=${lng}&method=5&tune=0,8,0,0,0,0,0,0,0`;
 
   try {
     const response = await fetch(apiUrl);
@@ -6118,12 +6268,17 @@ window.initSalatHijriWidget = async function () {
     const indonesianMonth = monthTranslation[hijri.month.number] || hijri.month.en;
     const hijriDateDisplay = `${hijri.day} ${indonesianMonth} ${hijri.year} H`;
     hijriEl.textContent = hijriDateDisplay;
-    locLabelEl.textContent = locationSource;
+
+    const gpsHijriEl = document.getElementById("gps-hijri-date");
+    if (gpsHijriEl) {
+      gpsHijriEl.textContent = hijriDateDisplay;
+    }
 
     // 2. Isi data jadwal salat
     const timings = data.timings;
     const salatMap = {
       Subuh: timings.Fajr,
+      Syuruq: timings.Sunrise,
       Dzuhur: timings.Dhuhr,
       Ashar: timings.Asr,
       Maghrib: timings.Maghrib,
@@ -6142,6 +6297,9 @@ window.initSalatHijriWidget = async function () {
       if (el) {
         el.querySelector(".prayer-time").textContent = timeStr;
       }
+
+      // Do not use Syuruq (Sunrise) as a next prayer target for daily fardu prayer highlights/countdown
+      if (name === "Syuruq") return;
 
       const [h, m] = timeStr.split(":").map(Number);
       const salatMinutes = h * 60 + m;
@@ -6172,8 +6330,8 @@ window.initSalatHijriWidget = async function () {
             "dark:hover:shadow-black/20", "hover:-translate-y-1"
           );
           el.classList.add(
-            "bg-gradient-to-b", "from-emerald-400", "to-emerald-600", "dark:from-emerald-500", "dark:to-emerald-700",
-            "border-none", "shadow-[0_10px_30px_rgb(16,185,129,0.4)]", "transform", "scale-105", "z-10"
+            "bg-gradient-to-b", "from-emerald-500", "to-emerald-600", "dark:from-emerald-600", "dark:to-emerald-800",
+            "border-none", "shadow-lg", "shadow-emerald-500/30", "z-10"
           );
           
           if (patternOverlay) patternOverlay.classList.remove("hidden");
@@ -6189,14 +6347,14 @@ window.initSalatHijriWidget = async function () {
           }
           
           if (timeEl) {
-            timeEl.classList.remove("text-lg", "text-slate-800", "dark:text-slate-100");
-            timeEl.classList.add("text-xl", "text-white", "relative", "z-10");
+            timeEl.classList.remove("text-[10px]", "text-slate-800", "dark:text-slate-100");
+            timeEl.classList.add("text-xs", "text-white", "relative", "z-10");
           }
         } else {
           // Inactive state classes for card
           el.classList.remove(
-            "bg-gradient-to-b", "from-emerald-400", "to-emerald-600", "dark:from-emerald-500", "dark:to-emerald-700",
-            "border-none", "shadow-[0_10px_30px_rgb(16,185,129,0.4)]", "transform", "scale-105", "z-10"
+            "bg-gradient-to-b", "from-emerald-500", "to-emerald-600", "dark:from-emerald-600", "dark:to-emerald-800",
+            "border-none", "shadow-lg", "shadow-emerald-500/30", "z-10"
           );
           el.classList.add(
             "bg-white/60", "dark:bg-slate-800/60", "border-slate-200/60", "dark:border-slate-700/60",
@@ -6217,12 +6375,42 @@ window.initSalatHijriWidget = async function () {
           }
           
           if (timeEl) {
-            timeEl.classList.remove("text-xl", "text-white", "relative", "z-10");
-            timeEl.classList.add("text-lg", "text-slate-800", "dark:text-slate-100");
+            timeEl.classList.remove("text-xs", "text-white", "relative", "z-10");
+            timeEl.classList.add("text-[10px]", "text-slate-800", "dark:text-slate-100");
           }
         }
       }
     });
+
+    // Sunnah Fasting Reminder Banner
+    const fastingReminderEl = document.getElementById("widget-fasting-reminder");
+    if (fastingReminderEl) {
+      const dayOfWeek = now.getDay(); // Sunday=0, Monday=1, ..., Saturday=6
+      const hijriDay = parseInt(hijri.day, 10);
+      let reminderText = "";
+
+      if (dayOfWeek === 0) {
+        reminderText = "✨ Pengingat: Besok hari Senin, Sunnah Puasa Senin.";
+      } else if (dayOfWeek === 3) {
+        reminderText = "✨ Pengingat: Besok hari Kamis, Sunnah Puasa Kamis.";
+      } else if (hijriDay === 12 || hijriDay === 13 || hijriDay === 14) {
+        reminderText = `✨ Pengingat: Besok tanggal ${hijriDay + 1} Hijriah, Sunnah Puasa Ayyamul Bidh.`;
+      } else if (hijri.month.number === 9) {
+        reminderText = "🌙 Marhaban ya Ramadhan, Selamat menunaikan Ibadah Puasa Wajib.";
+      }
+
+      if (reminderText) {
+        fastingReminderEl.innerHTML = `<span class="flex items-center gap-1.5 leading-tight">
+          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-info shrink-0"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+          ${reminderText}
+        </span>`;
+        fastingReminderEl.classList.remove("hidden");
+        fastingReminderEl.classList.add("flex");
+      } else {
+        fastingReminderEl.classList.add("hidden");
+        fastingReminderEl.classList.remove("flex");
+      }
+    }
 
     window.todaySalatTimings = salatMap; // Simpan untuk countdown
 
@@ -6239,6 +6427,11 @@ window.initSalatHijriWidget = async function () {
   }
 };
 
+window.refreshPrayerLocation = async function () {
+  if (window.showToast) window.showToast("📍 Mencari koordinat GPS...", "info");
+  await window.initSalatHijriWidget();
+};
+
 window.updatePrayerCountdown = function () {
   const countdownEl = document.getElementById("header-prayer-countdown");
   if (countdownEl && window.todaySalatTimings) {
@@ -6248,6 +6441,9 @@ window.updatePrayerCountdown = function () {
     let minDiff = Infinity;
 
     Object.keys(window.todaySalatTimings).forEach((name) => {
+      // Exclude Syuruq from header prayer countdown
+      if (name === "Syuruq") return;
+
       const timeStr = window.todaySalatTimings[name];
       const [h, m] = timeStr.split(":").map(Number);
       
@@ -6293,6 +6489,208 @@ window.updatePrayerCountdown = function () {
     }
   }
 
+};
+
+window.toggleSlotStatsAccordion = function (btn) {
+  const card = btn.closest(".slot-item");
+  if (!card) return;
+  const accordionContent = card.querySelector(".slot-stats-accordion");
+  const chevron = btn.querySelector(".chevron-icon");
+
+  if (accordionContent) {
+    const isOpen = accordionContent.classList.contains("grid-rows-[1fr]");
+    if (isOpen) {
+      accordionContent.classList.remove("grid-rows-[1fr]");
+      accordionContent.classList.add("grid-rows-[0fr]");
+      if (chevron) chevron.classList.remove("rotate-180");
+    } else {
+      accordionContent.classList.remove("grid-rows-[0fr]");
+      accordionContent.classList.add("grid-rows-[1fr]");
+      if (chevron) chevron.classList.add("rotate-180");
+    }
+  }
+};
+
+window.openBentoModal = function (s, access, stats) {
+  const modal = document.getElementById("bento-detail-modal");
+  const modalContent = document.getElementById("bento-modal-content");
+  if (!modal || !modalContent) return;
+
+  const isHoliday = window.isSlotHoliday(s.id, appState.date);
+  const isToday = appState.date === window.getLocalDateStr();
+
+  // Populate basic info
+  document.getElementById("bento-modal-title").textContent = s.label;
+  document.getElementById("bento-modal-time").textContent = s.subLabel;
+
+  // Set icon inside modal header
+  const iconEl = document.getElementById("bento-modal-icon");
+  if (iconEl) {
+    iconEl.setAttribute("data-lucide", isHoliday ? "calendar-x" : (access.locked ? "lock" : s.style.icon));
+  }
+
+  // Header background theme
+  const header = document.getElementById("bento-modal-header");
+  if (header) {
+    header.className = "relative p-6 text-white flex flex-col justify-end min-h-[130px] bg-gradient-to-br";
+    const gradientMap = {
+      emerald: ["from-emerald-600", "to-teal-500"],
+      cyan: ["from-cyan-600", "to-blue-500"],
+      orange: ["from-orange-500", "to-amber-500"],
+      indigo: ["from-indigo-600", "to-purple-600"],
+      slate: ["from-slate-700", "to-slate-800"]
+    };
+    header.classList.add(...(gradientMap[s.theme] || gradientMap.emerald));
+  }
+
+  // Status badge inside modal
+  const badge = document.getElementById("bento-modal-status");
+  if (badge) {
+    if (isHoliday) {
+      badge.textContent = "Libur";
+      badge.className = "text-[10px] font-bold px-2.5 py-0.5 rounded-lg border bg-slate-100 text-slate-500 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700";
+    } else if (access.locked) {
+      let lockText = access.reason === "wait" ? "Menunggu" : "Terkunci";
+      if (access.reason === "limit") lockText = "Expired";
+      badge.textContent = lockText;
+      badge.className = "text-[10px] font-bold px-2.5 py-0.5 rounded-lg border bg-slate-100 text-slate-500 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700";
+    } else if (stats.isFilled) {
+      badge.textContent = "Selesai";
+      badge.className = "text-[10px] font-bold px-2.5 py-0.5 rounded-lg border text-emerald-700 bg-emerald-100 border-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/30";
+    } else {
+      badge.textContent = "Belum Diisi";
+      badge.className = "text-[10px] font-bold px-2.5 py-0.5 rounded-lg border text-amber-700 bg-amber-100 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800";
+    }
+  }
+
+  // Calculate duration-based progress
+  let timeProgressPercent = 0;
+  const todayStr = window.getLocalDateStr();
+  if (appState.date < todayStr) {
+    timeProgressPercent = 100;
+  } else if (appState.date > todayStr) {
+    timeProgressPercent = 0;
+  } else {
+    const now = new Date();
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+    const match = s.subLabel.match(/(\d{2}):(\d{2})\s*-\s*(\d{2}):(\d{2})/);
+    if (match) {
+      const startMins = parseInt(match[1], 10) * 60 + parseInt(match[2], 10);
+      const endMins = parseInt(match[3], 10) * 60 + parseInt(match[4], 10);
+      if (currentMinutes >= endMins) {
+        timeProgressPercent = 100;
+      } else if (currentMinutes >= startMins) {
+        const totalDuration = endMins - startMins;
+        const elapsed = currentMinutes - startMins;
+        timeProgressPercent = Math.max(0, Math.min(100, Math.round((elapsed / totalDuration) * 100)));
+      }
+    }
+  }
+
+  if (isHoliday) {
+    timeProgressPercent = 0;
+  }
+
+  const pBar = document.getElementById("bento-modal-progress-bar");
+  const pText = document.getElementById("bento-modal-progress-text");
+  if (pBar) {
+    pBar.style.width = `${timeProgressPercent}%`;
+    if (isHoliday || access.locked) {
+      pBar.className = "h-full rounded-full transition-all duration-500 bg-slate-400 dark:bg-slate-600";
+      pBar.style.backgroundColor = "";
+    } else {
+      const themeColors = {
+        emerald: "from-emerald-500 to-teal-500",
+        cyan: "from-sky-500 to-indigo-500",
+        orange: "from-amber-500 to-orange-500",
+        indigo: "from-indigo-500 to-purple-500",
+        slate: "from-slate-500 to-slate-600"
+      };
+      const themeGrad = themeColors[s.theme] || themeColors.emerald;
+      pBar.className = `h-full rounded-full transition-all duration-500 bg-gradient-to-r ${themeGrad} animate-pulse-subtle shadow-[0_0_8px_rgba(255,255,255,0.3)]`;
+      pBar.style.backgroundColor = "";
+    }
+  }
+  if (pText) {
+    pText.textContent = `${timeProgressPercent}%`;
+    const themeTextColors = {
+      emerald: "text-emerald-500 dark:text-emerald-400",
+      cyan: "text-sky-500 dark:text-sky-400",
+      orange: "text-orange-500 dark:text-orange-400",
+      indigo: "text-indigo-500 dark:text-indigo-400",
+      slate: "text-slate-500 dark:text-slate-400"
+    };
+    pText.className = `font-black text-xs ${isHoliday || access.locked ? "text-slate-400 dark:text-slate-500" : (themeTextColors[s.theme] || "text-emerald-500")}`;
+  }
+
+  // Populate H S I P A Stats inside modal
+  document.getElementById("bento-modal-h").textContent = stats.h;
+  document.getElementById("bento-modal-t").textContent = stats.t;
+  document.getElementById("bento-modal-i").textContent = stats.i;
+  document.getElementById("bento-modal-s").textContent = stats.s;
+  document.getElementById("bento-modal-p").textContent = stats.p;
+  document.getElementById("bento-modal-a").textContent = stats.a;
+
+  // CTA Button setup
+  const ctaBtn = document.getElementById("bento-modal-cta");
+  const ctaText = ctaBtn.querySelector("span");
+
+  if (isHoliday) {
+    ctaText.textContent = "Libur (Akses Ditolak)";
+    ctaBtn.className = "w-full py-3.5 rounded-2xl font-bold text-sm bg-slate-200 text-slate-400 dark:bg-slate-800 dark:text-slate-600 cursor-not-allowed flex items-center justify-center gap-2";
+    ctaBtn.onclick = () => window.showToast(`Kegiatan ${s.label} libur pada hari ini.`, "info");
+  } else if (access.locked) {
+    let lockText = access.reason === "wait" ? "Belum Masuk Waktu" : "Akses Terkunci";
+    if (access.reason === "limit") lockText = "Expired (Batas 3 Hari)";
+    ctaText.textContent = lockText;
+    ctaBtn.className = "w-full py-3.5 rounded-2xl font-bold text-sm bg-slate-200 text-slate-400 dark:bg-slate-800 dark:text-slate-600 cursor-not-allowed flex items-center justify-center gap-2";
+    ctaBtn.onclick = () => window.showToast(`🔒 Akses ${s.label} ${lockText}`, "error");
+  } else {
+    ctaText.textContent = stats.isFilled ? "Ubah Presensi" : "Mulai Presensi";
+    const btnThemeMap = {
+      emerald: "from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 shadow-emerald-500/20",
+      cyan: "from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 shadow-cyan-500/20",
+      orange: "from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 shadow-orange-500/20",
+      indigo: "from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 shadow-indigo-500/20",
+      slate: "from-slate-600 to-slate-700 hover:from-slate-700 hover:to-slate-800 shadow-slate-600/20"
+    };
+    const themeClass = btnThemeMap[s.theme] || btnThemeMap.emerald;
+    ctaBtn.className = `w-full py-3.5 rounded-2xl font-bold text-sm bg-gradient-to-r ${themeClass} text-white shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2`;
+
+    ctaBtn.onclick = () => {
+      window.closeBentoModal();
+      appState.currentSlotId = s.id;
+      if (isToday && s.id === window.determineCurrentSlot()) {
+        window.updateDashboard();
+        document.getElementById("main-content").scrollTo({ top: 0, behavior: "smooth" });
+      } else {
+        window.openAttendance();
+      }
+    };
+  }
+
+  // Open modal with fade-in and scale-up effect
+  modal.classList.remove("hidden");
+  modal.offsetHeight; // force reflow
+  modal.classList.remove("opacity-0");
+  modalContent.classList.remove("scale-95");
+  modalContent.classList.add("scale-100");
+
+  if (window.lucide) window.lucide.createIcons();
+};
+
+window.closeBentoModal = function () {
+  const modal = document.getElementById("bento-detail-modal");
+  const modalContent = document.getElementById("bento-modal-content");
+  if (!modal || !modalContent) return;
+
+  modal.classList.add("opacity-0");
+  modalContent.classList.remove("scale-100");
+  modalContent.classList.add("scale-95");
+
+  setTimeout(() => {
+    modal.classList.add("hidden");
+  }, 300);
 };
 
 // Start App
