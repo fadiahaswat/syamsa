@@ -459,27 +459,27 @@ const STATUS_UI = {
   },
   Telat: {
     class:
-      "bg-emerald-100 text-emerald-500 border-emerald-500 dark:bg-emerald-900/30 dark:text-emerald-500 dark:border-emerald-500",
+      "bg-cyan-100 text-cyan-600 border-cyan-500 dark:bg-cyan-950/30 dark:text-cyan-400 dark:border-cyan-800",
     label: "T",
   },
   Izin: {
     class:
-      "bg-blue-100 text-blue-500 border-blue-500 dark:bg-blue-900/30 dark:text-blue-500 dark:border-blue-500",
+      "bg-blue-100 text-blue-600 border-blue-500 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-800",
     label: "I",
   },
   Sakit: {
     class:
-      "bg-amber-100 text-amber-500 border-amber-500 dark:bg-amber-900/30 dark:text-amber-500 dark:border-amber-500",
+      "bg-yellow-100 text-yellow-600 border-yellow-500 dark:bg-yellow-950/30 dark:text-yellow-400 dark:border-yellow-800",
     label: "S",
   },
   Alpa: {
     class:
-      "bg-red-100 text-red-500 border-red-500 dark:bg-red-900/30 dark:text-red-500 dark:border-red-500",
+      "bg-red-100 text-red-600 border-red-500 dark:bg-red-950/30 dark:text-red-400 dark:border-red-800",
     label: "A",
   },
   Pulang: {
     class:
-      "bg-purple-100 text-purple-500 border-purple-500 dark:bg-purple-900/30 dark:text-purple-500 dark:border-purple-500",
+      "bg-purple-100 text-purple-600 border-purple-500 dark:bg-purple-950/30 dark:text-purple-400 dark:border-purple-800",
     label: "P",
   },
   Tidak: {

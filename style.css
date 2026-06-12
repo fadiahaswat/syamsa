@@ -148,3 +148,75 @@ body {
 .progress-bar {
   transition: width 0.5s ease-in-out;
 }
+
+/* Salat Accordion Expanded Layout */
+#salat-accordion-wrapper.is-expanded .salat-flex-container {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px 12px 12px;
+}
+
+#salat-accordion-wrapper.is-expanded #salat-accordion-content {
+  width: 0; /* allows flex box shrink/grow */
+  flex-grow: 1;
+}
+
+/* Mobile layout: 3 columns, 2 rows for Salat cards when expanded */
+#salat-accordion-wrapper.is-expanded #salat-hijri-widget .grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+@media (min-width: 640px) {
+  #salat-accordion-wrapper.is-expanded #salat-hijri-widget .grid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+}
+
+/* Toggle Button in Expanded State */
+#salat-accordion-wrapper.is-expanded #salat-accordion-toggle {
+  width: auto;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-top: 0;
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 4px 4px 4px 12px;
+  margin-left: 8px;
+  gap: 6px;
+}
+
+#salat-accordion-wrapper.is-expanded #salat-toggle-left {
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+#salat-accordion-wrapper.is-expanded #salat-toggle-right {
+  flex-direction: column-reverse;
+  align-items: center;
+  gap: 4px;
+}
+
+#salat-accordion-wrapper.is-expanded #salat-accordion-label {
+  display: block;
+  max-width: 50px;
+  white-space: normal;
+  text-align: center;
+  font-size: 10px;
+  line-height: 1.2;
+}
+
+#salat-accordion-wrapper.is-expanded #widget-hijri-date {
+  display: block;
+  max-width: 60px;
+  white-space: normal;
+  text-align: center;
+  font-size: 8px;
+  line-height: 1.2;
+  margin-right: 0;
+}

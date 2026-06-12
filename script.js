@@ -115,7 +115,39 @@ window.initApp = async function () {
         loadingEl.style.display = "none";
       }, 500);
     }
+    window.initBottomNavScroll();
   }
+};
+
+window.initBottomNavScroll = function () {
+  const bottomNav = document.querySelector("nav");
+  if (!bottomNav) return;
+
+  const handleScroll = (e) => {
+    const scrollTop = e.target.scrollTop;
+    if (scrollTop > 20) {
+      bottomNav.classList.add("nav-expanded");
+    } else {
+      bottomNav.classList.remove("nav-expanded");
+    }
+
+    if (e.target.id === "main-content") {
+      const heroCard = document.getElementById("dash-main-card");
+      if (heroCard) {
+        if (scrollTop > 80) {
+          heroCard.classList.add("sticky-hero");
+        } else {
+          heroCard.classList.remove("sticky-hero");
+        }
+      }
+    }
+  };
+
+  const tabContents = document.querySelectorAll(".tab-content");
+  tabContents.forEach((container) => {
+    container.removeEventListener("scroll", handleScroll);
+    container.addEventListener("scroll", handleScroll, { passive: true });
+  });
 };
 
 window.populateClassDropdown = function () {
@@ -506,12 +538,8 @@ window.updateDashboard = function () {
         const cleanName = musyrifName.replace(/^(ustadz|ustad|ust\.|ust\b)/i, "").trim();
         const words = cleanName.split(/\s+/).filter(w => w.length > 0);
         if (words.length > 0) {
-          const firstWord = words[0].toLowerCase();
-          const prefixes = ["muhammad", "mohammad", "muhamad", "ahmad", "m.", "m", "moh.", "moh"];
-          let targetName = words[0];
-          if (prefixes.includes(firstWord) && words.length > 1) {
-            targetName = words[1];
-          }
+          // Ambil maksimal 2 kata pertama dari nama ustadz
+          const targetName = words.slice(0, 2).join(" ");
           displayName = "Ustadz " + targetName;
         }
       }
@@ -541,13 +569,13 @@ window.updateDashboard = function () {
       }
     }
 
-    // Dynamic solid color mapping for the hero card depending on slot id (using deep/dark versions)
+    // Static solid color mapping for the hero card (always bg-slate-900 and dark:bg-black)
     const solidMap = {
-      shubuh: ["bg-emerald-950"],
-      sekolah: ["bg-cyan-950"],
-      ashar: ["bg-orange-950"],
-      maghrib: ["bg-indigo-950"],
-      isya: ["bg-slate-950"]
+      shubuh: ["bg-slate-900", "dark:bg-black"],
+      sekolah: ["bg-slate-900", "dark:bg-black"],
+      ashar: ["bg-slate-900", "dark:bg-black"],
+      maghrib: ["bg-slate-900", "dark:bg-black"],
+      isya: ["bg-slate-900", "dark:bg-black"]
     };
 
     // Remove any previous gradient/solid background classes
@@ -618,6 +646,9 @@ window.updateDashboard = function () {
   if (window.lucide) window.lucide.createIcons();
 
   window.updateLocationStatus();
+  if (window.initSalatHijriWidget) {
+    window.initSalatHijriWidget().catch(err => console.error("Gagal update salat widget:", err));
+  }
 };
 
 // ==========================================
@@ -962,18 +993,17 @@ window.renderSlotList = function () {
         progressBar.style.backgroundColor = "";
       }
 
-      // Conditional statistics: Display only if there is any status other than H
       const hasNonHStats = (stats.t > 0 || stats.s > 0 || stats.i > 0 || stats.p > 0 || stats.a > 0);
       const statsContainer = clone.querySelector(".slot-card-stats");
       if (statsContainer) {
         if (hasNonHStats) {
           statsContainer.innerHTML = `
-            <div class="flex flex-wrap gap-1 mt-1.5 bg-black/10 dark:bg-black/25 p-1 rounded-xl w-full justify-between text-[8px] font-bold text-white/95">
-              ${stats.t > 0 ? `<div class="flex items-center gap-0.5 px-1 bg-amber-500/40 rounded text-amber-100"><span>T:</span><span>${stats.t}</span></div>` : ''}
-              ${stats.s > 0 ? `<div class="flex items-center gap-0.5 px-1 bg-red-500/40 rounded text-red-100"><span>S:</span><span>${stats.s}</span></div>` : ''}
-              ${stats.i > 0 ? `<div class="flex items-center gap-0.5 px-1 bg-indigo-500/40 rounded text-indigo-100"><span>I:</span><span>${stats.i}</span></div>` : ''}
-              ${stats.p > 0 ? `<div class="flex items-center gap-0.5 px-1 bg-purple-500/40 rounded text-purple-100"><span>P:</span><span>${stats.p}</span></div>` : ''}
-              ${stats.a > 0 ? `<div class="flex items-center gap-0.5 px-1 bg-slate-500/40 rounded text-slate-100"><span>A:</span><span>${stats.a}</span></div>` : ''}
+            <div class="flex flex-wrap sm:flex-nowrap gap-0.5 mt-0.5 justify-end max-w-[52px] sm:max-w-none">
+              ${stats.t > 0 ? `<span class="flex items-center justify-center w-4 h-4 rounded-full bg-cyan-500 text-white shadow-sm" title="Telat: ${stats.t}"><svg xmlns="http://www.w3.org/2000/svg" width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" class="text-current"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v6l4 2"></path></svg></span>` : ''}
+              ${stats.s > 0 ? `<span class="flex items-center justify-center w-4 h-4 rounded-full bg-yellow-500 text-white shadow-sm" title="Sakit: ${stats.s}"><svg xmlns="http://www.w3.org/2000/svg" width="8" height="8" viewBox="0 0 24 24" fill="currentColor" stroke="none" class="text-current"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg></span>` : ''}
+              ${stats.i > 0 ? `<span class="flex items-center justify-center w-4 h-4 rounded-full bg-blue-500 text-white shadow-sm" title="Izin: ${stats.i}"><svg xmlns="http://www.w3.org/2000/svg" width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" class="text-current"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/></svg></span>` : ''}
+              ${stats.p > 0 ? `<span class="flex items-center justify-center w-4 h-4 rounded-full bg-purple-500 text-white shadow-sm" title="Pulang: ${stats.p}"><svg xmlns="http://www.w3.org/2000/svg" width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" class="text-current"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span>` : ''}
+              ${stats.a > 0 ? `<span class="flex items-center justify-center w-4 h-4 rounded-full bg-red-500 text-white shadow-sm" title="Alpa: ${stats.a}"><svg xmlns="http://www.w3.org/2000/svg" width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" class="text-current"><circle cx="12" cy="12" r="10"></circle><line x1="12" x2="12" y1="8" y2="12"/></svg></span>` : ''}
             </div>
           `;
           statsContainer.classList.remove("hidden");
@@ -1603,10 +1633,10 @@ window.renderAttendanceList = function () {
           "ring-2 ring-emerald-500 ring-offset-2 ring-offset-white dark:ring-offset-slate-800";
       } else if (curr === "Telat") {
         ringClass =
-          "ring-2 ring-teal-500 ring-offset-2 ring-offset-white dark:ring-offset-slate-800";
+          "ring-2 ring-cyan-500 ring-offset-2 ring-offset-white dark:ring-offset-slate-800";
       } else if (curr === "Sakit") {
         ringClass =
-          "ring-2 ring-amber-500 ring-offset-2 ring-offset-white dark:ring-offset-slate-800";
+          "ring-2 ring-yellow-500 ring-offset-2 ring-offset-white dark:ring-offset-slate-800";
       } else if (curr === "Izin") {
         ringClass =
           "ring-2 ring-blue-500 ring-offset-2 ring-offset-white dark:ring-offset-slate-800";
@@ -2491,29 +2521,140 @@ window.saveData = function () {
   }, 500); // Increased debounce for better batching
 };
 
-window.updateQuickStats = function () {
-  if (!appState.selectedClass) return;
-
-  // PERBAIKAN: Hitung kumulatif seharian agar sama dengan chart
-  let totalStats = { h: 0, s: 0, i: 0, a: 0 };
-
-  Object.values(SLOT_WAKTU).forEach((slot) => {
-    const stats = window.calculateSlotStats(slot.id);
-    if (stats.isFilled) {
-      totalStats.h += stats.h;
-      totalStats.s += stats.s;
-      totalStats.i += stats.i;
-      totalStats.a += stats.a;
+window.changeStatsRange = function (range) {
+  appState.statsRange = range;
+  
+  const buttons = ['weekly', 'monthly', 'semester'];
+  buttons.forEach(btnKey => {
+    const el = document.getElementById(`stats-range-${btnKey}`);
+    if (el) {
+      if (btnKey === range) {
+        el.className = "flex-1 md:flex-none px-4 py-1.5 text-[11px] font-bold rounded-lg transition-all bg-white dark:bg-slate-800 text-slate-800 dark:text-white shadow-[0_2px_8px_rgba(0,0,0,0.04)] border border-slate-200/50 dark:border-slate-700/50";
+      } else {
+        el.className = "flex-1 md:flex-none px-4 py-1.5 text-[11px] font-bold rounded-lg transition-all text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 border border-transparent";
+      }
     }
   });
 
-  document.getElementById("stat-hadir").textContent = totalStats.h;
-  document.getElementById("stat-sakit").textContent = totalStats.s;
-  document.getElementById("stat-izin").textContent = totalStats.i;
-  document.getElementById("stat-alpa").textContent = totalStats.a;
+  window.updateQuickStats();
+  window.drawDonutChart();
 };
 
-// Ganti fungsi window.drawDonutChart yang lama dengan ini:
+window.updateQuickStats = function () {
+  if (!appState.selectedClass) return;
+
+  const range = appState.statsRange || 'weekly';
+  let daysCount = 7;
+  if (range === 'monthly') daysCount = 30;
+  if (range === 'semester') daysCount = 180;
+
+  // Helper to generate dates list
+  const getDatesForRange = (baseDateStr, count, offset = 0) => {
+    const dates = [];
+    const baseDate = new Date(baseDateStr);
+    baseDate.setDate(baseDate.getDate() - offset);
+    for (let i = count - 1; i >= 0; i--) {
+      const d = new Date(baseDate);
+      d.setDate(baseDate.getDate() - i);
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      dates.push(`${yyyy}-${mm}-${dd}`);
+    }
+    return dates;
+  };
+
+  const currentDates = getDatesForRange(appState.date, daysCount, 0);
+  const prevDates = getDatesForRange(appState.date, daysCount, daysCount);
+
+  // Compute stats for current period
+  let totalStats = { h: 0, s: 0, i: 0, p: 0, t: 0, a: 0, total: 0 };
+  let daysWithData = 0;
+
+  currentDates.forEach((dateKey) => {
+    let dayFilled = false;
+    let dayStats = { h: 0, s: 0, i: 0, p: 0, t: 0, a: 0, total: 0 };
+    Object.values(SLOT_WAKTU).forEach((slot) => {
+      const stats = window.calculateSlotStats(slot.id, dateKey);
+      if (stats.isFilled) {
+        dayStats.h += stats.h;
+        dayStats.s += stats.s;
+        dayStats.i += stats.i;
+        dayStats.p += stats.p || 0;
+        dayStats.t += stats.t || 0;
+        dayStats.a += stats.a;
+        dayStats.total += stats.total;
+        dayFilled = true;
+      }
+    });
+    if (dayFilled) {
+      totalStats.h += dayStats.h;
+      totalStats.s += dayStats.s;
+      totalStats.i += dayStats.i;
+      totalStats.p += dayStats.p;
+      totalStats.t += dayStats.t;
+      totalStats.a += dayStats.a;
+      totalStats.total += dayStats.total;
+      daysWithData++;
+    }
+  });
+
+  const divisor = daysWithData > 0 ? daysWithData : 1;
+
+  // Set numeric indicators (percentage of total events in this period)
+  const totalPeriodPeristiwa = totalStats.total > 0 ? totalStats.total : 1;
+  const hadirCount = totalStats.h + totalStats.t;
+  const tidakHadirCount = totalStats.s + totalStats.i + totalStats.p + totalStats.a;
+
+  if (document.getElementById("stat-hadir")) {
+    document.getElementById("stat-hadir").textContent = Math.round((hadirCount / totalPeriodPeristiwa) * 100) + "%";
+  }
+  if (document.getElementById("stat-tidak-hadir")) {
+    document.getElementById("stat-tidak-hadir").textContent = Math.round((tidakHadirCount / totalPeriodPeristiwa) * 100) + "%";
+  }
+
+  // Calculate current & previous period attendance rate
+  const calculateRate = (datesList) => {
+    let hadir = 0;
+    let total = 0;
+    datesList.forEach(dateKey => {
+      Object.values(SLOT_WAKTU).forEach(slot => {
+        const sStats = window.calculateSlotStats(slot.id, dateKey);
+        if (sStats.isFilled) {
+          hadir += sStats.h;
+          total += sStats.total;
+        }
+      });
+    });
+    return total > 0 ? (hadir / total) * 100 : 100; // default to 100% if empty
+  };
+
+  const currentRate = calculateRate(currentDates);
+  const prevRate = calculateRate(prevDates);
+  const rateDiff = currentRate - prevRate;
+
+  // Set top percentage label
+  document.getElementById("stats-current-percentage").innerHTML = `${currentRate.toFixed(1)}% <span class="text-xl sm:text-2xl font-bold text-slate-400 dark:text-slate-500">Hadir</span>`;
+
+  // Set comparison badge
+  const comparisonEl = document.getElementById("stats-comparison-badge");
+  if (comparisonEl) {
+    const periodLabel = range === 'weekly' ? 'pekan lalu' : range === 'monthly' ? 'bulan lalu' : 'semester lalu';
+    if (rateDiff >= 0) {
+      comparisonEl.className = "flex items-center gap-1 text-[10px] sm:text-xs font-bold px-2 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-500/20 shadow-sm shrink-0";
+      comparisonEl.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trending-up"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+        <span>+${rateDiff.toFixed(1)}% vs ${periodLabel}</span>
+      `;
+    } else {
+      comparisonEl.className = "flex items-center gap-1 text-[10px] sm:text-xs font-bold px-2 py-1 rounded-lg bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 border border-red-100 dark:border-red-500/20 shadow-sm shrink-0";
+      comparisonEl.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trending-down"><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/></svg>
+        <span>${rateDiff.toFixed(1)}% vs ${periodLabel}</span>
+      `;
+    }
+  }
+};
 
 window.drawDonutChart = function () {
   const canvas = document.getElementById("weekly-chart");
@@ -2539,107 +2680,227 @@ window.drawDonutChart = function () {
 
   const width = rect.width;
   const height = rect.height;
-  const centerX = width / 2;
-  const centerY = height / 2;
-
-  let radius = Math.min(width, height) / 2 - 10;
-  if (radius <= 0) {
-    console.warn("Canvas too small for chart");
-    return;
-  }
 
   ctx.clearRect(0, 0, width, height);
 
-  let stats = { h: 0, s: 0, i: 0, a: 0 };
-  let totalPeristiwa = 0;
-  let activeSlots = 0;
-
-  if (appState.selectedClass) {
-    Object.values(SLOT_WAKTU).forEach((slot) => {
-      const sStats = window.calculateSlotStats(slot.id);
-      if (sStats.isFilled) {
-        stats.h += sStats.h;
-        stats.s += sStats.s;
-        stats.i += sStats.i;
-        stats.a += sStats.a;
-        totalPeristiwa += sStats.total;
-        activeSlots++;
-      }
-    });
-  }
-
-  const divider = activeSlots > 0 ? activeSlots : 1;
-
-  const setLegend = (id, val) => {
-    const el = document.getElementById(id);
-    if (el) el.textContent = val;
+  const range = appState.statsRange || 'weekly';
+  const getDatesForRange = (baseDateStr, count) => {
+    const dates = [];
+    const baseDate = new Date(baseDateStr);
+    for (let i = count - 1; i >= 0; i--) {
+      const d = new Date(baseDate);
+      d.setDate(baseDate.getDate() - i);
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      dates.push(`${yyyy}-${mm}-${dd}`);
+    }
+    return dates;
   };
 
-  setLegend("legend-hadir", Math.round(stats.h / divider));
-  setLegend("legend-sakit", Math.round(stats.s / divider));
-  setLegend("legend-izin", Math.round(stats.i / divider));
-  setLegend("legend-alpa", Math.round(stats.a / divider));
+  // 1. Group/Retrieve data points based on selected range
+  const groupedData = [];
+  const classSize = (FILTERED_SANTRI && FILTERED_SANTRI.length) || 30;
 
-  if (totalPeristiwa === 0 || radius === 0) {
-    if (radius > 0) {
-      ctx.beginPath();
-      ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
-      ctx.strokeStyle = document.documentElement.classList.contains("dark")
-        ? "#334155"
-        : "#e2e8f0";
-      ctx.lineWidth = 12;
-      ctx.lineCap = "round";
-      ctx.stroke();
-      drawCenterText(ctx, centerX, centerY, "0%", "Belum Ada Data");
+  const getStatsForDates = (datesList) => {
+    let stats = { h: 0, s: 0, i: 0, p: 0, t: 0, a: 0 };
+    let filledSlots = 0;
+    datesList.forEach(dateKey => {
+      Object.values(SLOT_WAKTU).forEach(slot => {
+        const sStats = window.calculateSlotStats(slot.id, dateKey);
+        if (sStats.isFilled) {
+          stats.h += sStats.h;
+          stats.s += sStats.s;
+          stats.i += sStats.i;
+          stats.p += sStats.p || 0;
+          stats.t += sStats.t || 0;
+          stats.a += sStats.a;
+          filledSlots++;
+        }
+      });
+    });
+
+    const div = filledSlots > 0 ? filledSlots : 1;
+    return {
+      hadir: stats.h / div,
+      sakit: stats.s / div,
+      izin: stats.i / div,
+      pulang: stats.p / div,
+      telat: stats.t / div,
+      alpa: stats.a / div,
+      hasData: filledSlots > 0
+    };
+  };
+
+  if (range === 'weekly') {
+    const dates = getDatesForRange(appState.date, 7);
+    const dayNames = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"];
+    dates.forEach(dateKey => {
+      const stats = getStatsForDates([dateKey]);
+      const dateObj = new Date(dateKey);
+      groupedData.push({
+        label: dayNames[dateObj.getDay()],
+        stats: stats.hasData ? stats : { hadir: classSize, sakit: 0, izin: 0, pulang: 0, telat: 0, alpa: 0 }
+      });
+    });
+  } else if (range === 'monthly') {
+    // 4 points (4 weeks)
+    const dates = getDatesForRange(appState.date, 28);
+    for (let w = 0; w < 4; w++) {
+      const weekDates = dates.slice(w * 7, (w + 1) * 7);
+      const stats = getStatsForDates(weekDates);
+      groupedData.push({
+        label: `W-${4 - w}`,
+        stats: stats.hasData ? stats : { hadir: classSize, sakit: 0, izin: 0, pulang: 0, telat: 0, alpa: 0 }
+      });
     }
-    return;
+  } else if (range === 'semester') {
+    // 6 points (6 months)
+    const baseDate = new Date(appState.date);
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Ags", "Sep", "Okt", "Nov", "Des"];
+    for (let m = 5; m >= 0; m--) {
+      const targetDate = new Date(baseDate.getFullYear(), baseDate.getMonth() - m, 1);
+      const y = targetDate.getFullYear();
+      const mIdx = targetDate.getMonth();
+      const daysCount = new Date(y, mIdx + 1, 0).getDate();
+      const monthDates = [];
+      for (let d = 1; d <= daysCount; d++) {
+        const dd = String(d).padStart(2, '0');
+        const mm = String(mIdx + 1).padStart(2, '0');
+        monthDates.push(`${y}-${mm}-${dd}`);
+      }
+      const stats = getStatsForDates(monthDates);
+      groupedData.push({
+        label: monthNames[mIdx],
+        stats: stats.hasData ? stats : { hadir: classSize, sakit: 0, izin: 0, pulang: 0, telat: 0, alpa: 0 }
+      });
+    }
   }
 
-  const segments = [
-    { value: stats.h, color: "#10b981" },
-    { value: stats.s, color: "#f59e0b" },
-    { value: stats.i, color: "#3b82f6" },
-    { value: stats.a, color: "#f43f5e" },
-  ];
+  // Draw chart elements
+  const paddingLeft = 25;
+  const paddingRight = 10;
+  const paddingTop = 15;
+  const paddingBottom = 25;
 
-  let startAngle = -Math.PI / 2;
+  const chartWidth = width - paddingLeft - paddingRight;
+  const chartHeight = height - paddingTop - paddingBottom;
 
-  segments.forEach((seg) => {
-    if (seg.value > 0) {
-      const sliceAngle = (seg.value / totalPeristiwa) * 2 * Math.PI;
-      const endAngle = startAngle + sliceAngle;
+  const maxY = Math.max(classSize, 10);
+  const minY = 0;
 
-      ctx.beginPath();
-      ctx.arc(centerX, centerY, radius, startAngle, endAngle);
-      ctx.strokeStyle = seg.color;
-      ctx.lineWidth = 14;
-      ctx.lineCap = "butt";
-      ctx.stroke();
+  const isDark = document.documentElement.classList.contains("dark");
+  const gridColor = isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)";
+  const labelColor = isDark ? "#64748b" : "#94a3b8";
 
-      startAngle = endAngle;
-    }
+  // Y-axis grid & labels
+  const gridSteps = 3;
+  ctx.strokeStyle = gridColor;
+  ctx.lineWidth = 1;
+  ctx.fillStyle = labelColor;
+  ctx.font = "bold 9px 'Plus Jakarta Sans', sans-serif";
+  ctx.textAlign = "right";
+  ctx.textBaseline = "middle";
+
+  for (let i = 0; i <= gridSteps; i++) {
+    const val = Math.round(minY + (maxY - minY) * (i / gridSteps));
+    const y = paddingTop + chartHeight - (i / gridSteps) * chartHeight;
+
+    ctx.beginPath();
+    ctx.moveTo(paddingLeft, y);
+    ctx.lineTo(width - paddingRight, y);
+    ctx.stroke();
+
+    ctx.fillText(val.toString(), paddingLeft - 6, y);
+  }
+
+  // Coordinates
+  const points = { h: [], nh: [] };
+  const pointKeys = ['h', 'nh'];
+
+  ctx.textAlign = "center";
+  ctx.textBaseline = "top";
+
+  const dataLength = groupedData.length;
+  groupedData.forEach((d, idx) => {
+    const x = paddingLeft + (idx / (dataLength - 1)) * chartWidth;
+    
+    // Draw X label
+    ctx.fillText(d.label, x, height - paddingBottom + 6);
+
+    const valHadir = d.stats.hadir + d.stats.telat;
+    const valTidakHadir = d.stats.sakit + d.stats.izin + d.stats.pulang + d.stats.alpa;
+
+    // Y coords
+    points.h.push({ x, y: paddingTop + chartHeight - (valHadir / maxY) * chartHeight });
+    points.nh.push({ x, y: paddingTop + chartHeight - (valTidakHadir / maxY) * chartHeight });
   });
 
-  const percentHadir = Math.round((stats.h / totalPeristiwa) * 100);
-  drawCenterText(ctx, centerX, centerY, `${percentHadir}%`, "Hadir");
+  // Helper to draw lines
+  function drawSmoothLine(pts, strokeColor, fillColor) {
+    if (pts.length === 0) return;
 
-  const statsText = document.getElementById("dash-stats-text");
-  if (statsText) statsText.textContent = `${percentHadir}% KEHADIRAN`;
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x, pts[0].y);
+
+    for (let idx = 0; idx < pts.length - 1; idx++) {
+      const p0 = pts[idx];
+      const p1 = pts[idx + 1];
+      const cpX1 = p0.x + (p1.x - p0.x) / 3;
+      const cpY1 = p0.y;
+      const cpX2 = p0.x + 2 * (p1.x - p0.x) / 3;
+      const cpY2 = p1.y;
+
+      ctx.bezierCurveTo(cpX1, cpY1, cpX2, cpY2, p1.x, p1.y);
+    }
+
+    ctx.strokeStyle = strokeColor;
+    ctx.lineWidth = 2.5;
+    ctx.lineCap = "round";
+    ctx.stroke();
+
+    if (fillColor) {
+      ctx.lineTo(pts[pts.length - 1].x, paddingTop + chartHeight);
+      ctx.lineTo(pts[0].x, paddingTop + chartHeight);
+      ctx.closePath();
+      ctx.fillStyle = fillColor;
+      ctx.fill();
+    }
+  }
+
+  // Draw 2 curves with specific colors
+  const colors = {
+    h: '#3b82f6',  // Hadir - Blue
+    nh: '#f43f5e'  // Tidak Hadir - Rose/Red
+  };
+
+  // Gradients for area fills
+  const gradHadir = ctx.createLinearGradient(0, paddingTop, 0, paddingTop + chartHeight);
+  gradHadir.addColorStop(0, "rgba(59, 130, 246, 0.08)");
+  gradHadir.addColorStop(1, "rgba(59, 130, 246, 0.0)");
+
+  const gradTidakHadir = ctx.createLinearGradient(0, paddingTop, 0, paddingTop + chartHeight);
+  gradTidakHadir.addColorStop(0, "rgba(244, 63, 94, 0.05)");
+  gradTidakHadir.addColorStop(1, "rgba(244, 63, 94, 0.0)");
+
+  // Draw curves
+  drawSmoothLine(points.nh, colors.nh, gradTidakHadir);
+  drawSmoothLine(points.h, colors.h, gradHadir);
+
+  // Draw circular points for interaction/detail
+  groupedData.forEach((_, idx) => {
+    pointKeys.forEach(k => {
+      const pt = points[k][idx];
+      ctx.beginPath();
+      ctx.arc(pt.x, pt.y, 3.5, 0, 2 * Math.PI);
+      ctx.fillStyle = colors[k];
+      ctx.fill();
+      ctx.strokeStyle = isDark ? "#1e293b" : "#ffffff";
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
+    });
+  });
 };
-
-function drawCenterText(ctx, x, y, mainText, subText) {
-  ctx.fillStyle = document.documentElement.classList.contains("dark")
-    ? "#fff"
-    : "#1e293b";
-  ctx.font = '800 28px "Plus Jakarta Sans", sans-serif';
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.fillText(mainText, x, y - 5);
-
-  ctx.font = 'bold 11px "Plus Jakarta Sans", sans-serif';
-  ctx.fillStyle = "#94a3b8";
-  ctx.fillText(subText, x, y + 18);
-}
 
 // ==========================================
 // 9. TABS & NAVIGATION
@@ -2673,6 +2934,17 @@ window.switchTab = function (tabName) {
       btn.classList.add("text-slate-400");
     }
   });
+
+  // 4.5. Update Bottom Nav Expansion State for new tab
+  const bottomNav = document.querySelector("nav");
+  if (bottomNav) {
+    const activeTab = tabName === "home" ? document.getElementById("main-content") : document.getElementById(`tab-${tabName}`);
+    if (activeTab && activeTab.scrollTop > 20) {
+      bottomNav.classList.add("nav-expanded");
+    } else {
+      bottomNav.classList.remove("nav-expanded");
+    }
+  }
 
   // 5. Jalankan Logika Spesifik per Tab
   if (tabName === "home") {
@@ -4709,6 +4981,7 @@ window.markAsReturned = function (id) {
     );
     window.renderPermitList();
     window.renderAttendanceList();
+    if (window.renderActivePermitsWidget) window.renderActivePermitsWidget();
   }
 };
 
@@ -4820,6 +5093,7 @@ window.showStatDetails = function (statusType) {
   const modal = document.getElementById("modal-stat-detail");
   const container = document.getElementById("stat-detail-list");
   const title = document.getElementById("stat-detail-title");
+  let filledSantri = 0;
 
   // 1. Setup UI Modal
   modal.classList.remove("hidden");
@@ -4828,12 +5102,12 @@ window.showStatDetails = function (statusType) {
 
   // Warna Judul sesuai Tipe
   let colorClass = "text-slate-800";
-  if (statusType === "Sakit") colorClass = "text-amber-500";
+  if (statusType === "Hadir") colorClass = "text-blue-500";
+  else if (statusType === "Tidak Hadir") colorClass = "text-rose-500";
+  else if (statusType === "Sakit") colorClass = "text-yellow-500";
   else if (statusType === "Izin") colorClass = "text-blue-500";
-  else if (statusType === "Alpa") colorClass = "text-rose-500";
-  else if (statusType === "Hadir") colorClass = "text-emerald-500";
-  // Tambahkan Handling Telat & Pulang (Jaga-jaga)
-  else if (statusType === "Telat") colorClass = "text-teal-500";
+  else if (statusType === "Alpa") colorClass = "text-red-500";
+  else if (statusType === "Telat") colorClass = "text-cyan-500";
   else if (statusType === "Pulang") colorClass = "text-purple-500";
 
   title.textContent = `Daftar ${statusType}`;
@@ -4857,7 +5131,8 @@ window.showStatDetails = function (statusType) {
     const currentStatus = data?.status?.[mainActId]; // <-- PERBAIKAN DI SINI
 
     // Logic Matching
-    if (statusType === "Hadir") return currentStatus === "Hadir";
+    if (statusType === "Hadir") return currentStatus === "Hadir" || currentStatus === "Telat";
+    if (statusType === "Tidak Hadir") return currentStatus === "Sakit" || currentStatus === "Izin" || currentStatus === "Pulang" || currentStatus === "Alpa";
     if (statusType === "Sakit") return currentStatus === "Sakit";
     if (statusType === "Izin") return currentStatus === "Izin";
     if (statusType === "Pulang") return currentStatus === "Pulang";
@@ -4918,7 +5193,7 @@ window.renderDashboardPembinaan = function () {
 
   // Ubah Judul Widget agar mencakup semua (yang sudah & belum dibina)
   if (cardTitle)
-    cardTitle.innerHTML = `<i data-lucide="alert-triangle" class="w-4 h-4 text-red-500 mr-2 inline"></i>Pelanggaran Hari Ini`;
+    cardTitle.textContent = "Pelanggaran Hari Ini";
 
   if (!container) return;
 
@@ -4961,15 +5236,15 @@ window.renderDashboardPembinaan = function () {
     if (pendingCount > 0) {
       badge.textContent = `${pendingCount} Perlu Dibina`;
       badge.className =
-        "px-2 py-0.5 rounded-md bg-red-500 text-white text-[10px] font-bold shadow-sm animate-pulse";
+        "px-2 py-0.5 rounded-md bg-red-500 text-white text-[10px] font-bold shadow-sm animate-pulse whitespace-nowrap";
     } else if (violationList.length > 0) {
       badge.textContent = `Tuntas (${violationList.length})`;
       badge.className =
-        "px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-600 text-[10px] font-bold border border-emerald-200";
+        "px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-600 text-[10px] font-bold border border-emerald-200 whitespace-nowrap";
     } else {
       badge.textContent = "0 Pelanggaran";
       badge.className =
-        "px-2 py-0.5 rounded-md bg-slate-100 text-slate-500 text-[10px] font-bold";
+        "px-2 py-0.5 rounded-md bg-slate-100 text-slate-500 text-[10px] font-bold whitespace-nowrap";
     }
   }
 
@@ -4978,41 +5253,59 @@ window.renderDashboardPembinaan = function () {
 
   if (violationList.length === 0) {
     container.innerHTML = `
-            <div class="text-center py-8">
-                <div class="inline-flex p-3 rounded-full bg-emerald-50 dark:bg-emerald-900/20 text-emerald-500 mb-2 border border-emerald-100 dark:border-emerald-800">
-                    <i data-lucide="shield-check" class="w-6 h-6"></i>
-                </div>
-                <p class="text-[10px] font-bold text-slate-400">Nihil pelanggaran hari ini</p>
-            </div>`;
+      <div class="flex items-center justify-between p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 shadow-sm">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-shield-check"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg>
+          </div>
+          <div class="text-left">
+            <p class="text-[11px] sm:text-xs font-black text-emerald-700 dark:text-emerald-400">Aman Terkendali</p>
+            <p class="text-[9px] font-bold text-emerald-600/70 dark:text-emerald-400/70">Nihil pelanggaran hari ini</p>
+          </div>
+        </div>
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-emerald-400/50 mr-1 shrink-0"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+      </div>`;
   } else {
-    // SORTING: Yang BELUM DIBINA taruh paling atas
     violationList.sort((a, b) =>
       a.isCoached === b.isCoached ? 0 : a.isCoached ? 1 : -1,
     );
-
     violationList.forEach((p) => {
       const div = document.createElement("div");
 
-      // Visual Distinction: Jika sudah dibina, buat agak transparan/abu
-      const bgClass = p.isCoached
-        ? "bg-slate-50 dark:bg-slate-900 opacity-75 grayscale-[0.5] border-slate-100"
-        : "bg-white dark:bg-slate-800 border-red-100 dark:border-red-900/30 shadow-sm";
-
-      div.className = `flex items-center justify-between p-3 rounded-xl border mb-2 transition-all ${bgClass}`;
-
-      let actionHtml = "";
+      const initials = p.nama.substring(0, 2).toUpperCase();
 
       if (p.isCoached) {
-        // TAMPILAN SUDAH DIBINA (Tetap Muncul)
-        actionHtml = `
-                    <div class="text-right">
-                         <span class="px-2 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-500 text-[10px] font-bold border border-slate-200 dark:border-slate-600 flex items-center gap-1 cursor-default">
-                            <i data-lucide="check-check" class="w-3 h-3 text-emerald-500"></i> Sudah Dibina
-                        </span>
-                    </div>
-                `;
+        // TAMPILAN SUDAH DIBINA
+        div.className = "relative flex items-center justify-between p-2 sm:p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/50 dark:border-slate-700/50 shadow-sm overflow-hidden mb-1.5";
+        div.innerHTML = `
+          <!-- Pattern Overlay -->
+          <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGcgc3Ryb2tlPSJyZ2JhKDE1NiwgMTYzLCAxNzUsIDAuMikiIHN0cm9rZS13aWR0aD0iMSI+PHBhdGggZD0iTTAgNDBsNDAtNDAiLz48L2c+PC9zdmc+')] opacity-50 dark:opacity-20 pointer-events-none"></div>
+          
+          <div class="flex items-center gap-2.5 min-w-0 relative z-10 opacity-70 grayscale-[0.3]">
+            <!-- Avatar Inisial -->
+            <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-slate-200 dark:bg-slate-800 flex items-center justify-center text-xs font-black text-slate-500 border border-slate-300 dark:border-slate-700 shrink-0">
+              ${initials}
+            </div>
+            <!-- Detail Santri -->
+            <div class="min-w-0">
+              <h4 class="text-[11px] sm:text-xs font-bold text-slate-600 dark:text-slate-400 truncate pr-2 line-through decoration-slate-400/50">${p.nama}</h4>
+              <p class="text-[8px] font-black uppercase text-slate-400 flex items-center gap-0.5 tracking-wider mt-0.5">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="w-2.5 h-2.5"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+                Alpa ${p.slotLabel}
+              </p>
+            </div>
+          </div>
+          
+          <!-- Label Status -->
+          <div class="shrink-0 relative z-10">
+            <span class="px-2 py-1.5 rounded-lg bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm text-emerald-600 dark:text-emerald-500 text-[9px] font-black border border-emerald-100 dark:border-emerald-900/50 flex items-center gap-1 cursor-default shadow-sm tracking-wide">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="w-3 h-3 text-emerald-500"><path d="M18 6 7 17l-5-5"></path><path d="m22 10-7.5 7.5L13 16"></path></svg>
+              Selesai
+            </span>
+          </div>
+        `;
       } else {
-        // TAMPILAN BELUM DIBINA (Tombol Action Hijau)
+        // TAMPILAN BELUM DIBINA (Tombol Action Bina)
         const dataStr = JSON.stringify({
           id: p.nis || p.id,
           nama: p.nama,
@@ -5021,28 +5314,31 @@ window.renderDashboardPembinaan = function () {
           slotLabel: p.slotLabel,
         }).replace(/"/g, "&quot;");
 
-        actionHtml = `
-                    <button onclick="window.openPembinaanModal(${dataStr})" class="px-3 py-1.5 rounded-lg bg-emerald-500 text-white text-[10px] font-bold hover:bg-emerald-600 shadow-md shadow-emerald-500/20 active:scale-95 transition-all flex items-center gap-1">
-                        <i data-lucide="heart-handshake" class="w-3 h-3"></i> Bina
-                    </button>
-                `;
+        div.className = "flex items-center justify-between p-2 sm:p-2.5 rounded-xl bg-white dark:bg-slate-800/50 border border-red-100/50 dark:border-red-500/20 shadow-sm group hover:border-red-300 dark:hover:border-red-500/50 transition-colors mb-1.5";
+        div.innerHTML = `
+          <div class="flex items-center gap-2.5 min-w-0">
+            <!-- Avatar Inisial -->
+            <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-red-50 dark:bg-red-500/10 flex items-center justify-center text-xs font-black text-red-600 dark:text-red-400 border border-red-100 dark:border-red-500/20 shrink-0">
+              ${initials}
+            </div>
+            <!-- Detail Santri -->
+            <div class="min-w-0">
+              <h4 class="text-[11px] sm:text-xs font-bold text-slate-800 dark:text-white truncate pr-2">${p.nama}</h4>
+              <p class="text-[8px] font-black uppercase text-red-500 flex items-center gap-0.5 tracking-wider mt-0.5">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="w-2.5 h-2.5"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+                Alpa ${p.slotLabel}
+              </p>
+            </div>
+          </div>
+          
+          <!-- Tombol Aksi Bina -->
+          <button onclick="window.openPembinaanModal(${dataStr})" class="shrink-0 px-2.5 py-1.5 rounded-lg bg-emerald-500 text-white text-[9px] sm:text-[10px] font-bold hover:bg-emerald-600 shadow-md shadow-emerald-500/20 active:scale-95 transition-all flex items-center gap-1">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-3 h-3"><path d="M19.414 14.414C21 12.828 22 11.5 22 9.5a5.5 5.5 0 0 0-9.591-3.676.6.6 0 0 1-.818.001A5.5 5.5 0 0 0 2 9.5c0 2.3 1.5 4 3 5.5l5.535 5.362a2 2 0 0 0 2.879.052 2.12 2.12 0 0 0-.004-3 2.124 2.124 0 1 0 3-3 2.124 2.124 0 0 0 3.004 0 2 2 0 0 0 0-2.828l-1.881-1.882a2.41 2.41 0 0 0-3.409 0l-1.71 1.71a2 2 0 0 1-2.828 0 2 2 0 0 1 0-2.828l2.823-2.762"></path></svg>
+            Bina
+          </button>
+        `;
       }
 
-      div.innerHTML = `
-                <div class="flex items-center gap-3">
-                    <div class="w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-xs font-black text-slate-500 border border-slate-200">
-                        ${p.nama.substring(0, 2).toUpperCase()}
-                    </div>
-                    <div>
-                        <h4 class="text-xs font-bold text-slate-800 dark:text-white line-clamp-1">${p.nama}</h4>
-                        <p class="text-[10px] text-red-500 font-medium flex items-center gap-1">
-                            <i data-lucide="x" class="w-3 h-3"></i>
-                            Alpa ${p.slotLabel}
-                        </p>
-                    </div>
-                </div>
-                ${actionHtml}
-            `;
       container.appendChild(div);
     });
   }
@@ -5469,21 +5765,36 @@ window.renderActivePermitsWidget = function () {
     );
     if (!santri) return;
 
-    let colorClass, iconName;
+    let colorClass, textLabelColorClass, iconSVG, displayCategory;
     const cat = item.category.toLowerCase();
+    displayCategory = item.category;
 
     if (cat === "sakit") {
-      colorClass = "bg-amber-100 text-amber-600 border-amber-200";
-      iconName = "thermometer";
+      colorClass = "bg-amber-50 text-amber-500 dark:bg-amber-500/10 border border-amber-100 dark:border-amber-500/20";
+      textLabelColorClass = "text-amber-600 dark:text-amber-400";
+      iconSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4v10.54a4 4 0 1 1-4 0V4a2 2 0 0 1 4 0Z"/><path d="M12 7v4"/></svg>`;
     } else if (cat === "izin") {
-      colorClass = "bg-blue-100 text-blue-600 border-blue-200";
-      iconName = "file-text";
+      colorClass = "bg-blue-50 text-blue-500 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20";
+      textLabelColorClass = "text-blue-600 dark:text-blue-400";
+      iconSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>`;
     } else if (cat === "pulang") {
-      colorClass = "bg-purple-100 text-purple-600 border-purple-200";
-      iconName = "bus";
+      colorClass = "bg-purple-50 text-purple-500 dark:bg-purple-500/10 border border-purple-100 dark:border-purple-500/20";
+      textLabelColorClass = "text-purple-600 dark:text-purple-400";
+      iconSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6v6"></path><path d="M15 6v6"></path><path d="M2 12h19.6"></path><path d="M18 18h3s.5-1.7.8-2.8c.1-.4.2-.8.2-1.2 0-.4-.1-.8-.2-1.2l-1.4-5C20.1 6.8 19.1 6 18 6H4a2 2 0 0 0-2 2v10h3"></path><circle cx="7" cy="18" r="2"></circle><path d="M9 18h5"></path><circle cx="16" cy="18" r="2"></circle></svg>`;
     } else {
-      colorClass = "bg-slate-100 text-slate-600 border-slate-200";
-      iconName = "help-circle";
+      colorClass = "bg-rose-50 text-rose-500 dark:bg-rose-500/10 border border-rose-100 dark:border-rose-500/20";
+      textLabelColorClass = "text-rose-600 dark:text-rose-400";
+      iconSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>`;
+    }
+
+    if (!item.isActive) {
+      if (cat === "sakit") {
+        displayCategory = "Sembuh";
+      } else {
+        displayCategory = "Kembali";
+      }
+      colorClass = "bg-emerald-50 text-emerald-500 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20";
+      textLabelColorClass = "text-emerald-600 dark:text-emerald-400";
     }
 
     let btnHTML = "";
@@ -5493,11 +5804,9 @@ window.renderActivePermitsWidget = function () {
 
       // Logic Action
       if (item.type === "manual") {
-        // Jika manual, tombolnya "Hadirkan"
         action = `window.resolveManualStatus('${item.nis}', '${cat.charAt(0).toUpperCase() + cat.slice(1)}')`;
         label = "Hadirkan";
       } else {
-        // Jika permit
         if (cat === "sakit") {
           action = `window.markAsRecovered('${item.id}')`;
         } else {
@@ -5507,31 +5816,43 @@ window.renderActivePermitsWidget = function () {
       }
 
       btnHTML = `
-                <button onclick="${action}" class="ml-2 px-3 py-2 rounded-xl bg-emerald-500 text-white text-[10px] font-bold hover:bg-emerald-600 shadow-md flex items-center gap-1">
-                    <i data-lucide="check" class="w-3 h-3"></i> ${label}
-                </button>`;
+        <button onclick="${action}" class="shrink-0 px-2.5 py-1.5 rounded-lg bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400 border border-emerald-200/50 dark:border-emerald-500/20 text-[9px] font-bold hover:bg-emerald-500 hover:text-white dark:hover:bg-emerald-500 dark:hover:text-white hover:border-emerald-500 transition-all flex items-center gap-1 active:scale-95">
+          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>
+          ${label}
+        </button>
+      `;
     } else {
       btnHTML = `
-                <button disabled class="ml-2 px-3 py-2 rounded-xl bg-slate-100 text-slate-400 border border-slate-200 text-[10px] font-bold cursor-not-allowed flex items-center gap-1">
-                    <i data-lucide="check-check" class="w-3 h-3"></i> Selesai
-                </button>`;
+        <button disabled class="shrink-0 px-2.5 py-1.5 rounded-lg bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500 border border-slate-200 dark:border-slate-700 text-[9px] font-bold cursor-not-allowed flex items-center gap-1">
+          Selesai
+        </button>
+      `;
     }
 
     const div = document.createElement("div");
-    div.className = `flex items-center justify-between p-3 rounded-2xl border transition-all mb-2 ${item.isActive ? "bg-white dark:bg-slate-800 shadow-sm" : "bg-slate-50 dark:bg-slate-900 opacity-60 grayscale"}`;
+    div.className = `flex items-center justify-between p-2 rounded-xl border transition-colors ${
+      item.isActive 
+        ? "bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700/50 shadow-sm group hover:border-slate-300 dark:hover:border-slate-600" 
+        : "bg-slate-50/50 dark:bg-slate-900/30 border-slate-100 dark:border-slate-800 opacity-60 grayscale"
+    }`;
     div.innerHTML = `
-            <div class="flex items-center gap-3 min-w-0">
-                <div class="w-9 h-9 rounded-xl ${colorClass} flex items-center justify-center flex-shrink-0 border shadow-sm"><i data-lucide="${iconName}" class="w-4 h-4"></i></div>
-                <div class="min-w-0">
-                    <h4 class="text-xs font-bold text-slate-800 dark:text-white truncate">${santri.nama}</h4>
-                    <div class="flex items-center gap-1.5 mt-1">
-                        <span class="text-[9px] font-black uppercase ${colorClass.split(" ")[1]}">${item.category}</span>
-                        <span class="text-[9px] text-slate-400">• ${item.type === "manual" ? "Manual" : window.formatDate(item.startTime)}</span>
-                    </div>
-                </div>
-            </div>
-            ${btnHTML}
-        `;
+      <div class="flex items-center gap-2.5 min-w-0">
+        <!-- Ikon Status -->
+        <div class="w-8 h-8 rounded-lg ${colorClass} flex items-center justify-center shrink-0">
+          ${iconSVG}
+        </div>
+        <!-- Info Santri -->
+        <div class="min-w-0">
+          <h4 class="text-[11px] sm:text-xs font-bold text-slate-800 dark:text-slate-200 truncate pr-2">${santri.nama}</h4>
+          <div class="flex items-center gap-1.5 mt-0.5">
+            <span class="text-[8px] font-black uppercase ${textLabelColorClass} tracking-wider">${displayCategory}</span>
+            <span class="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-600"></span>
+            <span class="text-[8px] font-semibold text-slate-400">${item.type === "manual" ? "Manual" : window.formatDate(item.startTime)}</span>
+          </div>
+        </div>
+      </div>
+      ${btnHTML}
+    `;
     container.appendChild(div);
   });
   if (window.lucide) window.lucide.createIcons();
@@ -6214,23 +6535,31 @@ window.switchReportView = function (view) {
   }
 };
 
-// Widget Salat & Hijriah
 window.initSalatHijriWidget = async function () {
   const hijriEl = document.getElementById("widget-hijri-date");
   if (!hijriEl) return;
 
+  const todayStr = (window.appState && window.appState.date) || (window.getLocalDateStr ? window.getLocalDateStr() : new Date().toISOString().split("T")[0]);
+
+  const masehiEl = document.getElementById("widget-masehi-date");
+  if (masehiEl) {
+    const targetDate = new Date(todayStr);
+    const options = { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric' };
+    masehiEl.textContent = targetDate.toLocaleDateString('id-ID', options);
+  }
+
   // Set tanggal masehi lokal segera di widget GPS
   const gpsGregorianEl = document.getElementById("gps-gregorian-date");
   if (gpsGregorianEl) {
-    const now = new Date();
+    const targetDate = new Date(todayStr);
     const options = { day: 'numeric', month: 'long', year: 'numeric' };
-    gpsGregorianEl.textContent = now.toLocaleDateString('id-ID', options);
+    gpsGregorianEl.textContent = targetDate.toLocaleDateString('id-ID', options);
   }
 
   // Koordinat Default (Masjid Jami' Mu'allimin Yogyakarta)
   let lat = -7.807757;
   let lng = 110.350915;
-  let locationSource = "Mu'allimin";
+  let locationLabel = "Wirobrajan, Yogyakarta";
 
   // Coba dapatkan lokasi asli pengguna
   try {
@@ -6239,12 +6568,41 @@ window.initSalatHijriWidget = async function () {
     });
     lat = position.coords.latitude;
     lng = position.coords.longitude;
-    locationSource = "Lokasi GPS";
+    
+    // Reverse geocode to get human-readable location
+    try {
+      const geoResponse = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=14`, {
+        headers: { "Accept-Language": "id" }
+      });
+      if (geoResponse.ok) {
+        const geoData = await geoResponse.json();
+        if (geoData && geoData.address) {
+          const addr = geoData.address;
+          const suburb = addr.suburb || addr.village || addr.neighbourhood || addr.subdistrict || "";
+          const city = addr.city || addr.regency || addr.municipality || addr.town || "";
+          if (suburb && city) {
+            locationLabel = `${suburb}, ${city}`;
+          } else if (city) {
+            locationLabel = city;
+          } else if (geoData.display_name) {
+            locationLabel = geoData.display_name.split(",")[0] || "Lokasi Anda";
+          }
+        }
+      }
+    } catch (geoErr) {
+      console.log("Gagal reverse geocode:", geoErr);
+      locationLabel = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+    }
   } catch (locErr) {
     console.log("Menggunakan lokasi default (Yogyakarta):", locErr.message);
   }
 
-  const todayStr = window.getLocalDateStr ? window.getLocalDateStr() : new Date().toISOString().split("T")[0];
+  // Update subtitle
+  const subtitleEl = document.getElementById("salat-location-subtitle");
+  if (subtitleEl) {
+    subtitleEl.textContent = locationLabel;
+  }
+
   // Format tanggal ke DD-MM-YYYY untuk Aladhan API
   const [year, month, day] = todayStr.split("-");
   const formattedDate = `${day}-${month}-${year}`;
@@ -6325,9 +6683,8 @@ window.initSalatHijriWidget = async function () {
         if (name === nextSalat) {
           // Active state classes for card
           el.classList.remove(
-            "bg-white/60", "dark:bg-slate-800/60", "border-slate-200/60", "dark:border-slate-700/60",
-            "hover:bg-white", "dark:hover:bg-slate-700", "hover:shadow-xl", "hover:shadow-slate-200/50",
-            "dark:hover:shadow-black/20", "hover:-translate-y-1"
+            "bg-slate-50", "dark:bg-slate-900/40", "border-slate-100", "dark:border-slate-800/40",
+            "hover:bg-slate-100", "dark:hover:bg-slate-900/60", "hover:shadow-sm", "hover:-translate-y-1"
           );
           el.classList.add(
             "bg-gradient-to-b", "from-emerald-500", "to-emerald-600", "dark:from-emerald-600", "dark:to-emerald-800",
@@ -6357,9 +6714,8 @@ window.initSalatHijriWidget = async function () {
             "border-none", "shadow-lg", "shadow-emerald-500/30", "z-10"
           );
           el.classList.add(
-            "bg-white/60", "dark:bg-slate-800/60", "border-slate-200/60", "dark:border-slate-700/60",
-            "hover:bg-white", "dark:hover:bg-slate-700", "hover:shadow-xl", "hover:shadow-slate-200/50",
-            "dark:hover:shadow-black/20", "hover:-translate-y-1"
+            "bg-slate-50", "dark:bg-slate-900/40", "border-slate-100", "dark:border-slate-800/40",
+            "hover:bg-slate-100", "dark:hover:bg-slate-900/60", "hover:shadow-sm", "hover:-translate-y-1"
           );
           
           if (patternOverlay) patternOverlay.classList.add("hidden");
@@ -6660,12 +7016,7 @@ window.openBentoModal = function (s, access, stats) {
     ctaBtn.onclick = () => {
       window.closeBentoModal();
       appState.currentSlotId = s.id;
-      if (isToday && s.id === window.determineCurrentSlot()) {
-        window.updateDashboard();
-        document.getElementById("main-content").scrollTo({ top: 0, behavior: "smooth" });
-      } else {
-        window.openAttendance();
-      }
+      window.openAttendance();
     };
   }
 
@@ -6695,3 +7046,25 @@ window.closeBentoModal = function () {
 
 // Start App
 window.onload = window.initApp;
+
+window.toggleSalatAccordion = function () {
+  const content = document.getElementById("salat-accordion-content");
+  const chevron = document.getElementById("salat-accordion-chevron");
+  const label = document.getElementById("salat-accordion-label");
+  const wrapper = document.getElementById("salat-accordion-wrapper");
+  if (!content || !chevron) return;
+  const isExpanded = content.classList.contains("grid-rows-[1fr]");
+  if (isExpanded) {
+    if (wrapper) wrapper.classList.remove("is-expanded");
+    content.classList.remove("grid-rows-[1fr]");
+    content.classList.add("grid-rows-[0fr]");
+    chevron.classList.remove("rotate-180");
+    if (label) label.textContent = "Lihat Jadwal Salat";
+  } else {
+    if (wrapper) wrapper.classList.add("is-expanded");
+    content.classList.remove("grid-rows-[0fr]");
+    content.classList.add("grid-rows-[1fr]");
+    chevron.classList.add("rotate-180");
+    if (label) label.textContent = "Jadwal Salat";
+  }
+};
