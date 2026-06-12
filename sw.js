@@ -1,10 +1,11 @@
-const CACHE_NAME = "musyrif-app-v166-smooth-pwa-seamless";
+const CACHE_NAME = "musyrif-app-v166-smooth-qibla-seamless-ios";
 const ASSETS_TO_CACHE = [
   "./",
   "./index.html",
   "./output.css",
   "./config.js",
   "./script.js",
+  "./qibla.js",
   "./santri-manager.js",
   "./data-santri.js",
   "./data-kelas.js",

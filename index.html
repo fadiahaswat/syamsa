@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="id" class="scroll-smooth">
+<html lang="id" class="scroll-smooth bg-slate-50 dark:bg-[#0f172a]">
   <head>
     <meta charset="UTF-8" />
     <meta
@@ -68,6 +68,16 @@
         transition:
           background-color 0.2s ease,
           color 0.2s ease;
+        height: 100%;
+        height: -webkit-fill-available;
+        background-color: #f8fafc;
+      }
+      html.dark {
+        background-color: #0f172a;
+      }
+      body {
+        height: 100% !important;
+        height: -webkit-fill-available !important;
       }
 
       /* Modal z-index base */
@@ -1137,9 +1147,17 @@
               </h4>
               <span id="salat-location-subtitle" class="text-[9px] sm:text-[10px] font-bold text-slate-400 dark:text-slate-500 border-l border-slate-200 dark:border-slate-700 pl-1.5 leading-none truncate">Wirobrajan Yogyakarta</span>
             </div>
-            <div class="flex flex-col items-end text-right shrink-0">
-              <span id="widget-hijri-date" style="white-space: nowrap !important;" class="text-[10px] sm:text-xs font-black text-emerald-600 dark:text-emerald-400 leading-none"></span>
-              <span id="widget-masehi-date" style="white-space: nowrap !important;" class="text-[8px] sm:text-[9px] font-bold text-slate-400 dark:text-slate-500 mt-1 leading-none"></span>
+            <div class="flex items-center gap-2.5 shrink-0">
+              <div class="flex flex-col items-end text-right">
+                <span id="widget-hijri-date" style="white-space: nowrap !important;" class="text-[10px] sm:text-xs font-black text-emerald-600 dark:text-emerald-400 leading-none"></span>
+                <span id="widget-masehi-date" style="white-space: nowrap !important;" class="text-[8px] sm:text-[9px] font-bold text-slate-400 dark:text-slate-500 mt-1 leading-none"></span>
+              </div>
+              
+              <!-- Qibla Button inside Widget (Right of dates) -->
+              <button onclick="window.openQiblaModal()" class="flex items-center gap-1 px-2 py-1.5 rounded-lg text-[9px] sm:text-[10px] font-black text-slate-600 dark:text-slate-300 bg-slate-100 hover:bg-emerald-50 dark:bg-slate-700/50 dark:hover:bg-emerald-950/30 hover:text-emerald-500 transition-all active:scale-95 border border-slate-200/50 dark:border-slate-700/50" title="Kompas Kiblat">
+                <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-compass animate-spin-slow"><circle cx="12" cy="12" r="10"></circle><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon></svg>
+                <span class="hidden xs:inline">Kiblat</span>
+              </button>
             </div>
           </div>
 
@@ -2853,6 +2871,97 @@
     </section>
 
     <!-- Modals -->
+    <!-- Modal Kompas Kiblat -->
+    <div
+      id="modal-qibla"
+      class="fixed inset-0 z-[90] bg-slate-900/60 backdrop-blur-md hidden items-center justify-center p-4 transition-all"
+    >
+      <div class="bg-white dark:bg-slate-900 w-full max-w-sm rounded-[2.5rem] p-6 flex flex-col shadow-2xl animate-slide-up border border-white/10 relative overflow-hidden">
+        
+        <!-- Glow accents inside modal -->
+        <div class="absolute top-0 right-0 w-32 h-32 bg-emerald-500 rounded-full blur-[50px] opacity-10 pointer-events-none"></div>
+        <div class="absolute bottom-0 left-0 w-24 h-24 bg-blue-600 rounded-full blur-[45px] opacity-10 pointer-events-none"></div>
+
+        <div class="flex justify-between items-center mb-6 relative z-10">
+          <div>
+            <h3 class="text-xl font-black text-slate-800 dark:text-white flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-emerald-500"><circle cx="12" cy="12" r="10"></circle><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon></svg>
+              Arah Kiblat
+            </h3>
+            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Kompas Penunjuk Kiblat</p>
+          </div>
+          <button
+            onclick="window.closeQiblaModal()"
+            class="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-300 flex items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+          </button>
+        </div>
+
+        <!-- State 1: GPS Loading -->
+        <div id="qibla-loading" class="flex flex-col items-center justify-center py-10 gap-3 relative z-10">
+          <span class="relative flex h-3 w-3">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+          </span>
+          <p class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Mendapatkan Koordinat GPS...</p>
+        </div>
+
+        <!-- State 2: Content (Compass & Angle Info) -->
+        <div id="qibla-content-wrapper" class="hidden flex-col items-center gap-6 relative z-10">
+          
+          <!-- Haptic Alignment Indicator -->
+          <div id="qibla-alignment-indicator" class="px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200/50 dark:border-slate-700/50 transition-all duration-300">
+            PUTAR PONSEL ANDA
+          </div>
+
+          <!-- Compass Dial Widget -->
+          <div class="relative w-48 h-48 sm:w-52 sm:h-52 rounded-full border-4 border-slate-100 dark:border-slate-800/80 shadow-inner flex items-center justify-center bg-slate-50/50 dark:bg-slate-900/50">
+            <!-- Compass Dial (rotates inverse of heading) -->
+            <div id="qibla-compass-dial" class="absolute inset-2 rounded-full border border-dashed border-slate-200 dark:border-slate-700/60 transition-transform duration-100 flex items-center justify-center">
+              <span class="absolute top-1 text-[10px] font-extrabold text-red-500">U</span>
+              <span class="absolute right-1 text-[10px] font-extrabold text-slate-400">T</span>
+              <span class="absolute bottom-1 text-[10px] font-extrabold text-slate-400">S</span>
+              <span class="absolute left-1 text-[10px] font-extrabold text-slate-400">B</span>
+            </div>
+
+            <!-- Qibla Needle Arrow (rotates relative to Kaaba bearing) -->
+            <div id="qibla-needle" class="absolute w-8 h-32 transition-transform duration-100 flex flex-col items-center justify-between text-slate-400 dark:text-slate-600">
+              <!-- Top pointer -->
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" class="w-8 h-8 -mt-2"><polygon points="12,2 22,22 12,17 2,22"></polygon></svg>
+              <!-- Center Kaaba Icon -->
+              <div class="w-6 h-6 rounded-full bg-slate-900 dark:bg-black text-white flex items-center justify-center font-bold text-[8px] border-2 border-current shadow-lg shrink-0 z-20">🕋</div>
+              <!-- Bottom counterbalance -->
+              <div class="w-1.5 h-10 bg-current rounded-full"></div>
+            </div>
+          </div>
+
+          <!-- iOS Permission Trigger Button -->
+          <button id="qibla-sensor-permission-btn" onclick="window.requestQiblaSensorPermission()" class="hidden px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-black shadow-md hover:scale-105 active:scale-95 transition-all select-none uppercase tracking-wider">
+            Aktifkan Kompas
+          </button>
+
+          <!-- Info Details Container -->
+          <div class="grid grid-cols-2 gap-4 w-full bg-slate-50 dark:bg-slate-800/40 p-4 rounded-2xl border border-slate-100 dark:border-slate-800/50 text-center">
+            <div>
+              <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Sudut Kiblat</p>
+              <p id="qibla-angle-txt" class="text-sm font-black text-slate-800 dark:text-white">--</p>
+            </div>
+            <div>
+              <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Jarak Ke Makkah</p>
+              <p id="qibla-distance-txt" class="text-sm font-black text-slate-800 dark:text-white">--</p>
+            </div>
+            <div class="col-span-2 border-t border-slate-100 dark:border-slate-800/50 pt-2.5 mt-1">
+              <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Arah Hadap HP</p>
+              <p id="qibla-current-heading-txt" class="text-xs font-black text-emerald-500 dark:text-emerald-400">0° U</p>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+
     <div
       id="modal-rekap"
       class="fixed inset-0 z-[90] bg-slate-900/60 backdrop-blur-md hidden flex items-end sm:items-center justify-center p-4 transition-all"
@@ -3633,6 +3742,7 @@
     <script src="data-santri.js"></script>
     <script src="santri-manager.js"></script>
     <script src="app-core.js"></script>
+    <script src="qibla.js"></script>
     <script src="script.js"></script>
 
     <script>
