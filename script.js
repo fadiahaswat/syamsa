@@ -1,3 +1,11 @@
+window.updateMetaThemeColor = function () {
+  const isDark = document.documentElement.classList.contains("dark");
+  const metas = document.querySelectorAll('meta[name="theme-color"]');
+  metas.forEach(meta => {
+    meta.setAttribute("content", isDark ? "#0f172a" : "#f8fafc");
+  });
+};
+
 window.initApp = async function () {
   const loadingEl = document.getElementById("view-loading");
   try {
@@ -17,8 +25,10 @@ window.initApp = async function () {
           ...appState.settings,
           ...JSON.parse(savedSettings),
         };
-        if (appState.settings.darkMode)
+        if (appState.settings.darkMode) {
           document.documentElement.classList.add("dark");
+        }
+        window.updateMetaThemeColor();
       }
       const savedData = localStorage.getItem(APP_CONFIG.storageKey);
       if (savedData) appState.attendanceData = JSON.parse(savedData);
@@ -136,14 +146,20 @@ window.initBottomNavScroll = function () {
 
     if (container.id === "main-content") {
       const heroCard = document.getElementById("dash-main-card");
-      if (heroCard) {
-        if (scrollTop > 80) {
+      const heroWrapper = document.getElementById("dash-main-card-wrapper");
+      if (heroCard && heroWrapper) {
+        if (window.innerWidth < 1024 && scrollTop > 80) {
           heroCard.classList.add("sticky-hero");
+          heroWrapper.classList.remove("relative");
+          heroWrapper.classList.add("sticky", "top-2", "sm:top-3");
         } else {
           heroCard.classList.remove("sticky-hero");
+          heroWrapper.classList.remove("sticky", "top-2", "sm:top-3");
+          heroWrapper.classList.add("relative");
         }
       }
     }
+
   };
 
   const tabContents = document.querySelectorAll(".tab-content");
@@ -464,22 +480,26 @@ window.handleLogout = function () {
   location.reload();
 };
 
-const GREETING_TRANSLATIONS = {
-  "صباح الخير": "Selamat Pagi ☀️",
-  "صباح النور": "Selamat Pagi (Penuh Cahaya) ✨",
-  "صباح الورد": "Selamat Pagi (Penuh Bunga) 🌹",
-  "صباح الياسمين": "Selamat Pagi (Penuh Melati) 🌼",
-  "طاب صباحك": "Semoga Pagimu Menyenangkan ☕",
-  "أهلاً وسهلاً": "Selamat Datang 👋",
-  "السلام عليكم": "Semoga Keselamatan Menyertaimu 🤝",
-  "مرحباً بك": "Selamat Datang 🌟",
-  "كيف حالك": "Bagaimana Kabarmu? 😊",
-  "طاب يومك": "Semoga Harimu Menyenangkan ☀️",
-  "مساء الورد": "Selamat Sore/Malam (Penuh Bunga) 🌹",
-  "مساء النور": "Selamat Sore/Malam (Penuh Cahaya) ✨",
-  "مساء الخير": "Selamat Sore/Malam 🌙",
-  "طابت ليلتك": "Semoga Malammu Menyenangkan 🌌",
-  "ليلة سعيدة": "Semoga Malammu Bahagia 😴"
+const getGreetingTranslation = function (arabic, hour) {
+  const isSore = hour >= 15 && hour < 18;
+  const translations = {
+    "صباح الخير": "Selamat Pagi ☀️",
+    "صباح النور": "Pagi Penuh Cahaya ✨",
+    "صباح الورد": "Pagi Penuh Bunga 🌹",
+    "صباح الياسمين": "Pagi Penuh Melati 🌼",
+    "طاب صباحك": "Semoga Pagimu Indah ☕",
+    "أهلاً وسهلاً": "Selamat Datang 👋",
+    "السلام عليكم": "Semoga Damai Bersamamu 🤝",
+    "مرحباً بك": "Selamat Datang 🌟",
+    "كيف حالك": "Bagaimana Kabarmu? 😊",
+    "طاب يومك": "Semoga Harimu Menyenangkan ☀️",
+    "مساء الورد": isSore ? "Sore Penuh Bunga 🌹" : "Malam Penuh Bunga 🌹",
+    "مساء النور": isSore ? "Sore Penuh Cahaya ✨" : "Malam Penuh Cahaya ✨",
+    "مساء الخير": isSore ? "Selamat Sore 🌙" : "Selamat Malam 🌙",
+    "طابت ليلتك": "Semoga Malammu Nyaman 🌌",
+    "ليلة سعيدة": "Malam yang Bahagia 😴"
+  };
+  return translations[arabic] || arabic;
 };
 
 window.startGreetingLoop = function () {
@@ -494,7 +514,8 @@ window.startGreetingLoop = function () {
 
   function runStep() {
     const arabic = window.currentSessionGreeting || "صباح الخير";
-    const translation = GREETING_TRANSLATIONS[arabic] || "Selamat Pagi ☀️";
+    const hour = window.currentSessionGreetingHour !== undefined ? window.currentSessionGreetingHour : new Date().getHours();
+    const translation = getGreetingTranslation(arabic, hour);
 
     // 1. Fade out
     el.classList.add("opacity-0");
@@ -751,6 +772,29 @@ window.updateDashboard = function () {
 // FITUR STATUS LOKASI DASHBOARD
 // ==========================================
 
+window.gpsBypassEnabled = false;
+let locationCardClickCount = 0;
+let locationCardClickTimeout;
+window.handleLocationCardClick = function () {
+  locationCardClickCount++;
+  clearTimeout(locationCardClickTimeout);
+
+  if (locationCardClickCount >= 5) {
+    window.gpsBypassEnabled = !window.gpsBypassEnabled;
+    locationCardClickCount = 0;
+    if (window.gpsBypassEnabled) {
+      window.showToast("Bypass GPS Aktif (Mode Testing) ⚠️", "warning");
+    } else {
+      window.showToast("Bypass GPS Dinonaktifkan", "info");
+    }
+    window.updateLocationStatus();
+  } else {
+    locationCardClickTimeout = setTimeout(() => {
+      locationCardClickCount = 0;
+    }, 2000);
+  }
+};
+
 window.updateLocationStatus = function () {
   const card = document.getElementById("location-status-card");
 
@@ -762,6 +806,39 @@ window.updateLocationStatus = function () {
 
   if (card) card.classList.remove("hidden");
 
+  // Jika bypass aktif, tunjukkan status bypass khusus
+  if (window.gpsBypassEnabled) {
+    const elLoading = document.getElementById("loc-loading");
+    const elDetails = document.getElementById("loc-details");
+    const elNearest = document.getElementById("loc-nearest-name");
+    const elDistance = document.getElementById("loc-distance");
+    const elBadge = document.getElementById("loc-badge");
+    const elStatusWrapper = document.getElementById("loc-status-wrapper");
+    const elIcon = document.getElementById("loc-icon");
+    const elIconBg = document.getElementById("loc-icon-bg");
+    const elError = document.getElementById("loc-error");
+
+    if (elLoading) elLoading.classList.add("hidden");
+    if (elError) elError.classList.add("hidden");
+    if (elDetails) elDetails.classList.remove("hidden");
+    if (elStatusWrapper) elStatusWrapper.classList.remove("hidden");
+    if (elNearest) elNearest.textContent = "Bypass GPS Aktif";
+    if (elDistance) elDistance.textContent = "0m";
+    if (elBadge) {
+      elBadge.textContent = "TESTING";
+      elBadge.className = "px-2 py-0.5 rounded-lg text-[9px] font-black uppercase bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-100 dark:border-amber-500/20 shrink-0";
+    }
+    if (elIcon) {
+      elIcon.setAttribute("data-lucide", "shield-alert");
+      elIcon.className = "text-amber-500 dark:text-amber-400 transition-colors duration-500";
+    }
+    if (elIconBg) {
+      elIconBg.className = "w-6 h-6 shrink-0 rounded-full bg-amber-100/80 dark:bg-amber-900/50 flex items-center justify-center text-amber-500 dark:text-amber-400 transition-colors duration-500";
+    }
+    if (window.lucide) window.lucide.createIcons();
+    return;
+  }
+
   const cached = window.getCachedLocation();
 
   if (cached) {
@@ -769,13 +846,26 @@ window.updateLocationStatus = function () {
     const elDetails = document.getElementById("loc-details");
     const elNearest = document.getElementById("loc-nearest-name");
     const elDistance = document.getElementById("loc-distance");
+    const elBadge = document.getElementById("loc-badge");
+    const elStatusWrapper = document.getElementById("loc-status-wrapper");
     const elIcon = document.getElementById("loc-icon");
     const elIconBg = document.getElementById("loc-icon-bg");
 
     if (elLoading) elLoading.classList.add("hidden");
     if (elDetails) elDetails.classList.remove("hidden");
+    if (elStatusWrapper) elStatusWrapper.classList.remove("hidden");
     if (elNearest) elNearest.textContent = cached.locationName;
     if (elDistance) elDistance.textContent = Math.round(cached.distance) + "m";
+
+    if (elBadge) {
+      if (cached.isInside) {
+        elBadge.textContent = "Aman";
+        elBadge.className = "px-2 py-0.5 rounded-lg text-[9px] font-black uppercase bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-500/20 shrink-0";
+      } else {
+        elBadge.textContent = "Jauh";
+        elBadge.className = "px-2 py-0.5 rounded-lg text-[9px] font-black uppercase bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-500/20 shrink-0";
+      }
+    }
 
     if (cached.isInside) {
       if (elIcon) {
@@ -807,6 +897,7 @@ window.updateLocationStatus = function () {
   const elNearest = document.getElementById("loc-nearest-name");
   const elDistance = document.getElementById("loc-distance");
   const elBadge = document.getElementById("loc-badge");
+  const elStatusWrapper = document.getElementById("loc-status-wrapper");
   const elMessage = document.getElementById("loc-message");
   const elIcon = document.getElementById("loc-icon");
   const elIconBg = document.getElementById("loc-icon-bg");
@@ -815,6 +906,7 @@ window.updateLocationStatus = function () {
   if (elLoading) elLoading.classList.remove("hidden");
   if (elDetails) elDetails.classList.add("hidden");
   if (elError) elError.classList.add("hidden");
+  if (elStatusWrapper) elStatusWrapper.classList.add("hidden");
 
   // Cek Support Browser
   if (!navigator.geolocation) {
@@ -824,6 +916,11 @@ window.updateLocationStatus = function () {
       elError.innerHTML =
         '<p class="text-[10px] font-bold text-red-500">Browser tidak dukung GPS</p>';
     }
+    if (elBadge) {
+      elBadge.textContent = "Tdk Ditempat";
+      elBadge.className = "px-2 py-0.5 rounded-lg text-[9px] font-black uppercase bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700 shrink-0";
+    }
+    if (elStatusWrapper) elStatusWrapper.classList.remove("hidden");
     return;
   }
 
@@ -869,6 +966,8 @@ window.updateLocationStatus = function () {
       // 3. Update Tampilan
       if (elLoading) elLoading.classList.add("hidden");
       if (elDetails) elDetails.classList.remove("hidden");
+      const elStatusWrapper = document.getElementById("loc-status-wrapper");
+      if (elStatusWrapper) elStatusWrapper.classList.remove("hidden");
 
       if (elNearest) elNearest.textContent = nearestName;
       if (elDistance) elDistance.textContent = Math.round(nearestDist) + "m";
@@ -876,9 +975,9 @@ window.updateLocationStatus = function () {
       if (isInside) {
         // Tampilan HIJAU (Aman)
         if (elBadge) {
-          elBadge.textContent = "AMAN";
+          elBadge.textContent = "Aman";
           elBadge.className =
-            "px-1.5 py-0.5 rounded text-[9px] font-black uppercase bg-emerald-100 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/30 shrink-0";
+            "px-2 py-0.5 rounded-lg text-[9px] font-black uppercase bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-500/20 shrink-0";
         }
 
         if (elMessage) {
@@ -896,9 +995,9 @@ window.updateLocationStatus = function () {
       } else {
         // Tampilan MERAH (Jauh)
         if (elBadge) {
-          elBadge.textContent = "JAUH";
+          elBadge.textContent = "Jauh";
           elBadge.className =
-            "px-1.5 py-0.5 rounded text-[9px] font-black uppercase bg-red-100 dark:bg-red-500/10 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800/30 shrink-0";
+            "px-2 py-0.5 rounded-lg text-[9px] font-black uppercase bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-500/20 shrink-0";
         }
 
         const selisih = Math.round(nearestDist - GEO_CONFIG.maxRadiusMeters);
@@ -928,6 +1027,13 @@ window.updateLocationStatus = function () {
         else if (error.code === 3) msg = "Waktu GPS habis.";
         elError.innerHTML = `<p class="text-[10px] font-bold text-red-500 leading-tight">${msg}</p>`;
       }
+      const elBadge = document.getElementById("loc-badge");
+      const elStatusWrapper = document.getElementById("loc-status-wrapper");
+      if (elBadge) {
+        elBadge.textContent = "Tdk Ditempat";
+        elBadge.className = "px-2 py-0.5 rounded-lg text-[9px] font-black uppercase bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700 shrink-0";
+      }
+      if (elStatusWrapper) elStatusWrapper.classList.remove("hidden");
     },
     { enableHighAccuracy: true, timeout: 5000, maximumAge: GPS_CACHE_DURATION },
   );
@@ -1449,7 +1555,7 @@ window.openAttendance = async function () {
   }
 
   // 2. CEK LOKASI (LOGIC BARU)
-  if (GEO_CONFIG.useGeofencing) {
+  if (GEO_CONFIG.useGeofencing && !window.gpsBypassEnabled) {
     try {
       await window.verifyLocationCached();
       window.showToast("Lokasi Terverifikasi ✅", "success");
@@ -1463,11 +1569,25 @@ window.openAttendance = async function () {
   }
 
   // 3. Buka Halaman Absen (Logic Lama)
-  document.getElementById("view-main").classList.add("hidden");
-  document.getElementById("view-attendance").classList.remove("hidden");
+  const viewMain = document.getElementById("view-main");
+  const viewAttendance = document.getElementById("view-attendance");
+  
+  viewAttendance.classList.remove("animate-slide-down-custom");
+  viewAttendance.classList.remove("hidden");
+  viewAttendance.classList.add("animate-slide-up-custom");
+  
+  setTimeout(() => {
+    viewMain.classList.add("hidden");
+  }, 400);
 
   const slot = SLOT_WAKTU[appState.currentSlotId];
   document.getElementById("att-slot-title").textContent = slot.label;
+  
+  const slotDuration = document.getElementById("att-slot-duration");
+  if (slotDuration) {
+    slotDuration.innerHTML = `<i data-lucide="clock" class="w-3.5 h-3.5"></i> <span>${slot.subLabel}</span>`;
+    if (window.lucide) window.lucide.createIcons();
+  }
   
   const dateDisplay = document.getElementById("att-date-display");
   if (dateDisplay) {
@@ -1479,12 +1599,63 @@ window.openAttendance = async function () {
   }
 
   window.renderAttendanceList();
+
+  // Morphing bottom search bar on scroll
+  const bottomBar = document.getElementById("att-bottom-bar");
+  const listContainer = document.getElementById("attendance-list-container");
+  const searchInput = document.getElementById("att-search");
+  
+  if (listContainer && bottomBar) {
+    // Reset to collapsed when entering page
+    bottomBar.className = "fixed bottom-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-2 collapsed";
+    
+    // Clear search value
+    if (searchInput) searchInput.value = "";
+    
+    // Scroll listener on container
+    listContainer.onscroll = () => {
+      // If user has entered text in search or input has focus, keep it expanded
+      if (searchInput && (document.activeElement === searchInput || searchInput.value.trim() !== "")) {
+        return;
+      }
+      if (listContainer.scrollTop > 15) {
+        bottomBar.classList.add("expanded");
+        bottomBar.classList.remove("collapsed");
+      } else {
+        bottomBar.classList.add("collapsed");
+        bottomBar.classList.remove("expanded");
+      }
+    };
+
+    if (searchInput) {
+      searchInput.onfocus = () => {
+        bottomBar.classList.add("expanded");
+        bottomBar.classList.remove("collapsed");
+      };
+      // If search loses focus and is empty, collapse it if scrollTop is <= 15
+      searchInput.onblur = () => {
+        if (searchInput.value.trim() === "" && listContainer.scrollTop <= 15) {
+          bottomBar.classList.add("collapsed");
+          bottomBar.classList.remove("expanded");
+        }
+      };
+    }
+  }
 };
 
 window.closeAttendance = function () {
-  document.getElementById("view-attendance").classList.add("hidden");
-  document.getElementById("view-main").classList.remove("hidden");
-  window.updateDashboard();
+  const viewMain = document.getElementById("view-main");
+  const viewAttendance = document.getElementById("view-attendance");
+  
+  viewMain.classList.remove("hidden");
+  viewAttendance.classList.remove("animate-slide-up-custom");
+  viewAttendance.classList.add("animate-slide-down-custom");
+  
+  setTimeout(() => {
+    viewAttendance.classList.add("hidden");
+    viewAttendance.classList.remove("animate-slide-down-custom");
+    window.updateDashboard();
+  }, 350);
 };
 
 window.renderAttendanceList = function () {
@@ -2578,6 +2749,7 @@ window.toggleDarkMode = function () {
     APP_CONFIG.settingsKey,
     JSON.stringify(appState.settings),
   );
+  window.updateMetaThemeColor();
   window.showToast(
     `Mode ${appState.settings.darkMode ? "Gelap" : "Terang"} Aktif`,
     "success",
@@ -2617,16 +2789,19 @@ window.saveData = function () {
 
       const indicator = document.getElementById("save-indicator");
       if (appState.settings.autoSave && indicator) {
-        indicator.innerHTML = '<span class="relative flex h-1.5 w-1.5 shrink-0"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span><span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-amber-500"></span></span>';
+        indicator.innerHTML = '<i data-lucide="save" class="w-3.5 h-3.5 text-amber-500"></i>';
+        if (window.lucide) window.lucide.createIcons();
         
         setTimeout(() => {
           try {
             localStorage.setItem(APP_CONFIG.storageKey, dataStr);
             if (indicator) {
-              indicator.innerHTML = '<span class="relative flex h-1.5 w-1.5 shrink-0"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span><span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span></span>';
+              indicator.innerHTML = '<i data-lucide="save" class="w-3.5 h-3.5 text-emerald-400"></i>';
+              if (window.lucide) window.lucide.createIcons();
               setTimeout(() => {
                 if (indicator) {
-                  indicator.innerHTML = '<span class="relative flex h-1.5 w-1.5 shrink-0"><span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-slate-300 dark:bg-slate-600"></span></span>';
+                  indicator.innerHTML = '<i data-lucide="save" class="w-3.5 h-3.5 text-slate-400"></i>';
+                  if (window.lucide) window.lucide.createIcons();
                 }
               }, 1500);
             }
@@ -6630,6 +6805,7 @@ window.getDayCompletionStatus = function (dateStr) {
 };
 
 window.verifyLocationCached = async function () {
+  if (window.gpsBypassEnabled) return true;
   const cache = JSON.parse(localStorage.getItem(GPS_CACHE_KEY) || "null");
 
   if (cache && cache.distance !== undefined && Date.now() - cache.timestamp < GPS_CACHE_DURATION) {
