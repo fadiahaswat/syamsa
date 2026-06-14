@@ -261,23 +261,9 @@ body {
   transition: background 700ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
-.qibla-finder::before {
-  content: "";
-  position: absolute;
-  left: 50%;
-  top: 12px;
-  z-index: 30;
-  width: 126px;
-  height: 36px;
-  border-radius: 999px;
-  background: #050505;
-  box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.08), 0 8px 26px rgba(0, 0, 0, 0.36);
-  transform: translateX(-50%);
-}
-
 .qibla-finder > div {
   min-height: 100%;
-  padding: 58px 32px 26px !important;
+  padding: 28px 32px 26px !important;
   background: transparent !important;
 }
 
@@ -358,7 +344,10 @@ body {
 }
 
 #qibla-content-wrapper {
-  gap: 24px !important;
+  width: 100%;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 26px !important;
 }
 
 #qibla-alignment-indicator {
@@ -368,19 +357,26 @@ body {
   color: rgba(255, 255, 255, 0.62) !important;
   box-shadow: none !important;
   padding: 0 !important;
-  font-size: 28px !important;
+  max-width: 320px;
+  font-size: 21px !important;
   font-weight: 700 !important;
+  line-height: 1.45 !important;
+  text-align: center;
   text-transform: none !important;
   letter-spacing: 0 !important;
 }
 
 #qibla-content-wrapper > div:has(#qibla-compass-dial) {
+  position: relative;
   order: 1;
   width: min(74vw, 340px) !important;
   height: min(74vw, 340px) !important;
   border: 0 !important;
   background: transparent !important;
   box-shadow: none !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
 }
 
 #qibla-compass-dial {
@@ -388,10 +384,15 @@ body {
 }
 
 #qibla-needle {
+  position: absolute !important;
+  left: 50% !important;
+  top: 50% !important;
   width: min(42vw, 190px) !important;
   height: min(42vw, 190px) !important;
   color: #fff !important;
   filter: drop-shadow(0 22px 34px rgba(0, 0, 0, 0.34));
+  transform: translate(-50%, -50%) rotate(0deg);
+  transform-origin: center center;
   transition: transform 260ms cubic-bezier(0.2, 0.8, 0.2, 1), scale 260ms ease, opacity 260ms ease !important;
 }
 
@@ -399,6 +400,14 @@ body {
   width: 100% !important;
   height: 100% !important;
   margin: 0 !important;
+}
+
+#qibla-needle .qibla-arrow-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  transform-origin: center center;
 }
 
 #qibla-needle > div {
@@ -437,28 +446,45 @@ body {
 #qibla-sensor-permission-btn {
   position: absolute;
   left: 50%;
-  bottom: 92px;
+  top: 50%;
   z-index: 20;
-  transform: translateX(-50%);
-  border: 1px solid rgba(255, 255, 255, 0.22) !important;
-  border-radius: 999px !important;
-  background: rgba(255, 255, 255, 0.18) !important;
+  min-width: min(78vw, 310px);
+  min-height: 68px;
+  transform: translate(-50%, -50%);
+  border: 1px solid rgba(255, 255, 255, 0.34) !important;
+  border-radius: 24px !important;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0.12)),
+    rgba(255, 255, 255, 0.16) !important;
   color: #fff !important;
-  box-shadow: 0 16px 46px rgba(0, 0, 0, 0.22) !important;
-  backdrop-filter: blur(18px);
+  font-size: 16px !important;
+  font-weight: 850 !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+  box-shadow:
+    0 24px 70px rgba(0, 0, 0, 0.34),
+    inset 0 1px 0 rgba(255, 255, 255, 0.34),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.08) !important;
+  backdrop-filter: blur(22px) saturate(1.35);
+  transition: transform 180ms ease, background 180ms ease, box-shadow 180ms ease;
 }
 
-.qibla-finder::after {
+#qibla-sensor-permission-btn::before {
   content: "";
-  position: absolute;
-  left: 50%;
-  bottom: 9px;
-  z-index: 25;
-  width: 134px;
-  height: 5px;
+  width: 22px;
+  height: 22px;
+  display: inline-block;
+  margin-right: 10px;
+  vertical-align: -5px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.9);
-  transform: translateX(-50%);
+  background:
+    radial-gradient(circle at 50% 50%, #fff 0 22%, transparent 24%),
+    conic-gradient(from 0deg, #fff, rgba(255, 255, 255, 0.22), #fff);
+  box-shadow: 0 0 24px rgba(255, 255, 255, 0.56);
+}
+
+#qibla-sensor-permission-btn:active {
+  transform: translate(-50%, -50%) scale(0.97);
 }
 
 .qibla-finder footer,
@@ -499,6 +525,12 @@ body {
   background: rgba(255, 255, 255, 0.26);
 }
 
+.qibla-bottom-actions button.is-active {
+  background: rgba(38, 211, 84, 0.82);
+  border-color: rgba(255, 255, 255, 0.38);
+  box-shadow: 0 18px 42px rgba(38, 211, 84, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.24);
+}
+
 .qibla-bottom-actions svg {
   width: 20px;
   height: 20px;
@@ -535,35 +567,28 @@ body {
   scale: 0.64;
 }
 
-.qibla-finder[data-qibla-state="calibrating"] #qibla-content-wrapper > div:has(#qibla-compass-dial)::before {
-  content: "";
-  position: absolute;
-  left: 50%;
-  top: 44%;
-  width: 96px;
-  height: 158px;
-  border: 3px solid rgba(255, 255, 255, 0.78);
-  border-radius: 28px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.06));
-  box-shadow: 0 24px 54px rgba(0, 0, 0, 0.22);
-  transform: translate(-50%, -50%) rotate(-14deg);
-  animation: qiblaPhoneTilt 2.4s ease-in-out infinite;
+.qibla-finder[data-qibla-state="calibrating"] #qibla-content-wrapper {
+  justify-content: center !important;
+  padding-top: 0;
 }
 
-.qibla-finder[data-qibla-state="calibrating"] #qibla-content-wrapper > div:has(#qibla-compass-dial)::after {
-  content: "";
+.qibla-finder[data-qibla-state="calibrating"] #qibla-content-wrapper > div:has(#qibla-compass-dial) {
+  display: none !important;
+}
+
+.qibla-finder[data-qibla-state="calibrating"] #qibla-content-wrapper .grid {
+  display: none !important;
+}
+
+.qibla-finder[data-qibla-state="calibrating"] #qibla-alignment-indicator {
   position: absolute;
   left: 50%;
-  top: 63%;
-  width: 188px;
-  height: 78px;
-  border: 5px solid rgba(255, 255, 255, 0.48);
-  border-left-color: rgba(255, 255, 255, 0.86);
-  border-right-color: rgba(255, 255, 255, 0.86);
-  border-radius: 50%;
-  transform: translate(-50%, -50%) rotate(28deg);
-  clip-path: polygon(0 0, 50% 0, 50% 100%, 0 100%, 0 0, 50% 0, 100% 0, 100% 100%, 50% 100%, 50% 0);
-  opacity: 0.8;
+  top: calc(50% + 56px);
+  width: min(78vw, 330px);
+  margin-top: 0;
+  transform: translateX(-50%);
+  font-size: 19px !important;
+  line-height: 1.45 !important;
 }
 
 .qibla-finder[data-qibla-state="perfect"] #qibla-needle,
@@ -575,7 +600,8 @@ body {
 .qibla-finder[data-qibla-state="perfect"] #qibla-content-wrapper > div:has(#qibla-compass-dial)::before {
   content: "";
   position: absolute;
-  inset: 50%;
+  left: 50%;
+  top: 50%;
   width: 118px;
   height: 118px;
   border-radius: 999px;
@@ -590,25 +616,17 @@ body {
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 136px;
-  height: 136px;
-  border-radius: 26px 26px 18px 18px;
-  background: linear-gradient(#111 0 22%, #d6a83f 22% 31%, #050505 31%);
-  box-shadow: 0 24px 54px rgba(0, 0, 0, 0.24);
+  width: min(48vw, 190px);
+  height: min(48vw, 190px);
+  border-radius: 28px;
+  background: url("kaaba.webp") center / contain no-repeat;
+  filter: drop-shadow(0 24px 42px rgba(0, 0, 0, 0.28));
   transform: translate(-50%, -50%);
+  animation: qiblaKaabaFloat 4s ease-in-out infinite;
 }
 
 .qibla-finder[data-qibla-state="locked"] #qibla-content-wrapper > div:has(#qibla-compass-dial)::after {
-  content: "";
-  position: absolute;
-  left: 50%;
-  top: calc(50% + 14px);
-  width: 38px;
-  height: 54px;
-  border-radius: 16px 16px 4px 4px;
-  background: linear-gradient(#171717, #030303);
-  border: 2px solid rgba(214, 168, 63, 0.72);
-  transform: translate(-50%, -50%);
+  display: none;
 }
 
 @keyframes qiblaRing {
@@ -630,9 +648,9 @@ body {
   }
 }
 
-@keyframes qiblaPhoneTilt {
+@keyframes qiblaKaabaFloat {
   50% {
-    transform: translate(-50%, -50%) rotate(14deg);
+    transform: translate(-50%, calc(-50% - 10px));
   }
 }
 

@@ -6,6 +6,8 @@ window.qiblaDistance = null;
 window.deviceHeading = null;
 window.orientationListenerActive = false;
 window.qiblaLocked = false;
+window.qiblaSoundEnabled = false;
+window.lastQiblaSoundTime = 0;
 
 // Lokasi Kakbah Makkah
 const MECCA_LAT = 21.422487;
@@ -135,10 +137,7 @@ window.preparePrecisionQiblaUI = function () {
 
   if (qiblaNeedle && !qiblaNeedle.dataset.precisionReady) {
     qiblaNeedle.innerHTML = `
-      <svg viewBox="0 0 180 180" aria-hidden="true">
-        <path d="M43 104.5 104.5 43c7.6-7.6 20.5-2.2 20.5 8.6v50.8c0 12.5-10.1 22.6-22.6 22.6H51.6c-10.8 0-16.2-12.9-8.6-20.5Z" fill="currentColor"></path>
-        <path d="M119 43v43.5H75.5" fill="none" stroke="currentColor" stroke-width="24" stroke-linecap="round" stroke-linejoin="round"></path>
-      </svg>
+      <img src="arrowup.webp" alt="" aria-hidden="true" class="qibla-arrow-img">
     `;
     qiblaNeedle.dataset.precisionReady = "true";
   }
@@ -149,9 +148,10 @@ window.preparePrecisionQiblaUI = function () {
     actions.className = "qibla-bottom-actions";
     actions.innerHTML = `
       <button type="button" onclick="window.closeQiblaPage()" aria-label="Tutup"><i data-lucide="x"></i></button>
-      <button type="button" aria-label="Suara"><i data-lucide="volume-2"></i></button>
+      <button id="qibla-sound-btn" type="button" onclick="window.toggleQiblaSound()" aria-label="Aktifkan suara" aria-pressed="false"><i data-lucide="volume-x"></i></button>
     `;
     wrapper.appendChild(actions);
+    if (window.lucide) window.lucide.createIcons();
   }
 };
 
@@ -178,9 +178,9 @@ window.setQiblaPrecisionState = function (state, diff = null, directionText = ""
     return;
   }
   if (state === "calibrating") {
-    if (title) title.textContent = "Kalibrasi Kompas";
-    if (angleTxt) angleTxt.textContent = "\u221e";
-    if (indicator) indicator.textContent = "Gerakkan perangkat membentuk angka 8";
+    if (title) title.textContent = "Aktifkan Kompas";
+    if (angleTxt) angleTxt.textContent = "";
+    if (indicator) indicator.textContent = "Izinkan akses sensor gerak agar arah kiblat bisa dibaca secara presisi.";
     if (arrow) arrow.style.opacity = "0";
     return;
   }
@@ -208,29 +208,71 @@ window.closeQiblaModal = window.closeQiblaPage;
 
 // Initialize Compass Sensor
 window.initCompass = function () {
-  // Check if iOS permissions are required
-  if (typeof DeviceOrientationEvent !== "undefined" && typeof DeviceOrientationEvent.requestPermission === "function") {
-    // Show iOS Izin button
-    document.getElementById("qibla-sensor-permission-btn").classList.remove("hidden");
-  } else {
-    // Android or desktop - listen directly
-    window.startCompassListener();
-  }
+  document.getElementById("qibla-sensor-permission-btn")?.classList.remove("hidden");
 };
 
 // Handle iOS permission request click
 window.requestQiblaSensorPermission = async function () {
   try {
-    const permission = await DeviceOrientationEvent.requestPermission();
-    if (permission === "granted") {
-      document.getElementById("qibla-sensor-permission-btn").classList.add("hidden");
-      window.startCompassListener();
-    } else {
-      window.showToast("Izin sensor ditolak. Kompas tidak dapat berputar.", "warning");
+    if (typeof DeviceOrientationEvent !== "undefined" && typeof DeviceOrientationEvent.requestPermission === "function") {
+      const permission = await DeviceOrientationEvent.requestPermission();
+      if (permission !== "granted") {
+        window.showToast("Izin sensor ditolak. Kompas tidak dapat aktif.", "warning");
+        return;
+      }
     }
+    document.getElementById("qibla-sensor-permission-btn")?.classList.add("hidden");
+    window.setQiblaPrecisionState("far", 45, "mencari arah");
+    window.startCompassListener();
   } catch (error) {
     console.error("Error requesting compass permission:", error);
+    window.showToast("Kompas belum bisa diaktifkan di perangkat ini.", "warning");
   }
+};
+
+window.toggleQiblaSound = function () {
+  window.qiblaSoundEnabled = !window.qiblaSoundEnabled;
+  const soundBtn = document.getElementById("qibla-sound-btn");
+  if (soundBtn) {
+    soundBtn.classList.toggle("is-active", window.qiblaSoundEnabled);
+    soundBtn.setAttribute("aria-pressed", String(window.qiblaSoundEnabled));
+    soundBtn.setAttribute("aria-label", window.qiblaSoundEnabled ? "Matikan suara" : "Aktifkan suara");
+    soundBtn.innerHTML = `<i data-lucide="${window.qiblaSoundEnabled ? "volume-2" : "volume-x"}"></i>`;
+    if (window.lucide) window.lucide.createIcons();
+  }
+  window.playQiblaTone(window.qiblaSoundEnabled ? 660 : 330, 70);
+};
+
+window.playQiblaTone = function (frequency = 520, duration = 60) {
+  try {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContext) return;
+    const context = window.qiblaAudioContext || new AudioContext();
+    window.qiblaAudioContext = context;
+    const oscillator = context.createOscillator();
+    const gain = context.createGain();
+    oscillator.frequency.value = frequency;
+    oscillator.type = "sine";
+    gain.gain.setValueAtTime(0.0001, context.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.08, context.currentTime + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + duration / 1000);
+    oscillator.connect(gain);
+    gain.connect(context.destination);
+    oscillator.start();
+    oscillator.stop(context.currentTime + duration / 1000 + 0.02);
+  } catch (error) {
+    console.warn("Qibla sound unavailable:", error);
+  }
+};
+
+window.playQiblaGuidanceSound = function (state, diff) {
+  if (!window.qiblaSoundEnabled) return;
+  const now = Date.now();
+  const gap = state === "almost" || state === "perfect" ? 350 : 850;
+  if (now - window.lastQiblaSoundTime < gap) return;
+  window.lastQiblaSoundTime = now;
+  const frequency = state === "perfect" ? 880 : Math.max(360, 760 - diff * 7);
+  window.playQiblaTone(frequency, state === "perfect" ? 120 : 55);
 };
 
 // Start device orientation listener
@@ -294,13 +336,14 @@ window.updateCompassUI = function (heading) {
   const signedDiff = ((window.qiblaAngle - heading + 540) % 360) - 180;
   const diff = Math.abs(signedDiff);
   const directionText = signedDiff > 0 ? "ke kanan" : "ke kiri";
-  qiblaArrow.style.transform = `rotate(${signedDiff}deg)`;
+  qiblaArrow.style.transform = `translate(-50%, -50%) rotate(${signedDiff}deg)`;
 
   // If phone is pointing to Qibla (within ±4 degrees)
   if (diff <= 4) {
     qiblaArrow.classList.add("qibla-active");
     if (alignmentIndicator) alignmentIndicator.classList.add("qibla-aligned");
     window.setQiblaPrecisionState(diff <= 1 ? "perfect" : "almost", diff, directionText);
+    window.playQiblaGuidanceSound(diff <= 1 ? "perfect" : "almost", diff);
     if (diff <= 1 && !window.qiblaLocked) {
       window.qiblaLocked = true;
       setTimeout(() => {
@@ -320,6 +363,7 @@ window.updateCompassUI = function (heading) {
     qiblaArrow.classList.remove("qibla-active");
     if (alignmentIndicator) alignmentIndicator.classList.remove("qibla-aligned");
     window.setQiblaPrecisionState(diff <= 15 ? "closer" : "far", diff, directionText);
+    window.playQiblaGuidanceSound(diff <= 15 ? "closer" : "far", diff);
   }
 };
 
