@@ -258,7 +258,7 @@ body {
     radial-gradient(circle at 50% 42%, rgba(255, 255, 255, 0.08), transparent 34%),
     linear-gradient(160deg, var(--qibla-bg-b), var(--qibla-bg-a) 62%);
   color: var(--qibla-foreground);
-  transition: background 700ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition: background 1100ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .qibla-finder > div {
@@ -312,6 +312,7 @@ body {
   font-weight: 800 !important;
   letter-spacing: 0 !important;
   line-height: 1.08 !important;
+  transition: opacity 520ms cubic-bezier(0.2, 0.8, 0.2, 1), transform 520ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .qibla-finder header button {
@@ -371,6 +372,10 @@ body {
   text-transform: none !important;
   letter-spacing: 0 !important;
   pointer-events: none;
+  transition:
+    opacity 520ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    transform 520ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    color 700ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 #qibla-content-wrapper > div:has(#qibla-compass-dial) {
@@ -403,7 +408,10 @@ body {
   filter: drop-shadow(0 22px 34px rgba(0, 0, 0, 0.34));
   transform: translate(-50%, -50%) rotate(0deg);
   transform-origin: center center;
-  transition: transform 260ms cubic-bezier(0.2, 0.8, 0.2, 1), scale 260ms ease, opacity 260ms ease !important;
+  transition:
+    transform 520ms cubic-bezier(0.19, 1, 0.22, 1),
+    opacity 520ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    filter 700ms cubic-bezier(0.2, 0.8, 0.2, 1) !important;
 }
 
 #qibla-needle svg {
@@ -433,6 +441,10 @@ body {
   display: block !important;
   transform: translateX(-50%);
   pointer-events: none;
+  transition:
+    opacity 520ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    transform 520ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    top 640ms cubic-bezier(0.19, 1, 0.22, 1);
 }
 
 #qibla-content-wrapper .grid > div {
@@ -461,6 +473,9 @@ body {
   line-height: 0.95 !important;
   text-align: center;
   text-shadow: 0 18px 38px rgba(0, 0, 0, 0.28);
+  transition:
+    opacity 520ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    transform 520ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 #qibla-sensor-permission-btn {
@@ -648,7 +663,7 @@ body {
 }
 
 .qibla-finder[data-qibla-state="locked"] #qibla-content-wrapper .grid {
-  top: calc(50% - min(35vw, 178px));
+  top: calc(50% - min(46vw, 238px));
 }
 
 .qibla-finder[data-qibla-state="perfect"] #qibla-alignment-indicator,
@@ -671,7 +686,8 @@ body {
   background: #fff;
   box-shadow: 0 0 0 18px rgba(255, 255, 255, 0.18), 0 0 58px rgba(255, 255, 255, 0.72);
   transform: translate(-50%, -50%);
-  animation: qiblaSuccessPulse 1.8s ease-in-out infinite;
+  opacity: 1;
+  animation: qiblaSuccessPulse 1.8s ease-in-out infinite, qiblaSoftEnter 700ms cubic-bezier(0.19, 1, 0.22, 1);
 }
 
 .qibla-finder[data-qibla-state="locked"] #qibla-content-wrapper > div:has(#qibla-compass-dial)::before {
@@ -685,7 +701,7 @@ body {
   background: url("kaaba.webp") center / contain no-repeat;
   filter: drop-shadow(0 24px 42px rgba(0, 0, 0, 0.28));
   transform: translate(-50%, -50%);
-  animation: qiblaKaabaFloat 4s ease-in-out infinite;
+  animation: qiblaKaabaEnter 900ms cubic-bezier(0.19, 1, 0.22, 1), qiblaKaabaFloat 4s ease-in-out 900ms infinite;
 }
 
 .qibla-finder[data-qibla-state="locked"] #qibla-content-wrapper > div:has(#qibla-compass-dial)::after {
@@ -714,6 +730,100 @@ body {
 @keyframes qiblaKaabaFloat {
   50% {
     transform: translate(-50%, calc(-50% - 10px));
+  }
+}
+
+.qibla-finder.qibla-state-enter header h3,
+.qibla-finder.qibla-state-enter #qibla-angle-txt {
+  animation: qiblaTextStateEnter 620ms cubic-bezier(0.19, 1, 0.22, 1);
+}
+
+.qibla-finder.qibla-state-enter #qibla-alignment-indicator {
+  animation: qiblaLabelStateEnter 620ms cubic-bezier(0.19, 1, 0.22, 1);
+}
+
+.qibla-finder.qibla-state-enter[data-qibla-state="perfect"] #qibla-alignment-indicator,
+.qibla-finder.qibla-state-enter[data-qibla-state="locked"] #qibla-alignment-indicator {
+  animation: qiblaCenteredLabelStateEnter 620ms cubic-bezier(0.19, 1, 0.22, 1);
+}
+
+.qibla-finder.qibla-state-enter #qibla-needle {
+  animation: qiblaArrowStateEnter 620ms cubic-bezier(0.19, 1, 0.22, 1);
+}
+
+@keyframes qiblaTextStateEnter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+    filter: blur(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+@keyframes qiblaLabelStateEnter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+    filter: blur(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: blur(0);
+  }
+}
+
+@keyframes qiblaCenteredLabelStateEnter {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(10px);
+    filter: blur(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%);
+    filter: blur(0);
+  }
+}
+
+@keyframes qiblaArrowStateEnter {
+  from {
+    opacity: 0.35;
+    filter: blur(8px) drop-shadow(0 22px 34px rgba(0, 0, 0, 0.34));
+  }
+  to {
+    opacity: 1;
+    filter: blur(0) drop-shadow(0 22px 34px rgba(0, 0, 0, 0.34));
+  }
+}
+
+@keyframes qiblaSoftEnter {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.78);
+    filter: blur(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes qiblaKaabaEnter {
+  from {
+    opacity: 0;
+    transform: translate(-50%, calc(-50% + 18px)) scale(0.72);
+    filter: blur(14px) drop-shadow(0 24px 42px rgba(0, 0, 0, 0.18));
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+    filter: blur(0) drop-shadow(0 24px 42px rgba(0, 0, 0, 0.28));
   }
 }
 

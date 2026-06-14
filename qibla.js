@@ -136,7 +136,7 @@ window.preparePrecisionQiblaUI = function () {
 
   const headerLabel = viewQibla.querySelector("header p");
   const headerTitle = viewQibla.querySelector("header h3");
-  if (headerLabel) headerLabel.textContent = "Finding";
+  if (headerLabel) headerLabel.textContent = "Syamsa";
   if (headerTitle) headerTitle.textContent = "Cari Kiblat";
 
   if (qiblaNeedle && !qiblaNeedle.dataset.precisionReady) {
@@ -170,8 +170,13 @@ window.setQiblaPrecisionState = function (state, diff = null, directionText = ""
   const arrow = document.getElementById("qibla-needle");
   if (!viewQibla) return;
 
+  if (viewQibla.dataset.qiblaState !== state) {
+    viewQibla.classList.remove("qibla-state-enter");
+    void viewQibla.offsetWidth;
+    viewQibla.classList.add("qibla-state-enter");
+  }
   viewQibla.dataset.qiblaState = state;
-  if (subtitle) subtitle.textContent = "Finding";
+  if (subtitle) subtitle.textContent = "Syamsa";
   if (loading) loading.classList.toggle("hidden", state !== "searching");
   if (content) content.classList.toggle("hidden", state === "searching");
 
@@ -179,6 +184,7 @@ window.setQiblaPrecisionState = function (state, diff = null, directionText = ""
   if (state === "searching") {
     if (title) title.textContent = "Cari Kiblat";
     if (indicator) indicator.textContent = "Menentukan arah kiblat...";
+    if (arrow) arrow.classList.remove("qibla-arrow-small");
     return;
   }
   if (state === "calibrating") {
@@ -186,19 +192,23 @@ window.setQiblaPrecisionState = function (state, diff = null, directionText = ""
     if (angleTxt) angleTxt.textContent = "";
     if (indicator) indicator.textContent = "Izinkan akses sensor gerak agar arah kiblat bisa dibaca secara presisi.";
     if (arrow) arrow.style.opacity = "0";
+    if (arrow) arrow.classList.remove("qibla-arrow-small");
     return;
   }
   if (arrow) arrow.style.opacity = "";
+  if (arrow) arrow.classList.toggle("qibla-arrow-small", state === "almost");
   if (state === "perfect") {
     if (title) title.textContent = "Kiblat Ditemukan";
     if (angleTxt) angleTxt.textContent = "";
     if (indicator) indicator.textContent = "Siap Shalat";
+    if (arrow) arrow.classList.remove("qibla-arrow-small");
     return;
   }
   if (state === "locked") {
     if (title) title.textContent = "Arah Kiblat Terkunci";
     if (angleTxt) angleTxt.textContent = Math.round(window.qiblaAngle || 0) + "\u00b0";
     if (indicator) indicator.textContent = "Siap digunakan saat shalat";
+    if (arrow) arrow.classList.remove("qibla-arrow-small");
     return;
   }
 
@@ -340,7 +350,7 @@ window.updateCompassUI = function (heading) {
   const signedDiff = ((window.qiblaAngle - heading + 540) % 360) - 180;
   const diff = Math.abs(signedDiff);
   const directionText = signedDiff > 0 ? "ke kanan" : "ke kiri";
-  const arrowScale = diff <= 4 && !window.qiblaLocked ? 0.64 : 1;
+  const arrowScale = qiblaArrow.classList.contains("qibla-arrow-small") ? 0.64 : 1;
   qiblaArrow.style.transform = `translate(-50%, -50%) rotate(${signedDiff}deg) scale(${arrowScale})`;
 
   if (window.qiblaLocked && diff > 2) {
