@@ -692,6 +692,11 @@ body.qibla-browser-active.qibla-browser-green {
   transform: translateX(-50%);
 }
 
+.qibla-finder[data-qibla-state="locked"] #qibla-alignment-indicator {
+  font-size: 25px !important;
+  line-height: 1.2 !important;
+}
+
 .qibla-finder[data-qibla-state="perfect"] #qibla-alignment-indicator,
 .qibla-finder[data-qibla-state="locked"] #qibla-alignment-indicator {
   left: 32px;
