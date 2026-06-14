@@ -8,6 +8,7 @@ window.orientationListenerActive = false;
 window.qiblaLocked = false;
 window.qiblaSoundEnabled = false;
 window.lastQiblaSoundTime = 0;
+window.qiblaOriginalThemeColors = null;
 
 // Lokasi Kakbah Makkah
 const MECCA_LAT = 21.422487;
@@ -53,6 +54,7 @@ window.openQiblaPage = function () {
     window.qiblaLockTimer = null;
   }
   window.preparePrecisionQiblaUI();
+  window.setQiblaBrowserChrome("dark");
   window.setQiblaPrecisionState("searching");
   viewQibla.classList.remove("hidden");
   viewQibla.classList.add("flex");
@@ -125,7 +127,37 @@ window.closeQiblaPage = function () {
     viewQibla.classList.add("hidden");
     viewQibla.classList.remove("flex");
   }
+  window.restoreQiblaBrowserChrome();
   window.stopCompassListener();
+};
+
+window.setQiblaBrowserChrome = function (tone = "dark") {
+  const color = tone === "green" ? "#25d654" : "#070707";
+  const root = document.documentElement;
+  const body = document.body;
+  root.classList.add("qibla-browser-active");
+  body?.classList.add("qibla-browser-active");
+  root.classList.toggle("qibla-browser-green", tone === "green");
+  body?.classList.toggle("qibla-browser-green", tone === "green");
+
+  const themeMetas = Array.from(document.querySelectorAll('meta[name="theme-color"]'));
+  if (!window.qiblaOriginalThemeColors) {
+    window.qiblaOriginalThemeColors = themeMetas.map((meta) => meta.getAttribute("content"));
+  }
+  themeMetas.forEach((meta) => meta.setAttribute("content", color));
+};
+
+window.restoreQiblaBrowserChrome = function () {
+  document.documentElement.classList.remove("qibla-browser-active", "qibla-browser-green");
+  document.body?.classList.remove("qibla-browser-active", "qibla-browser-green");
+
+  const themeMetas = Array.from(document.querySelectorAll('meta[name="theme-color"]'));
+  if (window.qiblaOriginalThemeColors) {
+    themeMetas.forEach((meta, index) => {
+      if (window.qiblaOriginalThemeColors[index]) meta.setAttribute("content", window.qiblaOriginalThemeColors[index]);
+    });
+  }
+  window.qiblaOriginalThemeColors = null;
 };
 
 window.preparePrecisionQiblaUI = function () {
@@ -176,6 +208,7 @@ window.setQiblaPrecisionState = function (state, diff = null, directionText = ""
     viewQibla.classList.add("qibla-state-enter");
   }
   viewQibla.dataset.qiblaState = state;
+  window.setQiblaBrowserChrome(["closer", "almost", "perfect", "locked"].includes(state) ? "green" : "dark");
   if (subtitle) subtitle.textContent = "Syamsa";
   if (loading) loading.classList.toggle("hidden", state !== "searching");
   if (content) content.classList.toggle("hidden", state === "searching");
