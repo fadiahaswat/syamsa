@@ -296,11 +296,11 @@ window.renderAttendanceList = function () {
     const profileAvatar =
       profileStats[issueStatus] >= 2
         ? {
-            Sakit: { icon: "heart-pulse", class: "text-rose-500" },
-            Izin: { icon: "file-text", class: "text-blue-500" },
-            Pulang: { icon: "home", class: "text-purple-500" },
-            Alpa: { icon: "alert-triangle", class: "text-red-500" },
-            Telat: { icon: "clock-alert", class: "text-amber-500" },
+            Sakit: { icon: window.getStatusMeta("Sakit").icon, class: window.getStatusMeta("Sakit").text },
+            Izin: { icon: window.getStatusMeta("Izin").icon, class: window.getStatusMeta("Izin").text },
+            Pulang: { icon: window.getStatusMeta("Pulang").icon, class: window.getStatusMeta("Pulang").text },
+            Alpa: { icon: window.getStatusMeta("Alpa").icon, class: window.getStatusMeta("Alpa").text },
+            Telat: { icon: window.getStatusMeta("Telat").icon, class: window.getStatusMeta("Telat").text },
           }[issueStatus]
         : profileStats.Hadir >= 2 || currentStatus === "Hadir"
           ? { icon: "flame", class: "text-orange-500" }
@@ -414,21 +414,9 @@ window.renderAttendanceList = function () {
       if (curr === "Hadir" || curr === "Ya") {
         ringClass =
           "ring-2 ring-emerald-500 ring-offset-2 ring-offset-white dark:ring-offset-slate-800";
-      } else if (curr === "Telat") {
+      } else if (["Telat", "Sakit", "Izin", "Alpa", "Pulang"].includes(curr)) {
         ringClass =
-          "ring-2 ring-teal-500 ring-offset-2 ring-offset-white dark:ring-offset-slate-800";
-      } else if (curr === "Sakit") {
-        ringClass =
-          "ring-2 ring-amber-500 ring-offset-2 ring-offset-white dark:ring-offset-slate-800";
-      } else if (curr === "Izin") {
-        ringClass =
-          "ring-2 ring-blue-500 ring-offset-2 ring-offset-white dark:ring-offset-slate-800";
-      } else if (curr === "Alpa") {
-        ringClass =
-          "ring-2 ring-red-500 ring-offset-2 ring-offset-white dark:ring-offset-slate-800";
-      } else if (curr === "Pulang") {
-        ringClass =
-          "ring-2 ring-purple-500 ring-offset-2 ring-offset-white dark:ring-offset-slate-800";
+          `ring-2 ${window.getStatusMeta(curr).ring} ring-offset-2 ring-offset-white dark:ring-offset-slate-800`;
       } else {
         ringClass =
           "ring-2 ring-slate-400 ring-offset-2 ring-offset-white dark:ring-offset-slate-800";
@@ -548,48 +536,34 @@ window.renderAttendanceList = function () {
       makeBadge(
         summaryCount.Sakit,
         "Sakit",
-        "bg-amber-100 text-amber-600 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-700",
+        window.getStatusMeta("Sakit").pill,
       );
       makeBadge(
         summaryCount.Izin,
         "Izin",
-        "bg-blue-100 text-blue-600 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-700",
+        window.getStatusMeta("Izin").pill,
       );
       makeBadge(
         summaryCount.Pulang,
         "Pulang",
-        "bg-purple-100 text-purple-600 border-purple-200 dark:bg-purple-900/30 dark:text-purple-400 dark:border-purple-700",
+        window.getStatusMeta("Pulang").pill,
       );
       makeBadge(
         summaryCount.Alpa,
         "Alpa",
-        "bg-red-50 text-red-500 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-700",
+        window.getStatusMeta("Alpa").pill,
       );
       makeBadge(
         summaryCount.Telat,
         "Telat",
-        "bg-teal-100 text-teal-600 border-teal-200 dark:bg-teal-900/30 dark:text-teal-400 dark:border-teal-700",
+        window.getStatusMeta("Telat").pill,
       );
 
       summaryList.forEach((item) => {
         let badgeClass =
           "px-2 py-1 rounded-md text-[10px] font-bold inline-block m-0.5 border";
 
-        if (item.status === "Sakit")
-          badgeClass +=
-            " bg-amber-100 text-amber-600 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400";
-        else if (item.status === "Izin")
-          badgeClass +=
-            " bg-blue-100 text-blue-600 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400";
-        else if (item.status === "Pulang")
-          badgeClass +=
-            " bg-purple-100 text-purple-600 border-purple-200 dark:bg-purple-900/30 dark:text-purple-400";
-        else if (item.status === "Alpa")
-          badgeClass +=
-            " bg-red-50 text-red-500 border-red-200 dark:bg-red-900/30 dark:text-red-400";
-        else if (item.status === "Telat")
-          badgeClass +=
-            " bg-teal-100 text-teal-600 border-teal-200 dark:bg-teal-900/30 dark:text-teal-400";
+        badgeClass += ` ${window.getStatusMeta(item.status).pill}`;
 
         const badge = document.createElement("span");
         badge.className = badgeClass;

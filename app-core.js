@@ -575,41 +575,112 @@ const STATUS_UI = {
   Hadir: {
     class: "bg-emerald-500 text-white border-emerald-500",
     label: "H",
+    icon: "check",
   },
   Ya: {
     class: "bg-emerald-500 text-white border-emerald-500",
     label: "Y",
+    icon: "check",
   },
   Telat: {
     class:
       "bg-cyan-100 text-cyan-600 border-cyan-500 dark:bg-cyan-950/30 dark:text-cyan-400 dark:border-cyan-800",
     label: "T",
+    icon: "clock-alert",
   },
   Izin: {
     class:
       "bg-blue-100 text-blue-600 border-blue-500 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-800",
     label: "I",
+    icon: "file-text",
   },
   Sakit: {
     class:
-      "bg-yellow-100 text-yellow-600 border-yellow-500 dark:bg-yellow-950/30 dark:text-yellow-400 dark:border-yellow-800",
+      "bg-amber-100 text-amber-600 border-amber-500 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-800",
     label: "S",
+    icon: "thermometer",
   },
   Alpa: {
     class:
       "bg-red-100 text-red-600 border-red-500 dark:bg-red-950/30 dark:text-red-400 dark:border-red-800",
     label: "A",
+    icon: "alert-triangle",
   },
   Pulang: {
     class:
       "bg-purple-100 text-purple-600 border-purple-500 dark:bg-purple-950/30 dark:text-purple-400 dark:border-purple-800",
     label: "P",
+    icon: "home",
   },
   Tidak: {
     class:
       "bg-slate-100 text-slate-400 border-slate-400 dark:bg-slate-700 dark:text-slate-500 dark:border-slate-500",
     label: "-",
+    icon: "minus",
   },
+};
+
+const STATUS_META = {
+  Hadir: {
+    icon: "check",
+    text: "text-emerald-600 dark:text-emerald-400",
+    pill: "bg-emerald-50 dark:bg-emerald-500/10 border-emerald-100 dark:border-emerald-500/20 text-emerald-700 dark:text-emerald-300",
+    solid: "bg-emerald-500 text-white",
+    ring: "ring-emerald-500",
+  },
+  Ya: {
+    icon: "check",
+    text: "text-emerald-600 dark:text-emerald-400",
+    pill: "bg-emerald-50 dark:bg-emerald-500/10 border-emerald-100 dark:border-emerald-500/20 text-emerald-700 dark:text-emerald-300",
+    solid: "bg-emerald-500 text-white",
+    ring: "ring-emerald-500",
+  },
+  Sakit: {
+    icon: "thermometer",
+    text: "text-amber-600 dark:text-amber-400",
+    pill: "bg-amber-50 dark:bg-amber-500/10 border-amber-100 dark:border-amber-500/20 text-amber-700 dark:text-amber-300",
+    solid: "bg-amber-500 text-white",
+    ring: "ring-amber-500",
+  },
+  Alpa: {
+    icon: "alert-triangle",
+    text: "text-red-600 dark:text-red-400",
+    pill: "bg-red-50 dark:bg-red-500/10 border-red-100 dark:border-red-500/20 text-red-700 dark:text-red-300",
+    solid: "bg-red-500 text-white",
+    ring: "ring-red-500",
+  },
+  Izin: {
+    icon: "file-text",
+    text: "text-blue-600 dark:text-blue-400",
+    pill: "bg-blue-50 dark:bg-blue-500/10 border-blue-100 dark:border-blue-500/20 text-blue-700 dark:text-blue-300",
+    solid: "bg-blue-500 text-white",
+    ring: "ring-blue-500",
+  },
+  Pulang: {
+    icon: "home",
+    text: "text-purple-600 dark:text-purple-400",
+    pill: "bg-purple-50 dark:bg-purple-500/10 border-purple-100 dark:border-purple-500/20 text-purple-700 dark:text-purple-300",
+    solid: "bg-purple-500 text-white",
+    ring: "ring-purple-500",
+  },
+  Telat: {
+    icon: "clock-alert",
+    text: "text-cyan-600 dark:text-cyan-400",
+    pill: "bg-cyan-50 dark:bg-cyan-500/10 border-cyan-100 dark:border-cyan-500/20 text-cyan-700 dark:text-cyan-300",
+    solid: "bg-cyan-500 text-white",
+    ring: "ring-cyan-500",
+  },
+  Tidak: {
+    icon: "minus",
+    text: "text-slate-500 dark:text-slate-400",
+    pill: "bg-slate-50 dark:bg-slate-700/40 border-slate-100 dark:border-slate-700 text-slate-500 dark:text-slate-300",
+    solid: "bg-slate-400 text-white",
+    ring: "ring-slate-400",
+  },
+};
+
+window.getStatusMeta = function (status) {
+  return STATUS_META[status] || STATUS_META.Tidak;
 };
 
 // Tambahkan 'kemarin': 0 agar logika matematika berjalan

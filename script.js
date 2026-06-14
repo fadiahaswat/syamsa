@@ -1942,11 +1942,11 @@ window.renderAttendanceList = function () {
     const profileAvatar =
       profileStats[issueStatus] >= 2
         ? {
-            Sakit: { icon: "heart-pulse", class: "text-rose-500" },
-            Izin: { icon: "file-text", class: "text-blue-500" },
-            Pulang: { icon: "home", class: "text-purple-500" },
-            Alpa: { icon: "alert-triangle", class: "text-red-500" },
-            Telat: { icon: "clock-alert", class: "text-amber-500" },
+            Sakit: { icon: window.getStatusMeta("Sakit").icon, class: window.getStatusMeta("Sakit").text },
+            Izin: { icon: window.getStatusMeta("Izin").icon, class: window.getStatusMeta("Izin").text },
+            Pulang: { icon: window.getStatusMeta("Pulang").icon, class: window.getStatusMeta("Pulang").text },
+            Alpa: { icon: window.getStatusMeta("Alpa").icon, class: window.getStatusMeta("Alpa").text },
+            Telat: { icon: window.getStatusMeta("Telat").icon, class: window.getStatusMeta("Telat").text },
           }[issueStatus]
         : profileStats.Hadir >= 2 || currentStatus === "Hadir"
           ? { icon: "flame", class: "text-orange-500" }
@@ -2060,21 +2060,9 @@ window.renderAttendanceList = function () {
       if (curr === "Hadir" || curr === "Ya") {
         ringClass =
           "ring-2 ring-emerald-500 ring-offset-2 ring-offset-white dark:ring-offset-slate-800";
-      } else if (curr === "Telat") {
+      } else if (["Telat", "Sakit", "Izin", "Alpa", "Pulang"].includes(curr)) {
         ringClass =
-          "ring-2 ring-cyan-500 ring-offset-2 ring-offset-white dark:ring-offset-slate-800";
-      } else if (curr === "Sakit") {
-        ringClass =
-          "ring-2 ring-yellow-500 ring-offset-2 ring-offset-white dark:ring-offset-slate-800";
-      } else if (curr === "Izin") {
-        ringClass =
-          "ring-2 ring-blue-500 ring-offset-2 ring-offset-white dark:ring-offset-slate-800";
-      } else if (curr === "Alpa") {
-        ringClass =
-          "ring-2 ring-red-500 ring-offset-2 ring-offset-white dark:ring-offset-slate-800";
-      } else if (curr === "Pulang") {
-        ringClass =
-          "ring-2 ring-purple-500 ring-offset-2 ring-offset-white dark:ring-offset-slate-800";
+          `ring-2 ${window.getStatusMeta(curr).ring} ring-offset-2 ring-offset-white dark:ring-offset-slate-800`;
       } else {
         ringClass =
           "ring-2 ring-slate-400 ring-offset-2 ring-offset-white dark:ring-offset-slate-800";
@@ -2193,48 +2181,33 @@ window.renderAttendanceList = function () {
       makeBadge(
         summaryCount.Sakit,
         "Sakit",
-        "bg-amber-100 text-amber-600 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-700",
+        window.getStatusMeta("Sakit").pill,
       );
       makeBadge(
         summaryCount.Izin,
         "Izin",
-        "bg-blue-100 text-blue-600 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-700",
+        window.getStatusMeta("Izin").pill,
       );
       makeBadge(
         summaryCount.Pulang,
         "Pulang",
-        "bg-purple-100 text-purple-600 border-purple-200 dark:bg-purple-900/30 dark:text-purple-400 dark:border-purple-700",
+        window.getStatusMeta("Pulang").pill,
       );
       makeBadge(
         summaryCount.Alpa,
         "Alpa",
-        "bg-red-50 text-red-500 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-700",
+        window.getStatusMeta("Alpa").pill,
       );
       makeBadge(
         summaryCount.Telat,
         "Telat",
-        "bg-teal-100 text-teal-600 border-teal-200 dark:bg-teal-900/30 dark:text-teal-400 dark:border-teal-700",
+        window.getStatusMeta("Telat").pill,
       );
 
       summaryList.forEach((item) => {
         let badgeClass =
           "px-2 py-1 rounded-md text-[10px] font-bold inline-block m-0.5 border";
-
-        if (item.status === "Sakit")
-          badgeClass +=
-            " bg-amber-100 text-amber-600 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400";
-        else if (item.status === "Izin")
-          badgeClass +=
-            " bg-blue-100 text-blue-600 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400";
-        else if (item.status === "Pulang")
-          badgeClass +=
-            " bg-purple-100 text-purple-600 border-purple-200 dark:bg-purple-900/30 dark:text-purple-400";
-        else if (item.status === "Alpa")
-          badgeClass +=
-            " bg-red-50 text-red-500 border-red-200 dark:bg-red-900/30 dark:text-red-400";
-        else if (item.status === "Telat")
-          badgeClass +=
-            " bg-teal-100 text-teal-600 border-teal-200 dark:bg-teal-900/30 dark:text-teal-400";
+        badgeClass += ` ${window.getStatusMeta(item.status).pill}`;
 
         const badge = document.createElement("span");
         badge.className = badgeClass;
@@ -3802,45 +3775,32 @@ window.updateReportTab = function () {
       let badges = "";
       ["shubuh", "ashar", "maghrib", "isya"].forEach((sid) => {
         const st = dayData[sid]?.[id]?.status?.shalat;
-        let color = "bg-slate-100 text-slate-300";
-
-        if (st === "Hadir") color = "bg-emerald-100 text-emerald-600";
-        else if (st === "Telat") color = "bg-teal-100 text-teal-600";
-        else if (st === "Sakit") color = "bg-amber-100 text-amber-600";
-        else if (st === "Izin") color = "bg-blue-100 text-blue-600";
-        else if (st === "Pulang") color = "bg-purple-100 text-purple-600";
-        else if (st === "Alpa") color = "bg-red-100 text-red-600";
+        const color = window.getStatusMeta(st || "Tidak").pill;
 
         const label = sid[0].toUpperCase();
-        badges += `<span class="w-5 h-5 flex items-center justify-center rounded ${color} text-[9px] font-black" aria-label="${sid}: ${st || "Belum diisi"}">${label}</span>`;
+        badges += `<span class="w-5 h-5 flex items-center justify-center rounded border ${color} text-[9px] font-black" aria-label="${sid}: ${st || "Belum diisi"}">${label}</span>`;
       });
       shalatCol = `<div class="flex justify-center gap-1" role="list">${badges}</div>`;
 
       const stSchool = dayData["sekolah"]?.[id]?.status?.kbm_sekolah;
-      let schColor = "bg-slate-100 text-slate-300";
+      let schColor = window.getStatusMeta(stSchool || "Tidak").pill;
       let schLabel = "-";
 
       if (stSchool === "Hadir") {
-        schColor = "bg-cyan-100 text-cyan-600";
         schLabel = "H";
       } else if (stSchool === "Telat") {
-        schColor = "bg-teal-100 text-teal-600";
         schLabel = "T";
       } else if (stSchool === "Sakit") {
-        schColor = "bg-amber-100 text-amber-600";
         schLabel = "S";
       } else if (stSchool === "Izin") {
-        schColor = "bg-blue-100 text-blue-600";
         schLabel = "I";
       } else if (stSchool === "Pulang") {
-        schColor = "bg-purple-100 text-purple-600";
         schLabel = "P";
       } else if (stSchool === "Alpa") {
-        schColor = "bg-red-100 text-red-600";
         schLabel = "A";
       }
 
-      schoolCol = `<div class="flex justify-center"><span class="w-6 h-6 flex items-center justify-center rounded-lg ${schColor} text-[10px] font-black shadow-sm" aria-label="Sekolah: ${stSchool || "Belum diisi"}">${schLabel}</span></div>`;
+      schoolCol = `<div class="flex justify-center"><span class="w-6 h-6 flex items-center justify-center rounded-lg border ${schColor} text-[10px] font-black shadow-sm" aria-label="Sekolah: ${stSchool || "Belum diisi"}">${schLabel}</span></div>`;
 
       const kbmTotal = stats.mahad.total || 0;
       const sunnahTotal = stats.sunnah.total || 0;
@@ -4884,23 +4844,26 @@ window.runAnalysis = function () {
             ) {
               stats.sunnah.total++;
               dayTotal++;
-              const sunnahKey = String(act.label || act.id).toLowerCase();
-              if (!stats.sunnahByAct[sunnahKey]) {
-                stats.sunnahByAct[sunnahKey] = {
-                  label: act.label || act.id,
-                  y: 0,
-                  t: 0,
-                  total: 0,
-                };
+              let sunnahKey = null;
+              if (act.category === "sunnah") {
+                sunnahKey = String(act.label || act.id).toLowerCase();
+                if (!stats.sunnahByAct[sunnahKey]) {
+                  stats.sunnahByAct[sunnahKey] = {
+                    label: act.label || act.id,
+                    y: 0,
+                    t: 0,
+                    total: 0,
+                  };
+                }
+                stats.sunnahByAct[sunnahKey].total++;
               }
-              stats.sunnahByAct[sunnahKey].total++;
               if (st === "Ya" || st === "Hadir") {
                 stats.sunnah.y++;
-                stats.sunnahByAct[sunnahKey].y++;
+                if (sunnahKey) stats.sunnahByAct[sunnahKey].y++;
                 dayGood++;
               } else {
                 stats.sunnah.t++;
-                stats.sunnahByAct[sunnahKey].t++;
+                if (sunnahKey) stats.sunnahByAct[sunnahKey].t++;
               }
             }
 
@@ -5007,16 +4970,18 @@ window.runAnalysis = function () {
     profileDominant.textContent = dominantIssue && dominantIssue[1] > 0 ? dominantIssue[0] : "Tidak ada";
   }
   if (profileStatus) {
+    const statusTone =
+      finalScore >= 90
+        ? "bg-emerald-50 dark:bg-emerald-500/10 border-emerald-100 dark:border-emerald-500/20 text-emerald-600 dark:text-emerald-400"
+        : finalScore >= 75
+          ? "bg-blue-50 dark:bg-blue-500/10 border-blue-100 dark:border-blue-500/20 text-blue-600 dark:text-blue-400"
+          : finalScore >= 60
+            ? "bg-amber-50 dark:bg-amber-500/10 border-amber-100 dark:border-amber-500/20 text-amber-600 dark:text-amber-400"
+            : "bg-red-50 dark:bg-red-500/10 border-red-100 dark:border-red-500/20 text-red-600 dark:text-red-400";
     profileStatus.textContent =
       finalScore >= 90 ? "Sangat baik" : finalScore >= 75 ? "Baik" : finalScore >= 60 ? "Perlu dampingan" : "Prioritas";
     profileStatus.className =
-      finalScore >= 90
-        ? "text-xs font-black text-emerald-600 dark:text-emerald-400 mt-1"
-        : finalScore >= 75
-          ? "text-xs font-black text-blue-600 dark:text-blue-400 mt-1"
-          : finalScore >= 60
-            ? "text-xs font-black text-amber-600 dark:text-amber-400 mt-1"
-            : "text-xs font-black text-red-600 dark:text-red-400 mt-1";
+      `inline-flex items-center justify-center px-2.5 py-1 rounded-full border text-[10px] font-black whitespace-nowrap ${statusTone}`;
   }
   if (profileIcon) {
     const issueIcon =
@@ -5043,19 +5008,19 @@ window.runAnalysis = function () {
   const issueBreakdown = document.getElementById("anl-issue-breakdown");
   if (issueBreakdown) {
     const issueMeta = {
-      Sakit: ["thermometer", "bg-amber-50 dark:bg-amber-500/10 border-amber-100 dark:border-amber-500/20 text-amber-600 dark:text-amber-300"],
-      Izin: ["clipboard-check", "bg-blue-50 dark:bg-blue-500/10 border-blue-100 dark:border-blue-500/20 text-blue-600 dark:text-blue-300"],
-      Pulang: ["home", "bg-purple-50 dark:bg-purple-500/10 border-purple-100 dark:border-purple-500/20 text-purple-600 dark:text-purple-300"],
-      Alpa: ["alert-triangle", "bg-red-50 dark:bg-red-500/10 border-red-100 dark:border-red-500/20 text-red-600 dark:text-red-300"],
+      Sakit: [window.getStatusMeta("Sakit").icon, window.getStatusMeta("Sakit").pill],
+      Izin: [window.getStatusMeta("Izin").icon, window.getStatusMeta("Izin").pill],
+      Pulang: [window.getStatusMeta("Pulang").icon, window.getStatusMeta("Pulang").pill],
+      Alpa: [window.getStatusMeta("Alpa").icon, window.getStatusMeta("Alpa").pill],
     };
     issueBreakdown.innerHTML = Object.entries(issueMeta)
       .map(([label, [icon, colorClass]]) => `
-        <div class="rounded-2xl border p-3 ${colorClass}">
+        <div class="rounded-xl border p-2.5 ${colorClass}">
           <div class="flex items-center justify-between">
-            <i data-lucide="${icon}" class="w-4 h-4"></i>
-            <span class="text-xl font-black tabular-nums">${stats.issues[label]}</span>
+            <i data-lucide="${icon}" class="w-3.5 h-3.5"></i>
+            <span class="text-lg font-black tabular-nums">${stats.issues[label]}</span>
           </div>
-          <p class="text-[10px] font-black uppercase tracking-wider mt-2">${label}</p>
+          <p class="text-[9px] font-black uppercase tracking-wider mt-1.5">${label}</p>
         </div>
       `)
       .join("");
@@ -5078,33 +5043,7 @@ window.runAnalysis = function () {
 
   window.renderAnalysisTrendChart(stats.timeline);
 
-  const timelineEl = document.getElementById("anl-timeline");
-  if (timelineEl) {
-    const statusTone = {
-      Hadir: "bg-emerald-50 dark:bg-emerald-500/10 border-emerald-100 dark:border-emerald-500/20 text-emerald-700 dark:text-emerald-300",
-      Ya: "bg-emerald-50 dark:bg-emerald-500/10 border-emerald-100 dark:border-emerald-500/20 text-emerald-700 dark:text-emerald-300",
-      Telat: "bg-teal-50 dark:bg-teal-500/10 border-teal-100 dark:border-teal-500/20 text-teal-700 dark:text-teal-300",
-      Sakit: "bg-amber-50 dark:bg-amber-500/10 border-amber-100 dark:border-amber-500/20 text-amber-700 dark:text-amber-300",
-      Izin: "bg-blue-50 dark:bg-blue-500/10 border-blue-100 dark:border-blue-500/20 text-blue-700 dark:text-blue-300",
-      Pulang: "bg-purple-50 dark:bg-purple-500/10 border-purple-100 dark:border-purple-500/20 text-purple-700 dark:text-purple-300",
-      Alpa: "bg-red-50 dark:bg-red-500/10 border-red-100 dark:border-red-500/20 text-red-700 dark:text-red-300",
-      Tidak: "bg-slate-50 dark:bg-slate-700/40 border-slate-100 dark:border-slate-700 text-slate-500 dark:text-slate-300",
-    };
-    const events = stats.events.slice(-8);
-    timelineEl.innerHTML = events.length
-      ? events
-          .map((item) => `
-            <div class="rounded-lg border px-2.5 py-2 ${statusTone[item.status] || statusTone.Tidak}">
-              <div class="flex items-center justify-between gap-2">
-                <p class="text-[10px] font-black truncate">${window.sanitizeHTML(item.slot)}</p>
-                <span class="text-[9px] font-black uppercase">${window.sanitizeHTML(item.status)}</span>
-              </div>
-              <p class="text-[9px] font-bold opacity-75 truncate mt-0.5">${window.sanitizeHTML(item.activity)}</p>
-            </div>
-          `)
-          .join("")
-      : `<div class="sm:col-span-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-dashed border-slate-200 dark:border-slate-700 p-4 text-center text-[10px] font-bold text-slate-400">Belum ada timeline</div>`;
-  }
+  window.renderAnalysisTimeline(stats, range);
 
   const sunnahDetail = document.getElementById("anl-sunnah-detail");
   if (sunnahDetail) {
@@ -5175,6 +5114,168 @@ window.runAnalysis = function () {
     Math.round(pctKbm) + "%";
   document.getElementById("anl-score-sunnah").textContent =
     Math.round(pctSunnah) + "%";
+
+  if (window.lucide) window.lucide.createIcons();
+};
+
+window.renderAnalysisTimeline = function (stats, range) {
+  const el = document.getElementById("anl-timeline");
+  if (!el) return;
+
+  const mode = appState.analysisMode || "daily";
+  const events = stats.events || [];
+  const safe = (value) => window.sanitizeHTML(String(value || "-"));
+  const statusTone = (status) => window.getStatusMeta(status).pill;
+  const countStatuses = (items) => {
+    const counts = { hadir: 0, sakit: 0, izin: 0, pulang: 0, alpa: 0, total: 0 };
+    items.forEach((item) => {
+      counts.total++;
+      if (item.status === "Hadir" || item.status === "Ya" || item.status === "Telat") counts.hadir++;
+      else if (item.status === "Sakit") counts.sakit++;
+      else if (item.status === "Izin") counts.izin++;
+      else if (item.status === "Pulang") counts.pulang++;
+      else if (item.status === "Alpa") counts.alpa++;
+    });
+    return counts;
+  };
+  const percent = (good, total) => (total ? Math.round((good / total) * 100) : 0);
+
+  if (mode === "daily") {
+    const dateKey = appState.analysisDate || appState.date;
+    const dailyEvents = events.filter((item) => item.date === dateKey);
+    const slots = [
+      { title: "Shubuh", icon: "sunrise", accent: "emerald", match: (slot) => slot.includes("shubuh") },
+      { title: "Sekolah", icon: "graduation-cap", accent: "cyan", match: (slot) => slot.includes("sekolah") },
+      { title: "Ashar", icon: "sun", accent: "amber", match: (slot) => slot.includes("ashar") },
+      { title: "Maghrib", icon: "sunset", accent: "violet", match: (slot) => slot.includes("maghrib") },
+      { title: "Isya", icon: "moon", accent: "blue", match: (slot) => slot.includes("isya") },
+    ];
+    const accentMap = {
+      emerald: "bg-emerald-50 dark:bg-emerald-500/10 border-emerald-100 dark:border-emerald-500/20 text-emerald-600 dark:text-emerald-300",
+      cyan: "bg-cyan-50 dark:bg-cyan-500/10 border-cyan-100 dark:border-cyan-500/20 text-cyan-600 dark:text-cyan-300",
+      amber: "bg-amber-50 dark:bg-amber-500/10 border-amber-100 dark:border-amber-500/20 text-amber-600 dark:text-amber-300",
+      violet: "bg-violet-50 dark:bg-violet-500/10 border-violet-100 dark:border-violet-500/20 text-violet-600 dark:text-violet-300",
+      blue: "bg-blue-50 dark:bg-blue-500/10 border-blue-100 dark:border-blue-500/20 text-blue-600 dark:text-blue-300",
+    };
+
+    el.className = "grid grid-cols-1 sm:grid-cols-2 gap-2";
+    el.innerHTML = slots
+      .map((slot) => {
+        const items = dailyEvents.filter((item) => slot.match(String(item.slot || "").toLowerCase()));
+        const counts = countStatuses(items);
+        const pct = percent(counts.hadir, counts.total);
+        return `
+          <div class="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-3 min-h-[124px] shadow-sm overflow-hidden relative">
+            <div class="absolute inset-x-0 top-0 h-1 ${slot.accent === "emerald" ? "bg-emerald-400" : slot.accent === "cyan" ? "bg-cyan-400" : slot.accent === "amber" ? "bg-amber-400" : slot.accent === "violet" ? "bg-violet-400" : "bg-blue-400"}"></div>
+            <div class="flex items-center justify-between mb-2.5 pt-1">
+              <div class="flex items-center gap-2 min-w-0">
+                <span class="w-8 h-8 rounded-xl border flex items-center justify-center ${accentMap[slot.accent]}">
+                  <i data-lucide="${slot.icon}" class="w-4 h-4"></i>
+                </span>
+                <div class="min-w-0">
+                  <p class="text-xs font-black text-slate-800 dark:text-slate-100 truncate">${slot.title}</p>
+                  <p class="text-[9px] font-bold text-slate-400">${pct}% hadir</p>
+                </div>
+              </div>
+              <div class="flex items-center gap-1">
+                <span class="px-1.5 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-500/10 text-[9px] font-black text-emerald-600 dark:text-emerald-300">H ${counts.hadir}</span>
+                <span class="px-1.5 py-0.5 rounded-md bg-red-50 dark:bg-red-500/10 text-[9px] font-black text-red-500">M ${counts.alpa + counts.sakit + counts.izin + counts.pulang}</span>
+              </div>
+            </div>
+            <div class="space-y-1">
+              ${
+                items.length
+                  ? items
+                      .map((item) => `
+                        <div class="flex items-center justify-between gap-2 rounded-lg border px-2 py-1.5 bg-slate-50/80 dark:bg-slate-800/50 border-slate-100 dark:border-slate-700">
+                          <span class="text-[10px] font-bold text-slate-700 dark:text-slate-200 truncate">${safe(item.activity)}</span>
+                          <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md border text-[8px] font-black uppercase ${statusTone(item.status)}">
+                            <i data-lucide="${window.getStatusMeta(item.status).icon}" class="w-2.5 h-2.5"></i>${safe(item.status)}
+                          </span>
+                        </div>
+                      `)
+                      .join("")
+                  : `<div class="rounded-lg border border-dashed border-slate-200 dark:border-slate-700 p-3 text-center text-[10px] font-bold text-slate-400">Belum ada data</div>`
+              }
+            </div>
+          </div>`;
+      })
+      .join("");
+  } else if (mode === "weekly") {
+    const dayNames = ["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Ahad"];
+    el.className = "grid grid-cols-2 sm:grid-cols-4 gap-2";
+    el.innerHTML = Array.from({ length: 7 }, (_, idx) => {
+      const date = new Date(range.start);
+      date.setDate(range.start.getDate() + idx);
+      const dateKey = window.getLocalDateStr(date);
+      const items = events.filter((item) => item.date === dateKey);
+      const counts = countStatuses(items);
+      const pct = percent(counts.hadir, counts.total);
+      return `
+        <div class="rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-3">
+          <div class="flex items-center justify-between">
+            <p class="text-xs font-black text-slate-800 dark:text-slate-100">${dayNames[idx]}</p>
+            <span class="text-sm font-black text-palette-blue">${pct}%</span>
+          </div>
+          <div class="mt-2 grid grid-cols-4 gap-1 text-[9px] font-black">
+            <span class="text-emerald-600">H ${counts.hadir}</span>
+            <span class="text-red-500">A ${counts.alpa}</span>
+            <span class="text-amber-500">S ${counts.sakit}</span>
+            <span class="text-blue-500">I ${counts.izin}</span>
+          </div>
+        </div>`;
+    }).join("");
+  } else if (mode === "monthly") {
+    const monthDate = new Date(appState.analysisDate || appState.date);
+    const year = monthDate.getFullYear();
+    const month = monthDate.getMonth();
+    const totalDays = new Date(year, month + 1, 0).getDate();
+    const firstIndex = (new Date(year, month, 1).getDay() + 6) % 7;
+    const cells = [];
+    for (let i = 0; i < firstIndex; i++) cells.push(`<div></div>`);
+    for (let d = 1; d <= totalDays; d++) {
+      const dateKey = `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+      const items = events.filter((item) => item.date === dateKey);
+      const hasSick = items.some((item) => item.status === "Sakit");
+      const hasAlpa = items.some((item) => item.status === "Alpa");
+      const hasIzin = items.some((item) => item.status === "Izin");
+      const hasData = items.length > 0;
+      const status = hasSick ? "Sakit" : hasAlpa ? "Alpa" : hasIzin ? "Izin" : hasData ? "Hadir" : "Tidak";
+      const icon = hasData ? window.getStatusMeta(status).icon : "";
+      const tone = window.getStatusMeta(status).pill;
+      cells.push(`
+        <div class="aspect-square rounded-lg border ${tone} dark:bg-slate-900 dark:border-slate-700 flex flex-col items-center justify-center gap-1">
+          <span class="text-[10px] font-black">${d}</span>
+          ${icon ? `<i data-lucide="${icon}" class="w-3 h-3"></i>` : `<span class="w-3 h-3"></span>`}
+        </div>`);
+    }
+    el.className = "grid grid-cols-7 gap-1";
+    el.innerHTML = ["S", "S", "R", "K", "J", "S", "A"]
+      .map((day) => `<div class="text-center text-[9px] font-black text-slate-400 pb-1">${day}</div>`)
+      .join("") + cells.join("");
+  } else {
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Ags", "Sep", "Okt", "Nov", "Des"];
+    const startMonth = range.start.getMonth();
+    const year = range.start.getFullYear();
+    el.className = "grid grid-cols-2 sm:grid-cols-3 gap-2";
+    el.innerHTML = Array.from({ length: 6 }, (_, idx) => {
+      const date = new Date(year, startMonth + idx, 1);
+      const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+      const items = events.filter((item) => item.date.startsWith(key));
+      const counts = countStatuses(items);
+      const pct = percent(counts.hadir, counts.total);
+      return `
+        <div class="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-3">
+          <div class="flex items-center justify-between mb-2">
+            <p class="text-xs font-black text-slate-800 dark:text-slate-100">${monthNames[date.getMonth()]}</p>
+            <span class="text-sm font-black text-palette-blue">${pct}%</span>
+          </div>
+          <div class="h-1.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+            <div class="h-full bg-palette-blue" style="width:${pct}%"></div>
+          </div>
+        </div>`;
+    }).join("");
+  }
 
   if (window.lucide) window.lucide.createIcons();
 };
@@ -6197,7 +6298,7 @@ window.showStatDetails = function (statusType) {
   let colorClass = "text-slate-800";
   if (statusType === "Hadir") colorClass = "text-blue-500";
   else if (statusType === "Tidak Hadir") colorClass = "text-rose-500";
-  else if (statusType === "Sakit") colorClass = "text-yellow-500";
+  else if (statusType === "Sakit") colorClass = window.getStatusMeta("Sakit").text;
   else if (statusType === "Izin") colorClass = "text-blue-500";
   else if (statusType === "Alpa") colorClass = "text-red-500";
   else if (statusType === "Telat") colorClass = "text-cyan-500";
@@ -7105,7 +7206,7 @@ window.renderPermitHistory = function () {
     // --- Tema warna per kategori ---
     const catMap = {
       sakit: {
-        icon: "thermometer",
+        icon: window.getStatusMeta("Sakit").icon,
         iconBg:
           "bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400",
         border: "border-amber-200 dark:border-amber-800",
@@ -7113,7 +7214,7 @@ window.renderPermitHistory = function () {
           "bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800",
       },
       izin: {
-        icon: "calendar",
+        icon: window.getStatusMeta("Izin").icon,
         iconBg:
           "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400",
         border: "border-blue-200 dark:border-blue-800",
@@ -7121,7 +7222,7 @@ window.renderPermitHistory = function () {
           "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800",
       },
       pulang: {
-        icon: "bus",
+        icon: window.getStatusMeta("Pulang").icon,
         iconBg:
           "bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400",
         border: "border-purple-200 dark:border-purple-800",
