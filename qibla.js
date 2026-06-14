@@ -48,6 +48,10 @@ window.openQiblaPage = function () {
   if (!viewQibla) return;
 
   window.qiblaLocked = false;
+  if (window.qiblaLockTimer) {
+    clearTimeout(window.qiblaLockTimer);
+    window.qiblaLockTimer = null;
+  }
   window.preparePrecisionQiblaUI();
   window.setQiblaPrecisionState("searching");
   viewQibla.classList.remove("hidden");
@@ -200,7 +204,7 @@ window.setQiblaPrecisionState = function (state, diff = null, directionText = ""
 
   if (title) title.textContent = state === "almost" ? "Hampir Tepat" : "Cari Kiblat";
   if (angleTxt && roundedDiff !== null) angleTxt.textContent = `${roundedDiff}\u00b0`;
-  if (indicator) indicator.textContent = state === "far" ? directionText : `${roundedDiff}\u00b0 lagi`;
+  if (indicator) indicator.textContent = directionText;
 };
 
 window.openQiblaModal = window.openQiblaPage;
@@ -338,19 +342,36 @@ window.updateCompassUI = function (heading) {
   const directionText = signedDiff > 0 ? "ke kanan" : "ke kiri";
   qiblaArrow.style.transform = `translate(-50%, -50%) rotate(${signedDiff}deg)`;
 
+  if (window.qiblaLocked && diff > 2) {
+    window.qiblaLocked = false;
+  }
+
+  if (window.qiblaLocked && diff <= 2) {
+    qiblaArrow.classList.add("qibla-active");
+    if (alignmentIndicator) alignmentIndicator.classList.add("qibla-aligned");
+    window.setQiblaPrecisionState("locked", diff, directionText);
+    window.playQiblaGuidanceSound("perfect", diff);
+    return;
+  }
+
   // If phone is pointing to Qibla (within ±4 degrees)
   if (diff <= 4) {
     qiblaArrow.classList.add("qibla-active");
     if (alignmentIndicator) alignmentIndicator.classList.add("qibla-aligned");
     window.setQiblaPrecisionState(diff <= 1 ? "perfect" : "almost", diff, directionText);
     window.playQiblaGuidanceSound(diff <= 1 ? "perfect" : "almost", diff);
-    if (diff <= 1 && !window.qiblaLocked) {
-      window.qiblaLocked = true;
-      setTimeout(() => {
-        if (document.getElementById("view-qibla")?.dataset.qiblaState === "perfect") {
+    if (diff <= 1 && !window.qiblaLockTimer) {
+      window.qiblaLockTimer = setTimeout(() => {
+        window.qiblaLockTimer = null;
+        if (document.getElementById("view-qibla")?.dataset.qiblaState === "perfect" && window.deviceHeading !== null) {
+          window.qiblaLocked = true;
           window.setQiblaPrecisionState("locked", diff, directionText);
         }
-      }, 1800);
+      }, 900);
+    }
+    if (diff > 1 && window.qiblaLockTimer) {
+      clearTimeout(window.qiblaLockTimer);
+      window.qiblaLockTimer = null;
     }
 
     // Trigger haptic vibrate feedback on Android (max once every 1 second to not annoy user)
@@ -360,6 +381,10 @@ window.updateCompassUI = function (heading) {
     }
   } else {
     window.qiblaLocked = false;
+    if (window.qiblaLockTimer) {
+      clearTimeout(window.qiblaLockTimer);
+      window.qiblaLockTimer = null;
+    }
     qiblaArrow.classList.remove("qibla-active");
     if (alignmentIndicator) alignmentIndicator.classList.remove("qibla-aligned");
     window.setQiblaPrecisionState(diff <= 15 ? "closer" : "far", diff, directionText);
