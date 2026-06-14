@@ -77,7 +77,9 @@ window.startClock = function () {
       lastRealDate = currentRealDate; // Update referensi tanggal nyata
     }
 
-    const realCurrentSlot = window.determineCurrentSlot();
+    const realCurrentSlot = window.getCurrentDashboardSlotId
+      ? window.getCurrentDashboardSlotId(currentRealDate)
+      : window.determineCurrentSlot();
     if (
       appState.date === currentRealDate &&
       appState.currentSlotId !== realCurrentSlot

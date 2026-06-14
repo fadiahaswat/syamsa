@@ -9,6 +9,8 @@ window.qiblaLocked = false;
 window.qiblaSoundEnabled = false;
 window.lastQiblaSoundTime = 0;
 window.qiblaOriginalThemeColors = null;
+window.compassTargetMode = "qibla";
+window.compassTargetName = "Kakbah";
 
 // Lokasi Kakbah Makkah
 const MECCA_LAT = 21.422487;
@@ -16,34 +18,58 @@ const MECCA_LNG = 39.826206;
 
 // Fungsi hitung sudut arah kiblat (Bearing)
 window.calculateQiblaBearing = function (lat, lng) {
+  return window.calculateBearingTo(lat, lng, MECCA_LAT, MECCA_LNG);
+};
+
+window.calculateBearingTo = function (lat, lng, targetLat, targetLng) {
   const phi1 = lat * Math.PI / 180;
-  const phi2 = MECCA_LAT * Math.PI / 180;
+  const phi2 = targetLat * Math.PI / 180;
   const lambda1 = lng * Math.PI / 180;
-  const lambda2 = MECCA_LNG * Math.PI / 180;
+  const lambda2 = targetLng * Math.PI / 180;
   const dLng = lambda2 - lambda1;
 
   const y = Math.sin(dLng);
   const x = Math.cos(phi1) * Math.tan(phi2) - Math.sin(phi1) * Math.cos(dLng);
-  const qiblaRad = Math.atan2(y, x);
-  const qiblaDeg = (qiblaRad * 180 / Math.PI + 360) % 360;
-  return qiblaDeg;
+  return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
 };
 
 // Fungsi hitung jarak ke Kakbah (Haversine Formula)
 window.calculateQiblaDistance = function (lat, lng) {
-  const R = 6371; // Radius bumi dalam km
-  const dLat = (MECCA_LAT - lat) * Math.PI / 180;
-  const dLng = (MECCA_LNG - lng) * Math.PI / 180;
+  return window.calculateDistanceMeters(lat, lng, MECCA_LAT, MECCA_LNG) / 1000;
+};
+
+window.calculateDistanceMeters = function (lat, lng, targetLat, targetLng) {
+  const R = 6371e3;
+  const dLat = (targetLat - lat) * Math.PI / 180;
+  const dLng = (targetLng - lng) * Math.PI / 180;
 
   const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-            Math.cos(lat * Math.PI / 180) * Math.cos(MECCA_LAT * Math.PI / 180) *
+            Math.cos(lat * Math.PI / 180) * Math.cos(targetLat * Math.PI / 180) *
             Math.sin(dLng/2) * Math.sin(dLng/2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
   return R * c;
 };
 
+window.findNearestAsramaTarget = function (lat, lng) {
+  const locations = window.APP_LOCATION?.geofenceLocations || [];
+  let nearest = null;
+  let nearestDistance = Infinity;
+
+  locations.forEach((loc) => {
+    const distance = window.calculateDistanceMeters(lat, lng, loc.lat, loc.lng);
+    if (distance < nearestDistance) {
+      nearest = loc;
+      nearestDistance = distance;
+    }
+  });
+
+  return nearest ? { ...nearest, distance: nearestDistance } : null;
+};
+
 // Main function to open and init Qibla Page
 window.openQiblaPage = function () {
+  window.compassTargetMode = "qibla";
+  window.compassTargetName = "Kakbah";
   const viewMain = document.getElementById("view-main");
   const viewQibla = document.getElementById("view-qibla");
   if (!viewQibla) return;
@@ -119,6 +145,90 @@ window.openQiblaPage = function () {
   }
 };
 
+window.openAsramaPage = function () {
+  window.compassTargetMode = "asrama";
+  window.compassTargetName = "Asrama";
+  const viewMain = document.getElementById("view-main");
+  const viewQibla = document.getElementById("view-qibla");
+  if (!viewQibla) return;
+
+  window.qiblaLocked = false;
+  if (window.qiblaLockTimer) {
+    clearTimeout(window.qiblaLockTimer);
+    window.qiblaLockTimer = null;
+  }
+  window.preparePrecisionQiblaUI();
+  window.setQiblaBrowserChrome("dark");
+  window.setQiblaPrecisionState("searching");
+  viewQibla.classList.remove("hidden");
+  viewQibla.classList.add("flex");
+  viewQibla.scrollTop = 0;
+  if (window.lucide) window.lucide.createIcons();
+  setTimeout(() => {
+    if (viewMain) viewMain.classList.add("hidden");
+  }, 250);
+
+  document.getElementById("qibla-loading").classList.remove("hidden");
+  document.getElementById("qibla-content-wrapper").classList.add("hidden");
+  document.getElementById("qibla-sensor-permission-btn").classList.add("hidden");
+
+  const openWithPosition = (lat, lng) => {
+    const target = window.findNearestAsramaTarget(lat, lng);
+
+    if (!target) {
+      window.showToast("Target asrama belum tersedia di konfigurasi lokasi.", "warning");
+      window.closeQiblaPage();
+      return;
+    }
+
+    window.compassTargetName = target.name || "Asrama";
+    window.qiblaAngle = window.calculateBearingTo(lat, lng, target.lat, target.lng);
+    window.qiblaDistance = target.distance;
+
+    document.getElementById("qibla-angle-txt").textContent = Math.round(window.qiblaAngle) + "\u00b0";
+    document.getElementById("qibla-distance-txt").textContent = window.formatAsramaDistance(window.qiblaDistance);
+    document.getElementById("qibla-loading").classList.add("hidden");
+    document.getElementById("qibla-content-wrapper").classList.remove("hidden");
+    window.setQiblaPrecisionState("calibrating");
+    window.initCompass();
+  };
+
+  if (window.asramaNavigationTestEnabled) {
+    const target = window.APP_LOCATION?.geofenceLocations?.[0];
+    if (!target) {
+      window.showToast("Target asrama belum tersedia di konfigurasi lokasi.", "warning");
+      window.closeQiblaPage();
+      return;
+    }
+    // Offset kecil ke barat daya agar simulasi terlihat jauh dari radius.
+    openWithPosition(target.lat - 0.0018, target.lng - 0.0018);
+    return;
+  }
+
+  if (!navigator.geolocation) {
+    window.showToast("Browser Anda tidak mendukung GPS.", "error");
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    (position) => {
+      openWithPosition(position.coords.latitude, position.coords.longitude);
+    },
+    (error) => {
+      console.error("GPS error for Asrama:", error);
+      window.showToast("Gagal mengambil GPS untuk arah ke asrama.", "warning");
+      window.closeQiblaPage();
+    },
+    { enableHighAccuracy: true, timeout: 7000 }
+  );
+};
+
+window.formatAsramaDistance = function (meters) {
+  if (!Number.isFinite(meters)) return "--";
+  if (meters >= 1000) return `${(meters / 1000).toFixed(2).replace(".", ",")} km`;
+  return `${Math.round(meters)} m`;
+};
+
 window.closeQiblaPage = function () {
   const viewMain = document.getElementById("view-main");
   const viewQibla = document.getElementById("view-qibla");
@@ -168,8 +278,13 @@ window.preparePrecisionQiblaUI = function () {
 
   const headerLabel = viewQibla.querySelector("header p");
   const headerTitle = viewQibla.querySelector("header h3");
-  if (headerLabel) headerLabel.textContent = "Syamsa";
-  if (headerTitle) headerTitle.textContent = "Cari Kiblat";
+  const angleLabel = document.getElementById("qibla-angle-label");
+  const distanceLabel = document.getElementById("qibla-distance-label");
+  const isAsrama = window.compassTargetMode === "asrama";
+  if (headerLabel) headerLabel.textContent = isAsrama ? "Navigasi GPS" : "Syamsa";
+  if (headerTitle) headerTitle.textContent = isAsrama ? "Ke Asrama" : "Cari Kiblat";
+  if (angleLabel) angleLabel.textContent = isAsrama ? "Sudut Tujuan" : "Sudut Kiblat";
+  if (distanceLabel) distanceLabel.textContent = isAsrama ? "Jarak Asrama" : "Jarak Ke Makkah";
 
   if (qiblaNeedle && !qiblaNeedle.dataset.precisionReady) {
     qiblaNeedle.innerHTML = `
@@ -209,14 +324,15 @@ window.setQiblaPrecisionState = function (state, diff = null, directionText = ""
   }
   viewQibla.dataset.qiblaState = state;
   window.setQiblaBrowserChrome(["closer", "almost", "perfect", "locked"].includes(state) ? "green" : "dark");
-  if (subtitle) subtitle.textContent = "Syamsa";
+  const isAsrama = window.compassTargetMode === "asrama";
+  if (subtitle) subtitle.textContent = isAsrama ? (window.compassTargetName || "Asrama") : "Syamsa";
   if (loading) loading.classList.toggle("hidden", state !== "searching");
   if (content) content.classList.toggle("hidden", state === "searching");
 
   const roundedDiff = diff === null ? null : Math.round(diff);
   if (state === "searching") {
-    if (title) title.textContent = "Cari Kiblat";
-    if (indicator) indicator.textContent = "Menentukan arah kiblat...";
+    if (title) title.textContent = isAsrama ? "Mencari Asrama" : "Cari Kiblat";
+    if (indicator) indicator.textContent = isAsrama ? "Menentukan arah ke asrama..." : "Menentukan arah kiblat...";
     if (arrow) {
       arrow.classList.remove("qibla-arrow-small");
       arrow.style.visibility = "visible";
@@ -226,7 +342,9 @@ window.setQiblaPrecisionState = function (state, diff = null, directionText = ""
   if (state === "calibrating") {
     if (title) title.textContent = "Aktifkan Kompas";
     if (angleTxt) angleTxt.textContent = "";
-    if (indicator) indicator.textContent = "Izinkan akses sensor gerak agar arah kiblat bisa dibaca secara presisi.";
+    if (indicator) indicator.textContent = isAsrama
+      ? "Izinkan akses sensor gerak agar arah asrama bisa dibaca secara presisi."
+      : "Izinkan akses sensor gerak agar arah kiblat bisa dibaca secara presisi.";
     if (arrow) arrow.style.opacity = "0";
     if (arrow) {
       arrow.classList.remove("qibla-arrow-small");
@@ -238,9 +356,9 @@ window.setQiblaPrecisionState = function (state, diff = null, directionText = ""
   if (arrow) arrow.style.visibility = "visible";
   if (arrow) arrow.classList.toggle("qibla-arrow-small", state === "almost");
   if (state === "perfect") {
-    if (title) title.textContent = "Kiblat Ditemukan";
+    if (title) title.textContent = isAsrama ? "Arah Asrama Tepat" : "Kiblat Ditemukan";
     if (angleTxt) angleTxt.textContent = "";
-    if (indicator) indicator.textContent = "Siap Shalat";
+    if (indicator) indicator.textContent = isAsrama ? "Ikuti arah ini" : "Siap Shalat";
     if (arrow) {
       arrow.classList.remove("qibla-arrow-small");
       arrow.style.opacity = "0";
@@ -249,9 +367,9 @@ window.setQiblaPrecisionState = function (state, diff = null, directionText = ""
     return;
   }
   if (state === "locked") {
-    if (title) title.textContent = "Arah Kiblat Terkunci";
+    if (title) title.textContent = isAsrama ? "Arah Asrama Terkunci" : "Arah Kiblat Terkunci";
     if (angleTxt) angleTxt.textContent = Math.round(window.qiblaAngle || 0) + "\u00b0";
-    if (indicator) indicator.textContent = "Siap digunakan saat shalat";
+    if (indicator) indicator.textContent = isAsrama ? "Arah tujuan stabil" : "Siap digunakan saat shalat";
     if (arrow) {
       arrow.classList.remove("qibla-arrow-small");
       arrow.style.opacity = "0";
@@ -260,7 +378,7 @@ window.setQiblaPrecisionState = function (state, diff = null, directionText = ""
     return;
   }
 
-  if (title) title.textContent = state === "almost" ? "Hampir Tepat" : "Cari Kiblat";
+  if (title) title.textContent = state === "almost" ? "Hampir Tepat" : (isAsrama ? "Ke Asrama" : "Cari Kiblat");
   if (arrow) arrow.style.visibility = "visible";
   if (angleTxt && roundedDiff !== null) angleTxt.textContent = `${roundedDiff}\u00b0`;
   if (indicator) indicator.textContent = directionText;

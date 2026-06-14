@@ -210,6 +210,184 @@ window.clearAttendanceReviewGate = function () {
   }
 };
 
+window.isAttendanceSlotFinalForReport = function (slotData) {
+  if (!slotData) return false;
+  return slotData.__reviewConfirmed === true || slotData.__requiresReview !== true;
+};
+
+window.getDailyReportStatusMeta = function (
+  dateKey,
+  slotId,
+  studentId,
+  activityId,
+) {
+  if (window.isSlotHoliday && window.isSlotHoliday(slotId, dateKey)) {
+    return {
+      status: "Libur",
+      label: "L",
+      className: "bg-slate-200 text-slate-500",
+      aria: `${slotId}: Libur`,
+    };
+  }
+
+  const slotData = appState.attendanceData?.[dateKey]?.[slotId];
+  if (slotData?.__requiresReview === true && slotData.__reviewConfirmed !== true) {
+    return {
+      status: "Proses",
+      label: "P",
+      className: "bg-amber-100 text-amber-600",
+      aria: `${slotId}: Proses presensi`,
+    };
+  }
+
+  if (!window.isAttendanceSlotFinalForReport(slotData)) {
+    return {
+      status: null,
+      label: "-",
+      className: "bg-slate-100 text-slate-300",
+      aria: `${slotId}: Belum diisi`,
+    };
+  }
+
+  const st = slotData?.[String(studentId)]?.status?.[activityId];
+  const map = {
+    Hadir: { label: "H", className: "bg-emerald-100 text-emerald-600" },
+    Telat: { label: "T", className: "bg-teal-100 text-teal-600" },
+    Sakit: { label: "S", className: "bg-amber-100 text-amber-600" },
+    Izin: { label: "I", className: "bg-blue-100 text-blue-600" },
+    Pulang: { label: "P", className: "bg-purple-100 text-purple-600" },
+    Alpa: { label: "A", className: "bg-red-100 text-red-600" },
+    Ya: { label: "Y", className: "bg-emerald-100 text-emerald-600" },
+    Tidak: { label: "-", className: "bg-slate-100 text-slate-400" },
+  };
+  const meta = map[st] || { label: "-", className: "bg-slate-100 text-slate-300" };
+  return {
+    status: st || null,
+    label: meta.label,
+    className: meta.className,
+    aria: `${slotId}: ${st || "Belum diisi"}`,
+  };
+};
+
+window.STATUS_SCORE = {
+  Hadir: 100,
+  Telat: 90,
+  Izin: 75,
+  Sakit: 75,
+  Pulang: 0,
+  Alpa: -50,
+  Ya: 100,
+  Tidak: 0,
+};
+
+window.getStatusScore = function (status) {
+  return window.STATUS_SCORE[status] ?? null;
+};
+
+window.isReportCategoryActiveOnDate = function (dateKey, category) {
+  if (!dateKey || !category) return false;
+  const selectedDate = new Date(`${dateKey}T00:00:00`);
+  const dayNum = selectedDate.getDay();
+
+  return Object.values(SLOT_WAKTU).some((slot) => {
+    if (window.isSlotHoliday && window.isSlotHoliday(slot.id, dateKey)) return false;
+
+    return slot.activities.some((act) => {
+      if (act.category !== category) return false;
+      if (act.showOnDays && !act.showOnDays.includes(dayNum)) return false;
+      if (act.onlyRamadhan && !window.isRamadhan(dateKey)) return false;
+      if (window.isActivityHoliday && window.isActivityHoliday(dateKey, slot.id, act.id)) return false;
+      if (window.isCategoryHoliday && window.isCategoryHoliday(dateKey, act.category)) return false;
+      return true;
+    });
+  });
+};
+
+window.calculateReportScoreForStudentRange = function (studentId, range) {
+  if (!studentId || !range?.start || !range?.end) {
+    return { score: null, total: 0 };
+  }
+
+  const categoryStats = {
+    shalat: { score: 0, total: 0 },
+    sekolah: { score: 0, total: 0 },
+    mahad: { score: 0, total: 0 },
+    sunnah: { score: 0, total: 0 },
+  };
+  const startTime = range.start.getTime();
+  const endTime = range.end.getTime();
+  const dayInMs = 24 * 60 * 60 * 1000;
+  const totalDays = Math.min(Math.ceil((endTime - startTime) / dayInMs) + 1, 370);
+
+  for (let i = 0; i < totalDays; i++) {
+    const currentDate = new Date(startTime + i * dayInMs);
+    const dateKey = window.getLocalDateStr(currentDate);
+    const dayNum = currentDate.getDay();
+    const dayData = appState.attendanceData?.[dateKey];
+    if (!dayData) continue;
+
+    Object.values(SLOT_WAKTU).forEach((slot) => {
+      if (window.isSlotHoliday(slot.id, dateKey)) return;
+      const slotData = dayData[slot.id];
+      if (!window.isAttendanceSlotFinalForReport(slotData)) return;
+
+      const studentData = slotData?.[String(studentId)];
+      if (!studentData) return;
+
+      slot.activities.forEach((act) => {
+        if (act.showOnDays && !act.showOnDays.includes(dayNum)) return;
+        if (act.onlyRamadhan && !window.isRamadhan(dateKey)) return;
+        if (window.isActivityHoliday(dateKey, slot.id, act.id)) return;
+        if (window.isCategoryHoliday(dateKey, act.category)) return;
+
+        const score = window.getStatusScore(studentData.status?.[act.id]);
+        if (score === null) return;
+
+        const bucket =
+          act.category === "fardu" ? categoryStats.shalat :
+          act.category === "school" ? categoryStats.sekolah :
+          act.category === "kbm" ? categoryStats.mahad :
+          act.category === "sunnah" ? categoryStats.sunnah :
+          null;
+        if (!bucket) return;
+
+        bucket.score += score;
+        bucket.total++;
+      });
+    });
+  }
+
+  const scores = Object.values(categoryStats)
+    .filter((item) => item.total > 0)
+    .map((item) => item.score / item.total);
+
+  return {
+    score: scores.length
+      ? Math.round(scores.reduce((sum, value) => sum + value, 0) / scores.length)
+      : null,
+    total: Object.values(categoryStats).reduce((sum, item) => sum + item.total, 0),
+  };
+};
+
+window.getCurrentDashboardSlotId = function (dateKey = appState.date) {
+  const current = window.determineCurrentSlot
+    ? window.determineCurrentSlot()
+    : appState.currentSlotId;
+  if (!window.isSlotHoliday(current, dateKey)) return current;
+
+  const order = ["shubuh", "sekolah", "ashar", "maghrib", "isya"];
+  const currentIndex = Math.max(0, order.indexOf(current));
+  const fallbackOrder = [
+    ...order.slice(currentIndex + 1),
+    ...order.slice(0, currentIndex).reverse(),
+  ];
+
+  return (
+    fallbackOrder.find((slotId) => !window.isSlotHoliday(slotId, dateKey)) ||
+    current
+  );
+};
+
 window.refreshIcons = function () {
   clearTimeout(lucideTimeout);
   lucideTimeout = setTimeout(() => {
@@ -253,6 +431,25 @@ window.getLocalDateStr = function (dateObj = new Date()) {
     console.error("Date conversion error:", e);
     return new Date().toISOString().split("T")[0];
   }
+};
+
+window.getDashboardDateBadgeLabel = function (dateStr = appState.date) {
+  const parseLocalDate = (value) => {
+    const [year, month, day] = String(value || "").split("-").map(Number);
+    if (!year || !month || !day) return null;
+    return new Date(year, month - 1, day);
+  };
+
+  const selectedDate = parseLocalDate(dateStr);
+  if (!selectedDate) return "Lampau";
+
+  const today = parseLocalDate(window.getLocalDateStr());
+  const diffDays = Math.round((today - selectedDate) / (24 * 60 * 60 * 1000));
+
+  if (diffDays === 0) return "Hari ini";
+  if (diffDays === 1) return "Kemarin";
+  if (diffDays === 2) return "Kemarin Lusa";
+  return "Lampau";
 };
 
 // Format tanggal ke "Senin, 1 Jan 2025"

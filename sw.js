@@ -1,4 +1,4 @@
-const CACHE_NAME = "musyrif-app-v195-class-chip-icon";
+const CACHE_NAME = "musyrif-app-v213-asrama-testing-mode";
 const ASSETS_TO_CACHE = [
   "./",
   "./index.html",

@@ -206,6 +206,7 @@ window.updateReportTab = function () {
                 <th class="p-3 text-center">Sekolah %</th>
                 <th class="p-3 text-center">Ma'had %</th>
                 <th class="p-3 text-center">Sunnah %</th>
+                <th class="p-3 text-center">Tren</th>
             `;
     } else if (appState.reportMode === "semester") {
       headerHTML += `
@@ -214,6 +215,7 @@ window.updateReportTab = function () {
                 <th class="p-3 text-center">Ma'had</th>
                 <th class="p-3 text-center">Sunnah</th>
                 <th class="p-3 text-center">Grade</th>
+                <th class="p-3 text-center">Tren</th>
             `;
     }
 
@@ -226,7 +228,7 @@ window.updateReportTab = function () {
   const range = window.getReportDateRange(appState.reportMode);
   if (rangeLabel) rangeLabel.textContent = range.label;
 
-  const colspan = appState.reportMode === "semester" ? 7 : 6;
+  const colspan = appState.reportMode === "semester" ? 8 : (appState.reportMode === "weekly" || appState.reportMode === "monthly" ? 7 : 6);
 
   if (!appState.selectedClass || FILTERED_SANTRI.length === 0) {
     tbody.innerHTML =
@@ -248,6 +250,7 @@ window.updateReportTab = function () {
     Ya: 100,
     Tidak: 0,
   };
+  const getPoint = (status) => window.getStatusScore?.(status) ?? STATUS_WEIGHT[status] ?? 0;
 
   // OPTIMIZATION: Use Map for O(1) lookup
   const santriStatsMap = new Map();
@@ -287,6 +290,22 @@ window.updateReportTab = function () {
     Math.ceil((endTime - startTime) / dayInMs) + 1,
     370,
   );
+  const trendPrevRange = (() => {
+    if (appState.reportMode === "weekly") {
+      const prevBase = new Date(range.start);
+      prevBase.setDate(prevBase.getDate() - 7);
+      return window.getDateRange("weekly", window.getLocalDateStr(prevBase));
+    }
+    if (appState.reportMode === "monthly") {
+      const prevBase = new Date(range.start.getFullYear(), range.start.getMonth() - 1, 1);
+      return window.getDateRange("monthly", window.getLocalDateStr(prevBase));
+    }
+    if (appState.reportMode === "semester") {
+      const prevBase = new Date(range.start.getFullYear(), range.start.getMonth() - 6, 1);
+      return window.getDateRange("semester", window.getLocalDateStr(prevBase));
+    }
+    return null;
+  })();
 
   for (let i = 0; i < totalDays; i++) {
     const currentDate = new Date(startTime + i * dayInMs);
@@ -297,9 +316,13 @@ window.updateReportTab = function () {
     if (!dayData) continue;
 
     Object.values(SLOT_WAKTU).forEach((slot) => {
+      if (window.isSlotHoliday(slot.id, dateKey)) return;
+      const slotData = dayData[slot.id];
+      if (!window.isAttendanceSlotFinalForReport(slotData)) return;
+
       FILTERED_SANTRI.forEach((s) => {
         const id = String(s.nis || s.id);
-        const sData = dayData[slot.id]?.[id];
+        const sData = slotData?.[id];
         const stats = santriStatsMap.get(id);
 
         if (!sData || !stats) return;
@@ -307,10 +330,12 @@ window.updateReportTab = function () {
         slot.activities.forEach((act) => {
           if (act.showOnDays && !act.showOnDays.includes(dayNum)) return;
           if (act.onlyRamadhan && !window.isRamadhan(dateKey)) return;
+          if (window.isActivityHoliday(dateKey, slot.id, act.id)) return;
+          if (window.isCategoryHoliday(dateKey, act.category)) return;
 
           const st = sData.status[act.id];
 
-          const point = STATUS_WEIGHT[st] ?? 0;
+          const point = getPoint(st) ?? 0;
 
           if (act.category === "fardu") {
             stats.shalat.score += point;
@@ -354,13 +379,33 @@ window.updateReportTab = function () {
 
   // RENDER with DocumentFragment
   const fragment = document.createDocumentFragment();
-  const makeBar = (pct, color) => `
+  const makeBar = (pct, color) => {
+    const hasValue = pct !== null && pct !== undefined;
+    const safePct = hasValue ? Math.max(0, Math.min(100, pct)) : 0;
+    return `
         <div class="flex flex-col items-center">
-            <span class="text-[10px] font-bold ${pct < 60 ? "text-red-500" : "text-slate-600"}">${pct}%</span>
+            <span class="text-[10px] font-bold ${!hasValue ? "text-slate-400" : pct < 60 ? "text-red-500" : "text-slate-600"}">${hasValue ? `${pct}%` : "-"}</span>
             <div class="w-12 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                <div class="h-full ${color} transition-all duration-300" style="width: ${pct}%"></div>
+                <div class="h-full ${hasValue ? color : "bg-slate-300"} transition-all duration-300" style="width: ${safePct}%"></div>
             </div>
         </div>`;
+  };
+  const renderTrend = (currentScore, previousScore) => {
+    if (currentScore === null) {
+      return `<span class="inline-flex items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-400 px-2 py-1 text-[10px] font-black">Belum</span>`;
+    }
+    if (previousScore === null) {
+      return `<span class="inline-flex items-center gap-1 rounded-xl bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-300 px-2 py-1 text-[10px] font-black"><i data-lucide="sparkles" class="w-3 h-3"></i> Baru</span>`;
+    }
+    const diff = currentScore - previousScore;
+    if (diff >= 5) {
+      return `<span class="inline-flex items-center gap-1 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-300 px-2 py-1 text-[10px] font-black"><i data-lucide="trending-up" class="w-3 h-3"></i> Naik ${diff}</span>`;
+    }
+    if (diff <= -5) {
+      return `<span class="inline-flex items-center gap-1 rounded-xl bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-300 px-2 py-1 text-[10px] font-black"><i data-lucide="trending-down" class="w-3 h-3"></i> Turun ${Math.abs(diff)}</span>`;
+    }
+    return `<span class="inline-flex items-center gap-1 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-2 py-1 text-[10px] font-black"><i data-lucide="minus" class="w-3 h-3"></i> Stabil</span>`;
+  };
 
   FILTERED_SANTRI.forEach((s, idx) => {
     const id = String(s.nis || s.id);
@@ -393,112 +438,113 @@ window.updateReportTab = function () {
 
     if (stats.sunnah.total > 0) scoreList.push(sunnahPct);
 
-    const finalScore = scoreList.length
+    const hasReportScore = scoreList.length > 0;
+    const finalScore = hasReportScore
       ? Math.round(scoreList.reduce((a, b) => a + b, 0) / scoreList.length)
-      : 0;
+      : null;
 
-    const shalatGrade = window.getGrade(Math.round(shalatPct));
+    const shalatGrade = stats.shalat.total ? window.getGrade(Math.round(shalatPct)) : "-";
 
-    const sunnahGrade = window.getGrade(Math.round(sunnahPct));
+    const sunnahGrade = stats.sunnah.total ? window.getGrade(Math.round(sunnahPct)) : "-";
 
-    const sekolahGrade = window.getGrade(Math.round(sekolahPct));
+    const sekolahGrade = stats.sekolah.total ? window.getGrade(Math.round(sekolahPct)) : "-";
 
-    const mahadGrade = window.getGrade(Math.round(mahadPct));
+    const mahadGrade = stats.mahad.total ? window.getGrade(Math.round(mahadPct)) : "-";
 
-    const shalatPredikat = window.getPredikat(shalatGrade);
+    const shalatPredikat = stats.shalat.total ? window.getPredikat(shalatGrade) : "Tidak dinilai";
 
-    const sunnahPredikat = window.getPredikat(sunnahGrade);
+    const sunnahPredikat = stats.sunnah.total ? window.getPredikat(sunnahGrade) : "Tidak dinilai";
 
-    const sekolahPredikat = window.getPredikat(sekolahGrade);
+    const sekolahPredikat = stats.sekolah.total ? window.getPredikat(sekolahGrade) : "Tidak dinilai";
 
-    const mahadPredikat = window.getPredikat(mahadGrade);
+    const mahadPredikat = stats.mahad.total ? window.getPredikat(mahadGrade) : "Tidak dinilai";
 
-    const grade = window.getGrade(finalScore);
+    const grade = hasReportScore ? window.getGrade(finalScore) : "-";
 
-    const predikat = window.getPredikat(grade);
+    const predikat = hasReportScore ? window.getPredikat(grade) : "Tidak dinilai";
 
     const tr = document.createElement("tr");
     tr.className =
       "hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors border-b border-slate-50 dark:border-slate-700/50";
 
     let shalatCol, schoolCol, kbmCol, sunnahCol;
+    let trendCol = "";
 
     if (appState.reportMode === "daily") {
-      const dateKey = appState.date;
+      const dateKey = appState.reportDate || appState.date;
       const dayData = appState.attendanceData[dateKey] || {};
 
       let badges = "";
       ["shubuh", "ashar", "maghrib", "isya"].forEach((sid) => {
-        const st = dayData[sid]?.[id]?.status?.shalat;
-        let color = "bg-slate-100 text-slate-300";
-
-        if (st === "Hadir") color = "bg-emerald-100 text-emerald-600";
-        else if (st === "Telat") color = "bg-teal-100 text-teal-600";
-        else if (st === "Sakit") color = "bg-amber-100 text-amber-600";
-        else if (st === "Izin") color = "bg-blue-100 text-blue-600";
-        else if (st === "Pulang") color = "bg-purple-100 text-purple-600";
-        else if (st === "Alpa") color = "bg-red-100 text-red-600";
-
-        const label = sid[0].toUpperCase();
-        badges += `<span class="w-5 h-5 flex items-center justify-center rounded ${color} text-[9px] font-black" aria-label="${sid}: ${st || "Belum diisi"}">${label}</span>`;
+        const meta = window.getDailyReportStatusMeta(
+          dateKey,
+          sid,
+          id,
+          "shalat",
+        );
+        const label = meta.status && !["Libur", "Proses"].includes(meta.status)
+          ? sid[0].toUpperCase()
+          : meta.label;
+        badges += `<span class="w-5 h-5 flex items-center justify-center rounded ${meta.className} text-[9px] font-black" aria-label="${meta.aria}">${label}</span>`;
       });
       shalatCol = `<div class="flex justify-center gap-1" role="list">${badges}</div>`;
 
-      const stSchool = dayData["sekolah"]?.[id]?.status?.kbm_sekolah;
-      let schColor = "bg-slate-100 text-slate-300";
-      let schLabel = "-";
-
-      if (stSchool === "Hadir") {
-        schColor = "bg-cyan-100 text-cyan-600";
-        schLabel = "H";
-      } else if (stSchool === "Telat") {
-        schColor = "bg-teal-100 text-teal-600";
-        schLabel = "T";
-      } else if (stSchool === "Sakit") {
-        schColor = "bg-amber-100 text-amber-600";
-        schLabel = "S";
-      } else if (stSchool === "Izin") {
-        schColor = "bg-blue-100 text-blue-600";
-        schLabel = "I";
-      } else if (stSchool === "Pulang") {
-        schColor = "bg-purple-100 text-purple-600";
-        schLabel = "P";
-      } else if (stSchool === "Alpa") {
-        schColor = "bg-red-100 text-red-600";
-        schLabel = "A";
+      const schoolMeta = window.getDailyReportStatusMeta(
+        dateKey,
+        "sekolah",
+        id,
+        "kbm_sekolah",
+      );
+      if (schoolMeta.status === "Hadir") {
+        schoolMeta.className = "bg-cyan-100 text-cyan-600 border-cyan-200 dark:bg-cyan-500/20 dark:text-cyan-300 dark:border-cyan-500/30";
       }
+      schoolCol = `<div class="flex justify-center"><span class="w-6 h-6 flex items-center justify-center rounded-lg ${schoolMeta.className} text-[10px] font-black shadow-sm" aria-label="${schoolMeta.aria}">${schoolMeta.label}</span></div>`;
 
-      schoolCol = `<div class="flex justify-center"><span class="w-6 h-6 flex items-center justify-center rounded-lg ${schColor} text-[10px] font-black shadow-sm" aria-label="Sekolah: ${stSchool || "Belum diisi"}">${schLabel}</span></div>`;
-
-      kbmCol = `<span class="font-bold text-slate-600 dark:text-slate-400">${stats.mahad.h}</span>`;
-      sunnahCol = `<span class="font-bold text-slate-600 dark:text-slate-400">${stats.sunnah.y}</span>`;
+      const isKbmActiveToday = window.isReportCategoryActiveOnDate(dateKey, "kbm");
+      const isSunnahActiveToday = window.isReportCategoryActiveOnDate(dateKey, "sunnah");
+      kbmCol = stats.mahad.total
+        ? `<span class="font-bold text-slate-600 dark:text-slate-400">${stats.mahad.h}</span>`
+        : `<span class="font-bold ${isKbmActiveToday ? "text-slate-300" : "text-slate-400"}">${isKbmActiveToday ? "-" : "L"}</span>`;
+      sunnahCol = stats.sunnah.total
+        ? `<span class="font-bold text-slate-600 dark:text-slate-400">${stats.sunnah.y}</span>`
+        : `<span class="font-bold ${isSunnahActiveToday ? "text-slate-300" : "text-slate-400"}">${isSunnahActiveToday ? "-" : "L"}</span>`;
     } else {
       const pctShalat = stats.shalat.total
-        ? Math.round((stats.shalat.h / stats.shalat.total) * 100)
-        : 0;
+        ? Math.round(stats.shalat.score / stats.shalat.total)
+        : null;
 
       const pctSekolah = stats.sekolah.total
-        ? Math.round((stats.sekolah.h / stats.sekolah.total) * 100)
-        : 0;
+        ? Math.round(stats.sekolah.score / stats.sekolah.total)
+        : null;
 
       const pctMahad = stats.mahad.total
-        ? Math.round((stats.mahad.h / stats.mahad.total) * 100)
-        : 0;
+        ? Math.round(stats.mahad.score / stats.mahad.total)
+        : null;
 
       const pctSunnah = stats.sunnah.total
-        ? Math.round((stats.sunnah.y / stats.sunnah.total) * 100)
-        : 0;
+        ? Math.round(stats.sunnah.score / stats.sunnah.total)
+        : null;
 
       shalatCol = makeBar(pctShalat, "bg-emerald-500");
       schoolCol = makeBar(pctSekolah, "bg-cyan-500");
       kbmCol = makeBar(pctMahad, "bg-blue-500");
       sunnahCol = makeBar(pctSunnah, "bg-amber-500");
+      if ((appState.reportMode === "weekly" || appState.reportMode === "monthly") && trendPrevRange) {
+        const previous = window.calculateReportScoreForStudentRange(id, trendPrevRange);
+        trendCol = renderTrend(finalScore, previous.score);
+      }
     }
 
-    let scoreColor = "text-red-500";
-    if (finalScore >= 85) scoreColor = "text-emerald-500";
-    else if (finalScore >= 70) scoreColor = "text-blue-500";
-    else if (finalScore >= 50) scoreColor = "text-amber-500";
+    if (appState.reportMode === "semester" && trendPrevRange) {
+      const previous = window.calculateReportScoreForStudentRange(id, trendPrevRange);
+      trendCol = renderTrend(finalScore, previous.score);
+    }
+
+    let scoreColor = "text-slate-400";
+    if (hasReportScore && finalScore >= 85) scoreColor = "text-emerald-500";
+    else if (hasReportScore && finalScore >= 70) scoreColor = "text-blue-500";
+    else if (hasReportScore && finalScore >= 50) scoreColor = "text-amber-500";
+    else if (hasReportScore) scoreColor = "text-red-500";
 
     let gradeCells = "";
 
@@ -563,6 +609,10 @@ window.updateReportTab = function () {
                     </div>
         
                 </td>
+
+                <td class="p-3 text-center">
+                    ${trendCol}
+                </td>
             `;
     }
 
@@ -596,6 +646,11 @@ window.updateReportTab = function () {
                     <td class="p-3 text-center align-middle">
                         ${sunnahCol}
                     </td>
+                    ${
+                      appState.reportMode === "weekly" || appState.reportMode === "monthly"
+                        ? `<td class="p-3 text-center align-middle">${trendCol}</td>`
+                        : ""
+                    }
                 `
             }
         `;
@@ -839,5 +894,3 @@ window.switchReportView = function (view) {
     window.runAnalysis();
   }
 };
-
-

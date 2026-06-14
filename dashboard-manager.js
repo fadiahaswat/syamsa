@@ -24,7 +24,11 @@ window.updateDashboard = function () {
 
   if (isToday && mainCard) {
     mainCard.classList.remove("hidden");
-    const slot = SLOT_WAKTU[appState.currentSlotId];
+    const heroSlotId = window.getCurrentDashboardSlotId
+      ? window.getCurrentDashboardSlotId(appState.date)
+      : appState.currentSlotId;
+    appState.currentSlotId = heroSlotId;
+    const slot = SLOT_WAKTU[heroSlotId];
     document.getElementById("dash-card-title").textContent = slot.label;
 
     const access = window.isSlotAccessible(
@@ -48,6 +52,9 @@ window.updateDashboard = function () {
   }
 
   // 3. Render List Slot
+  if (typeof window.updateQuickAccessButtons === "function") {
+    window.updateQuickAccessButtons();
+  }
   window.renderSchoolStatsWidget();
   window.renderSlotList();
   window.renderKBMBanner();
@@ -93,6 +100,7 @@ window.updateLocationStatus = function () {
     const elNearest = document.getElementById("loc-nearest-name");
 
     const elDistance = document.getElementById("loc-distance");
+    const elAsramaBtn = document.getElementById("loc-asrama-btn");
 
     if (elLoading) elLoading.classList.add("hidden");
 
@@ -101,6 +109,10 @@ window.updateLocationStatus = function () {
     if (elNearest) elNearest.textContent = cached.locationName;
 
     if (elDistance) elDistance.textContent = Math.round(cached.distance) + "m";
+    if (elAsramaBtn) {
+      elAsramaBtn.classList.toggle("hidden", cached.isInside === true);
+      elAsramaBtn.classList.toggle("flex", cached.isInside !== true);
+    }
 
     return;
   }
@@ -116,11 +128,16 @@ window.updateLocationStatus = function () {
   const elMessage = document.getElementById("loc-message");
   const elIcon = document.getElementById("loc-icon");
   const elIconBg = document.getElementById("loc-icon-bg");
+  const elAsramaBtn = document.getElementById("loc-asrama-btn");
 
   // Reset Tampilan ke Loading
   if (elLoading) elLoading.classList.remove("hidden");
   if (elDetails) elDetails.classList.add("hidden");
   if (elError) elError.classList.add("hidden");
+  if (elAsramaBtn) {
+    elAsramaBtn.classList.add("hidden");
+    elAsramaBtn.classList.remove("flex");
+  }
 
   // Cek Support Browser
   if (!navigator.geolocation) {
@@ -180,6 +197,10 @@ window.updateLocationStatus = function () {
       if (elDistance) elDistance.textContent = Math.round(nearestDist) + "m";
 
       if (isInside) {
+        if (elAsramaBtn) {
+          elAsramaBtn.classList.add("hidden");
+          elAsramaBtn.classList.remove("flex");
+        }
         // Tampilan HIJAU (Aman)
         elBadge.textContent = "AMAN";
         elBadge.className =
@@ -198,6 +219,10 @@ window.updateLocationStatus = function () {
         elIconBg.classList.remove("bg-slate-100", "bg-red-100", "bg-amber-100");
         elIconBg.classList.add("bg-emerald-100");
       } else {
+        if (elAsramaBtn) {
+          elAsramaBtn.classList.remove("hidden");
+          elAsramaBtn.classList.add("flex");
+        }
         // Tampilan MERAH (Jauh)
         elBadge.textContent = "JAUH";
         elBadge.className =
@@ -250,6 +275,10 @@ window.updateLocationStatus = function () {
         `;
         if (window.lucide) window.lucide.createIcons();
       }
+      if (elAsramaBtn) {
+        elAsramaBtn.classList.add("hidden");
+        elAsramaBtn.classList.remove("flex");
+      }
     },
     { enableHighAccuracy: true, timeout: 5000, maximumAge: GPS_CACHE_DURATION },
   );
@@ -265,6 +294,9 @@ window.renderSlotList = function () {
   const fragment = document.createDocumentFragment();
 
   Object.values(SLOT_WAKTU).forEach((s) => {
+    if (s.id === "sekolah" && window.isSlotHoliday(s.id, appState.date)) {
+      return;
+    }
     const clone = tpl.content.cloneNode(true);
     const item = clone.querySelector(".slot-item");
     const access = window.isSlotAccessible(s.id, appState.date);
@@ -812,6 +844,20 @@ window.quickOpen = function (slotId) {
     isya: "Isya",
   };
   window.showToast(`Membuka presensi ${labels[slotId]}`, "info");
+};
+
+window.updateQuickAccessButtons = function () {
+  const schoolButton = document.getElementById("quick-access-sekolah");
+  const quickGrid = document.getElementById("quick-access-grid");
+  if (!schoolButton) return;
+
+  const isSchoolHoliday = window.isSlotHoliday("sekolah", appState.date);
+  schoolButton.classList.toggle("hidden", isSchoolHoliday);
+
+  if (quickGrid) {
+    quickGrid.classList.toggle("grid-cols-5", !isSchoolHoliday);
+    quickGrid.classList.toggle("grid-cols-4", isSchoolHoliday);
+  }
 };
 
 window.showStatDetails = function (statusType) {
@@ -1846,7 +1892,9 @@ window.updateHeroWidget = function() {
     svgPath = `<svg viewBox="0 0 24 24" width="80" height="80" class="text-white/20 fill-none stroke-current stroke-2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>`;
   } else if (h >= 10 && h < 15) {
     greet = "Selamat Siang, Musyrif.";
-    context = "Jangan lupa isi presensi sekolah santri.";
+    context = window.isSlotHoliday("sekolah", appState.date)
+      ? "Hari ini sekolah libur, cek sesi ibadah yang berjalan."
+      : "Jangan lupa isi presensi sekolah santri.";
     gradientClass = "from-cyan-500 to-blue-600";
     svgPath = `<svg viewBox="0 0 24 24" width="80" height="80" class="text-white/20 fill-none stroke-current stroke-2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M5.64 18.36l-1.42 1.42M19.78 4.22l-1.42 1.42"/></svg>`;
   } else if (h >= 15 && h < 17.5) {
