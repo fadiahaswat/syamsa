@@ -631,7 +631,8 @@ body {
 
 .qibla-finder[data-qibla-state="perfect"] #qibla-needle,
 .qibla-finder[data-qibla-state="locked"] #qibla-needle {
-  opacity: 0;
+  opacity: 0 !important;
+  visibility: hidden;
   scale: 1;
 }
 
@@ -664,6 +665,10 @@ body {
 
 .qibla-finder[data-qibla-state="locked"] #qibla-content-wrapper .grid {
   top: calc(50% - min(46vw, 238px));
+}
+
+.qibla-finder[data-qibla-state="locked"] #qibla-angle-txt {
+  font-size: clamp(42px, 12vw, 58px) !important;
 }
 
 .qibla-finder[data-qibla-state="perfect"] #qibla-alignment-indicator,
@@ -747,7 +752,7 @@ body {
   animation: qiblaCenteredLabelStateEnter 620ms cubic-bezier(0.19, 1, 0.22, 1);
 }
 
-.qibla-finder.qibla-state-enter #qibla-needle {
+.qibla-finder.qibla-state-enter:not([data-qibla-state="perfect"]):not([data-qibla-state="locked"]) #qibla-needle {
   animation: qiblaArrowStateEnter 620ms cubic-bezier(0.19, 1, 0.22, 1);
 }
 
