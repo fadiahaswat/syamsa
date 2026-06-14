@@ -356,7 +356,7 @@ body {
 #qibla-alignment-indicator {
   position: absolute;
   left: 32px;
-  bottom: 138px;
+  bottom: 124px;
   order: 3;
   border: 0 !important;
   background: transparent !important;
@@ -585,7 +585,7 @@ body {
 }
 
 .qibla-finder[data-qibla-state="almost"] #qibla-needle {
-  scale: 0.64;
+  scale: 1;
 }
 
 .qibla-finder[data-qibla-state="calibrating"] #qibla-content-wrapper {
@@ -603,19 +603,21 @@ body {
 
 .qibla-finder[data-qibla-state="calibrating"] #qibla-alignment-indicator {
   position: absolute;
-  left: 50%;
-  top: calc(50% + 56px);
+  left: 32px;
+  top: auto;
+  bottom: 124px;
   width: min(78vw, 330px);
   margin-top: 0;
-  transform: translateX(-50%);
+  transform: none;
   font-size: 19px !important;
+  text-align: left;
   line-height: 1.45 !important;
 }
 
 .qibla-finder[data-qibla-state="perfect"] #qibla-needle,
 .qibla-finder[data-qibla-state="locked"] #qibla-needle {
   opacity: 0;
-  scale: 0.4;
+  scale: 1;
 }
 
 .qibla-finder[data-qibla-state="perfect"] #qibla-content-wrapper,
@@ -643,6 +645,10 @@ body {
   top: calc(50% + min(26vw, 132px));
   width: min(78vw, 330px);
   transform: translateX(-50%);
+}
+
+.qibla-finder[data-qibla-state="locked"] #qibla-content-wrapper .grid {
+  top: calc(50% - min(35vw, 178px));
 }
 
 .qibla-finder[data-qibla-state="perfect"] #qibla-alignment-indicator,

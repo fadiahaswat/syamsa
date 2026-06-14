@@ -340,7 +340,8 @@ window.updateCompassUI = function (heading) {
   const signedDiff = ((window.qiblaAngle - heading + 540) % 360) - 180;
   const diff = Math.abs(signedDiff);
   const directionText = signedDiff > 0 ? "ke kanan" : "ke kiri";
-  qiblaArrow.style.transform = `translate(-50%, -50%) rotate(${signedDiff}deg)`;
+  const arrowScale = diff <= 4 && !window.qiblaLocked ? 0.64 : 1;
+  qiblaArrow.style.transform = `translate(-50%, -50%) rotate(${signedDiff}deg) scale(${arrowScale})`;
 
   if (window.qiblaLocked && diff > 2) {
     window.qiblaLocked = false;
