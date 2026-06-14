@@ -5,6 +5,7 @@ window.qiblaAngle = null;
 window.qiblaDistance = null;
 window.deviceHeading = null;
 window.orientationListenerActive = false;
+window.qiblaLocked = false;
 
 // Lokasi Kakbah Makkah
 const MECCA_LAT = 21.422487;
@@ -44,6 +45,9 @@ window.openQiblaPage = function () {
   const viewQibla = document.getElementById("view-qibla");
   if (!viewQibla) return;
 
+  window.qiblaLocked = false;
+  window.preparePrecisionQiblaUI();
+  window.setQiblaPrecisionState("searching");
   viewQibla.classList.remove("hidden");
   viewQibla.classList.add("flex");
   viewQibla.scrollTop = 0;
@@ -68,11 +72,12 @@ window.openQiblaPage = function () {
         window.qiblaDistance = window.calculateQiblaDistance(lat, lng);
 
         // Update UI
-        document.getElementById("qibla-angle-txt").textContent = Math.round(window.qiblaAngle) + "°";
+        document.getElementById("qibla-angle-txt").textContent = Math.round(window.qiblaAngle) + "\u00b0";
         document.getElementById("qibla-distance-txt").textContent = Math.round(window.qiblaDistance).toLocaleString("id-ID") + " km";
 
         document.getElementById("qibla-loading").classList.add("hidden");
         document.getElementById("qibla-content-wrapper").classList.remove("hidden");
+        window.setQiblaPrecisionState("calibrating");
 
         // Request Compass/Orientation permission
         window.initCompass();
@@ -89,11 +94,12 @@ window.openQiblaPage = function () {
         window.qiblaAngle = window.calculateQiblaBearing(fallbackLat, fallbackLng);
         window.qiblaDistance = window.calculateQiblaDistance(fallbackLat, fallbackLng);
 
-        document.getElementById("qibla-angle-txt").textContent = Math.round(window.qiblaAngle) + "° (Perkiraan)";
+        document.getElementById("qibla-angle-txt").textContent = Math.round(window.qiblaAngle) + "\u00b0 (Perkiraan)";
         document.getElementById("qibla-distance-txt").textContent = Math.round(window.qiblaDistance).toLocaleString("id-ID") + " km";
 
         document.getElementById("qibla-loading").classList.add("hidden");
         document.getElementById("qibla-content-wrapper").classList.remove("hidden");
+        window.setQiblaPrecisionState("calibrating");
         
         window.initCompass();
         window.showToast("Gagal GPS. Menggunakan estimasi koordinat regional.", "info");
@@ -114,6 +120,87 @@ window.closeQiblaPage = function () {
     viewQibla.classList.remove("flex");
   }
   window.stopCompassListener();
+};
+
+window.preparePrecisionQiblaUI = function () {
+  const viewQibla = document.getElementById("view-qibla");
+  const qiblaNeedle = document.getElementById("qibla-needle");
+  const wrapper = document.querySelector("#view-qibla > div");
+  if (!viewQibla || !wrapper) return;
+
+  const headerLabel = viewQibla.querySelector("header p");
+  const headerTitle = viewQibla.querySelector("header h3");
+  if (headerLabel) headerLabel.textContent = "Finding";
+  if (headerTitle) headerTitle.textContent = "Cari Kiblat";
+
+  if (qiblaNeedle && !qiblaNeedle.dataset.precisionReady) {
+    qiblaNeedle.innerHTML = `
+      <svg viewBox="0 0 180 180" aria-hidden="true">
+        <path d="M43 104.5 104.5 43c7.6-7.6 20.5-2.2 20.5 8.6v50.8c0 12.5-10.1 22.6-22.6 22.6H51.6c-10.8 0-16.2-12.9-8.6-20.5Z" fill="currentColor"></path>
+        <path d="M119 43v43.5H75.5" fill="none" stroke="currentColor" stroke-width="24" stroke-linecap="round" stroke-linejoin="round"></path>
+      </svg>
+    `;
+    qiblaNeedle.dataset.precisionReady = "true";
+  }
+
+  if (!document.getElementById("qibla-bottom-actions")) {
+    const actions = document.createElement("div");
+    actions.id = "qibla-bottom-actions";
+    actions.className = "qibla-bottom-actions";
+    actions.innerHTML = `
+      <button type="button" onclick="window.closeQiblaPage()" aria-label="Tutup"><i data-lucide="x"></i></button>
+      <button type="button" aria-label="Suara"><i data-lucide="volume-2"></i></button>
+    `;
+    wrapper.appendChild(actions);
+  }
+};
+
+window.setQiblaPrecisionState = function (state, diff = null, directionText = "") {
+  const viewQibla = document.getElementById("view-qibla");
+  const loading = document.getElementById("qibla-loading");
+  const content = document.getElementById("qibla-content-wrapper");
+  const title = viewQibla?.querySelector("header h3");
+  const subtitle = viewQibla?.querySelector("header p");
+  const angleTxt = document.getElementById("qibla-angle-txt");
+  const indicator = document.getElementById("qibla-alignment-indicator");
+  const arrow = document.getElementById("qibla-needle");
+  if (!viewQibla) return;
+
+  viewQibla.dataset.qiblaState = state;
+  if (subtitle) subtitle.textContent = "Finding";
+  if (loading) loading.classList.toggle("hidden", state !== "searching");
+  if (content) content.classList.toggle("hidden", state === "searching");
+
+  const roundedDiff = diff === null ? null : Math.round(diff);
+  if (state === "searching") {
+    if (title) title.textContent = "Cari Kiblat";
+    if (indicator) indicator.textContent = "Menentukan arah kiblat...";
+    return;
+  }
+  if (state === "calibrating") {
+    if (title) title.textContent = "Kalibrasi Kompas";
+    if (angleTxt) angleTxt.textContent = "\u221e";
+    if (indicator) indicator.textContent = "Gerakkan perangkat membentuk angka 8";
+    if (arrow) arrow.style.opacity = "0";
+    return;
+  }
+  if (arrow) arrow.style.opacity = "";
+  if (state === "perfect") {
+    if (title) title.textContent = "Kiblat Ditemukan";
+    if (angleTxt) angleTxt.textContent = "";
+    if (indicator) indicator.textContent = "Siap Shalat";
+    return;
+  }
+  if (state === "locked") {
+    if (title) title.textContent = "Arah Kiblat Terkunci";
+    if (angleTxt) angleTxt.textContent = Math.round(window.qiblaAngle || 0) + "\u00b0";
+    if (indicator) indicator.textContent = "Siap digunakan saat shalat";
+    return;
+  }
+
+  if (title) title.textContent = state === "almost" ? "Hampir Tepat" : "Cari Kiblat";
+  if (angleTxt && roundedDiff !== null) angleTxt.textContent = `${roundedDiff}\u00b0`;
+  if (indicator) indicator.textContent = state === "far" ? directionText : `${roundedDiff}\u00b0 lagi`;
 };
 
 window.openQiblaModal = window.openQiblaPage;
@@ -194,25 +281,34 @@ window.updateCompassUI = function (heading) {
   const headingTxt = document.getElementById("qibla-current-heading-txt");
   const alignmentIndicator = document.getElementById("qibla-alignment-indicator");
 
-  if (!compassDial || !qiblaArrow || window.qiblaAngle === null) return;
+  if (!qiblaArrow || window.qiblaAngle === null) return;
 
   // Round heading
   const roundedHeading = Math.round(heading);
-  if (headingTxt) headingTxt.textContent = roundedHeading + "° " + window.getCompassDirectionName(roundedHeading);
+  if (headingTxt) headingTxt.textContent = roundedHeading + "\u00b0 " + window.getCompassDirectionName(roundedHeading);
 
   // Compass Dial rotates inverse of heading so North stays North
-  compassDial.style.transform = `rotate(${-heading}deg)`;
+  if (compassDial) compassDial.style.transform = `rotate(${-heading}deg)`;
 
   // Compass needle rotates relative to device: qiblaAngle - heading
-  const relativeAngle = (window.qiblaAngle - heading + 360) % 360;
-  qiblaArrow.style.transform = `rotate(${relativeAngle}deg)`;
+  const signedDiff = ((window.qiblaAngle - heading + 540) % 360) - 180;
+  const diff = Math.abs(signedDiff);
+  const directionText = signedDiff > 0 ? "ke kanan" : "ke kiri";
+  qiblaArrow.style.transform = `rotate(${signedDiff}deg)`;
 
   // If phone is pointing to Qibla (within ±4 degrees)
-  const diff = Math.min(Math.abs(relativeAngle), 360 - Math.abs(relativeAngle));
   if (diff <= 4) {
     qiblaArrow.classList.add("qibla-active");
-    alignmentIndicator.classList.add("qibla-aligned");
-    alignmentIndicator.textContent = "TERARAH KE KAKBAH";
+    if (alignmentIndicator) alignmentIndicator.classList.add("qibla-aligned");
+    window.setQiblaPrecisionState(diff <= 1 ? "perfect" : "almost", diff, directionText);
+    if (diff <= 1 && !window.qiblaLocked) {
+      window.qiblaLocked = true;
+      setTimeout(() => {
+        if (document.getElementById("view-qibla")?.dataset.qiblaState === "perfect") {
+          window.setQiblaPrecisionState("locked", diff, directionText);
+        }
+      }, 1800);
+    }
 
     // Trigger haptic vibrate feedback on Android (max once every 1 second to not annoy user)
     if (navigator.vibrate && Date.now() - lastVibrateTime > 1000) {
@@ -220,9 +316,10 @@ window.updateCompassUI = function (heading) {
       lastVibrateTime = Date.now();
     }
   } else {
+    window.qiblaLocked = false;
     qiblaArrow.classList.remove("qibla-active");
-    alignmentIndicator.classList.remove("qibla-aligned");
-    alignmentIndicator.textContent = "PUTAR PONSEL ANDA";
+    if (alignmentIndicator) alignmentIndicator.classList.remove("qibla-aligned");
+    window.setQiblaPrecisionState(diff <= 15 ? "closer" : "far", diff, directionText);
   }
 };
 

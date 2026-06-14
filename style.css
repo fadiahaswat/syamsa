@@ -248,6 +248,394 @@ body {
   }
 }
 
+/* AirTag-inspired Qibla precision finder */
+.qibla-finder {
+  --qibla-bg-a: #070707;
+  --qibla-bg-b: #202018;
+  --qibla-accent: #26d354;
+  --qibla-foreground: #ffffff;
+  background:
+    radial-gradient(circle at 50% 42%, rgba(255, 255, 255, 0.08), transparent 34%),
+    linear-gradient(160deg, var(--qibla-bg-b), var(--qibla-bg-a) 62%);
+  color: var(--qibla-foreground);
+  transition: background 700ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.qibla-finder::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 12px;
+  z-index: 30;
+  width: 126px;
+  height: 36px;
+  border-radius: 999px;
+  background: #050505;
+  box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.08), 0 8px 26px rgba(0, 0, 0, 0.36);
+  transform: translateX(-50%);
+}
+
+.qibla-finder > div {
+  min-height: 100%;
+  padding: 58px 32px 26px !important;
+  background: transparent !important;
+}
+
+.qibla-finder > div > .absolute {
+  filter: blur(22px);
+  opacity: 0.75;
+}
+
+.qibla-finder > div > .absolute::before,
+.qibla-finder > div > .absolute::after {
+  content: "";
+  position: absolute;
+  width: 210px;
+  height: 210px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  animation: qiblaParticleFloat 7s ease-in-out infinite;
+}
+
+.qibla-finder > div > .absolute::before {
+  left: -80px;
+  top: 18%;
+}
+
+.qibla-finder > div > .absolute::after {
+  right: -110px;
+  bottom: 18%;
+  animation-delay: -2.4s;
+}
+
+.qibla-finder header {
+  display: block !important;
+  padding-top: 0;
+}
+
+.qibla-finder header p {
+  color: rgba(255, 255, 255, 0.52) !important;
+  font-size: 9px !important;
+  letter-spacing: 0.04em !important;
+  text-transform: uppercase;
+}
+
+.qibla-finder header h3 {
+  color: #fff !important;
+  font-size: 25px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0 !important;
+  line-height: 1.08 !important;
+}
+
+.qibla-finder header button {
+  display: none !important;
+}
+
+#qibla-loading {
+  color: #fff;
+}
+
+#qibla-loading span {
+  width: 180px !important;
+  height: 180px !important;
+  border-radius: 999px;
+  border: 10px solid rgba(255, 255, 255, 0.18);
+  border-top-color: rgba(255, 255, 255, 0.86);
+  border-right-color: rgba(255, 255, 255, 0.48);
+  animation: qiblaRing 1.2s linear infinite;
+}
+
+#qibla-loading span span {
+  display: none !important;
+}
+
+#qibla-loading p {
+  color: rgba(255, 255, 255, 0.72) !important;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+  font-size: 16px !important;
+}
+
+#qibla-content-wrapper {
+  gap: 24px !important;
+}
+
+#qibla-alignment-indicator {
+  order: 3;
+  border: 0 !important;
+  background: transparent !important;
+  color: rgba(255, 255, 255, 0.62) !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  font-size: 28px !important;
+  font-weight: 700 !important;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+}
+
+#qibla-content-wrapper > div:has(#qibla-compass-dial) {
+  order: 1;
+  width: min(74vw, 340px) !important;
+  height: min(74vw, 340px) !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+#qibla-compass-dial {
+  display: none !important;
+}
+
+#qibla-needle {
+  width: min(42vw, 190px) !important;
+  height: min(42vw, 190px) !important;
+  color: #fff !important;
+  filter: drop-shadow(0 22px 34px rgba(0, 0, 0, 0.34));
+  transition: transform 260ms cubic-bezier(0.2, 0.8, 0.2, 1), scale 260ms ease, opacity 260ms ease !important;
+}
+
+#qibla-needle svg {
+  width: 100% !important;
+  height: 100% !important;
+  margin: 0 !important;
+}
+
+#qibla-needle > div {
+  display: none !important;
+}
+
+#qibla-content-wrapper .grid {
+  order: 2;
+  display: block !important;
+}
+
+#qibla-content-wrapper .grid > div {
+  display: none !important;
+}
+
+#qibla-content-wrapper .grid > div:first-child {
+  display: block !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+
+#qibla-content-wrapper .grid > div:first-child p:first-child {
+  display: none;
+}
+
+#qibla-angle-txt {
+  color: #fff !important;
+  font-size: clamp(52px, 16vw, 78px) !important;
+  font-weight: 500 !important;
+  letter-spacing: 0 !important;
+  line-height: 0.95 !important;
+}
+
+#qibla-sensor-permission-btn {
+  position: absolute;
+  left: 50%;
+  bottom: 92px;
+  z-index: 20;
+  transform: translateX(-50%);
+  border: 1px solid rgba(255, 255, 255, 0.22) !important;
+  border-radius: 999px !important;
+  background: rgba(255, 255, 255, 0.18) !important;
+  color: #fff !important;
+  box-shadow: 0 16px 46px rgba(0, 0, 0, 0.22) !important;
+  backdrop-filter: blur(18px);
+}
+
+.qibla-finder::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 9px;
+  z-index: 25;
+  width: 134px;
+  height: 5px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.9);
+  transform: translateX(-50%);
+}
+
+.qibla-finder footer,
+.qibla-finder .qibla-actions {
+  display: none;
+}
+
+.qibla-bottom-actions {
+  position: absolute;
+  left: 32px;
+  right: 32px;
+  bottom: 34px;
+  z-index: 28;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  pointer-events: none;
+}
+
+.qibla-bottom-actions button {
+  pointer-events: auto;
+  width: 48px;
+  height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.16);
+  backdrop-filter: blur(18px);
+  transition: transform 180ms ease, background 180ms ease;
+}
+
+.qibla-bottom-actions button:active {
+  transform: scale(0.94);
+  background: rgba(255, 255, 255, 0.26);
+}
+
+.qibla-bottom-actions svg {
+  width: 20px;
+  height: 20px;
+}
+
+.qibla-finder #qibla-content-wrapper::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 6px;
+  height: 48px;
+  pointer-events: none;
+}
+
+.qibla-finder[data-qibla-state="far"] {
+  --qibla-bg-a: #000;
+  --qibla-bg-b: #141414;
+}
+
+.qibla-finder[data-qibla-state="closer"] {
+  --qibla-bg-a: #051408;
+  --qibla-bg-b: #119432;
+}
+
+.qibla-finder[data-qibla-state="almost"],
+.qibla-finder[data-qibla-state="perfect"],
+.qibla-finder[data-qibla-state="locked"] {
+  --qibla-bg-a: #21d34f;
+  --qibla-bg-b: #25d654;
+}
+
+.qibla-finder[data-qibla-state="almost"] #qibla-needle {
+  scale: 0.64;
+}
+
+.qibla-finder[data-qibla-state="calibrating"] #qibla-content-wrapper > div:has(#qibla-compass-dial)::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 44%;
+  width: 96px;
+  height: 158px;
+  border: 3px solid rgba(255, 255, 255, 0.78);
+  border-radius: 28px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.06));
+  box-shadow: 0 24px 54px rgba(0, 0, 0, 0.22);
+  transform: translate(-50%, -50%) rotate(-14deg);
+  animation: qiblaPhoneTilt 2.4s ease-in-out infinite;
+}
+
+.qibla-finder[data-qibla-state="calibrating"] #qibla-content-wrapper > div:has(#qibla-compass-dial)::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 63%;
+  width: 188px;
+  height: 78px;
+  border: 5px solid rgba(255, 255, 255, 0.48);
+  border-left-color: rgba(255, 255, 255, 0.86);
+  border-right-color: rgba(255, 255, 255, 0.86);
+  border-radius: 50%;
+  transform: translate(-50%, -50%) rotate(28deg);
+  clip-path: polygon(0 0, 50% 0, 50% 100%, 0 100%, 0 0, 50% 0, 100% 0, 100% 100%, 50% 100%, 50% 0);
+  opacity: 0.8;
+}
+
+.qibla-finder[data-qibla-state="perfect"] #qibla-needle,
+.qibla-finder[data-qibla-state="locked"] #qibla-needle {
+  opacity: 0;
+  scale: 0.4;
+}
+
+.qibla-finder[data-qibla-state="perfect"] #qibla-content-wrapper > div:has(#qibla-compass-dial)::before {
+  content: "";
+  position: absolute;
+  inset: 50%;
+  width: 118px;
+  height: 118px;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 0 0 18px rgba(255, 255, 255, 0.18), 0 0 58px rgba(255, 255, 255, 0.72);
+  transform: translate(-50%, -50%);
+  animation: qiblaSuccessPulse 1.8s ease-in-out infinite;
+}
+
+.qibla-finder[data-qibla-state="locked"] #qibla-content-wrapper > div:has(#qibla-compass-dial)::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 136px;
+  height: 136px;
+  border-radius: 26px 26px 18px 18px;
+  background: linear-gradient(#111 0 22%, #d6a83f 22% 31%, #050505 31%);
+  box-shadow: 0 24px 54px rgba(0, 0, 0, 0.24);
+  transform: translate(-50%, -50%);
+}
+
+.qibla-finder[data-qibla-state="locked"] #qibla-content-wrapper > div:has(#qibla-compass-dial)::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: calc(50% + 14px);
+  width: 38px;
+  height: 54px;
+  border-radius: 16px 16px 4px 4px;
+  background: linear-gradient(#171717, #030303);
+  border: 2px solid rgba(214, 168, 63, 0.72);
+  transform: translate(-50%, -50%);
+}
+
+@keyframes qiblaRing {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes qiblaParticleFloat {
+  50% {
+    transform: translate3d(18px, -22px, 0) scale(1.08);
+  }
+}
+
+@keyframes qiblaSuccessPulse {
+  50% {
+    box-shadow: 0 0 0 28px rgba(255, 255, 255, 0.12), 0 0 76px rgba(255, 255, 255, 0.88);
+    transform: translate(-50%, -50%) scale(1.04);
+  }
+}
+
+@keyframes qiblaPhoneTilt {
+  50% {
+    transform: translate(-50%, -50%) rotate(14deg);
+  }
+}
+
 /* Progress Bar Transition */
 .progress-bar {
   transition: width 0.5s ease-in-out;
