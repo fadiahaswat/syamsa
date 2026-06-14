@@ -1521,136 +1521,156 @@
       <!-- Tab: Report -->
       <div
         id="tab-report"
-        class="tab-content hidden min-h-screen pb-40 pt-6 px-4 animate-fade-in overflow-y-auto"
+        class="tab-content hidden min-h-screen pb-40 p-6 pt-safe animate-fade-in overflow-y-auto hide-scrollbar"
       >
-        <div class="mb-6 flex flex-col gap-1">
-          <h1
-            class="text-3xl font-black text-slate-800 dark:text-white tracking-tight"
-          >
-            Laporan
-            <span
-              class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 to-emerald-500"
-              >Presensi</span
-            >
-          </h1>
-          <p class="text-sm font-medium text-slate-500 dark:text-slate-400">
-            Rekapitulasi kelas dan evaluasi kinerja santri
-          </p>
-        </div>
+        <div class="max-w-7xl mx-auto w-full space-y-5">
+        <header class="flex justify-between items-center gap-3 sm:gap-4 animate-slide-up relative z-20 mt-3 sm:mt-4 w-full" style="animation-delay: 0.1s">
+          <div class="flex items-center gap-3 min-w-0">
+            <button onclick="switchTab('home')" class="relative shrink-0 rounded-full group focus:outline-none active:scale-95 transition-all duration-300">
+              <div class="absolute inset-0 rounded-full bg-emerald-400 blur-md opacity-25 group-hover:opacity-50 transition-opacity duration-300"></div>
+              <div class="relative w-11 h-11 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white shadow-md z-10 transition-transform group-hover:scale-105">
+                <i data-lucide="bar-chart-3" class="w-5 h-5"></i>
+              </div>
+            </button>
 
-        <div
-          class="flex p-1.5 bg-slate-200 dark:bg-slate-800 rounded-2xl mb-8 shadow-inner border border-slate-300 dark:border-slate-700"
-        >
+            <div class="flex flex-col justify-center min-w-0">
+              <div class="report-lang-rotator max-w-[170px] sm:max-w-[240px] overflow-hidden h-[15px] sm:h-[18px] mb-0">
+                <span class="report-lang-ar text-xs sm:text-[13px] font-semibold text-slate-500 dark:text-slate-400 leading-none block whitespace-nowrap" style="font-family: Rubik, sans-serif;">
+                  تقييم الحضور
+                </span>
+                <span class="report-lang-ar-fixed text-xs sm:text-[13px] font-semibold text-slate-500 dark:text-slate-400 leading-none block whitespace-nowrap" style="font-family: Rubik, sans-serif;">
+                  &#1578;&#1602;&#1610;&#1610;&#1605; &#1575;&#1604;&#1581;&#1590;&#1608;&#1585;
+                </span>
+                <span class="report-lang-id text-xs sm:text-[13px] font-semibold text-slate-500 dark:text-slate-400 leading-none block whitespace-nowrap" style="font-family: Rubik, sans-serif;">
+                  Evaluasi Presensi
+                </span>
+              </div>
+              <h1 class="text-base sm:text-lg font-black text-slate-800 dark:text-white tracking-tight leading-normal pb-[2px] truncate mb-0.5">
+                <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-700 to-teal-500 dark:from-emerald-400 dark:to-teal-300">
+                  Laporan Kelas
+                </span>
+              </h1>
+              <div class="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100/50 dark:border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[9px] w-fit">
+                <span class="font-bold uppercase tracking-widest text-[8px]">Rekap & Analisis</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex p-1 bg-white/80 dark:bg-slate-800/80 rounded-full shadow-sm border border-slate-200/60 dark:border-slate-700/60 backdrop-blur-xl w-auto shrink-0">
           <button
             id="report-view-btn"
             onclick="window.switchReportView('report')"
-            class="flex-1 py-2.5 flex items-center justify-center gap-2 rounded-xl bg-white dark:bg-slate-700 text-sm font-bold text-indigo-600 dark:text-indigo-400 shadow-sm transition-all duration-300 transform active:scale-[0.98]"
+            class="px-3 sm:px-4 py-2 flex items-center justify-center gap-2 rounded-full bg-palette-blue text-white text-xs font-black shadow-sm shadow-blue-500/20 transition-all duration-300 active:scale-[0.98]"
           >
-            <i data-lucide="layout-grid" class="w-4 h-4"></i> Rekap Kelas
+            <i data-lucide="layout-grid" class="w-4 h-4"></i> <span class="hidden sm:inline">Rekap</span>
           </button>
           <button
             id="analysis-view-btn"
             onclick="window.switchReportView('analysis')"
-            class="flex-1 py-2.5 flex items-center justify-center gap-2 rounded-xl text-sm font-bold text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-all duration-300 transform active:scale-[0.98]"
+            class="px-3 sm:px-4 py-2 flex items-center justify-center gap-2 rounded-full text-xs font-black text-slate-500 hover:text-palette-blue dark:hover:text-white transition-all duration-300 active:scale-[0.98]"
           >
-            <i data-lucide="user-search" class="w-4 h-4"></i> Analisis Santri
+            <i data-lucide="user-search" class="w-4 h-4"></i> <span class="hidden sm:inline">Analisis</span>
           </button>
-        </div>
+          </div>
+        </header>
 
-        <div id="report-section" class="animate-fade-in">
-          <div
-            class="bg-white dark:bg-slate-800 p-1.5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 mb-5 flex overflow-x-auto hide-scrollbar"
-          >
+        <div id="report-section" class="animate-fade-in space-y-4">
+          <div class="grid grid-cols-1 xl:grid-cols-[minmax(360px,1fr)_minmax(520px,1.1fr)] gap-3 bg-white/80 dark:bg-slate-900/80 rounded-2xl border border-slate-200/70 dark:border-slate-800 shadow-sm p-3 backdrop-blur-xl">
+          <div class="bg-slate-100/80 dark:bg-slate-950/60 p-1 rounded-xl grid grid-cols-4 min-w-0">
             <button
               onclick="window.setReportMode('daily')"
-              class="rpt-btn flex-1 py-2.5 px-4 text-[11px] font-bold rounded-xl whitespace-nowrap active-mode transition-all"
+              class="rpt-btn flex-1 lg:flex-none py-2.5 px-4 text-[11px] font-black rounded-lg whitespace-nowrap active-mode transition-all"
               data-mode="daily"
             >
               Hari Ini
             </button>
             <button
               onclick="window.setReportMode('weekly')"
-              class="rpt-btn flex-1 py-2.5 px-4 text-[11px] font-bold rounded-xl text-slate-500 whitespace-nowrap transition-all"
+              class="rpt-btn flex-1 lg:flex-none py-2.5 px-4 text-[11px] font-black rounded-lg text-slate-500 whitespace-nowrap transition-all"
               data-mode="weekly"
             >
               Pekan
             </button>
             <button
               onclick="window.setReportMode('monthly')"
-              class="rpt-btn flex-1 py-2.5 px-4 text-[11px] font-bold rounded-xl text-slate-500 whitespace-nowrap transition-all"
+              class="rpt-btn flex-1 lg:flex-none py-2.5 px-4 text-[11px] font-black rounded-lg text-slate-500 whitespace-nowrap transition-all"
               data-mode="monthly"
             >
               Bulan
             </button>
             <button
               onclick="window.setReportMode('semester')"
-              class="rpt-btn flex-1 py-2.5 px-4 text-[11px] font-bold rounded-xl text-slate-500 whitespace-nowrap transition-all"
+              class="rpt-btn flex-1 lg:flex-none py-2.5 px-4 text-[11px] font-black rounded-lg text-slate-500 whitespace-nowrap transition-all"
               data-mode="semester"
             >
               Semester
             </button>
           </div>
 
-          <div class="flex items-center gap-3 mb-6">
-            <div
-              class="flex-none px-4 py-2 rounded-full bg-indigo-50 dark:bg-indigo-900/40 border border-indigo-200 dark:border-indigo-800 flex items-center gap-2"
-            >
-              <i data-lucide="calendar" class="w-3.5 h-3.5 text-indigo-500"></i>
-              <span
+          <div class="report-action-bar min-w-0">
+            <div class="relative min-w-0 px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200/70 dark:border-slate-700 flex items-center gap-2 h-11">
+              <i data-lucide="calendar" class="w-3.5 h-3.5 text-slate-400"></i>
+              <button
                 id="report-date-range"
-                class="text-[10px] font-black uppercase tracking-wider text-indigo-600 dark:text-indigo-400"
-                >-</span
+                onclick="window.togglePeriodMenu('report')"
+                class="flex-1 text-center text-[10px] font-black uppercase tracking-wider text-slate-600 dark:text-slate-300 truncate"
+                type="button"
+                >-</button
               >
+              <div id="report-period-menu" class="hidden period-popover"></div>
             </div>
 
-            <div class="flex flex-1 gap-2">
               <button
                 onclick="window.kirimLaporanWA()"
-                class="flex-1 py-2 rounded-xl bg-emerald-500 text-white font-bold text-[10px] flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-500/30 active:scale-95 transition-all"
+                aria-label="Kirim WhatsApp"
+                title="Kirim WhatsApp"
+                class="h-11 w-full rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white border border-emerald-400 font-black text-[10px] flex items-center justify-center gap-1.5 shadow-sm shadow-emerald-500/20 active:scale-95 transition-all"
               >
-                <i data-lucide="message-circle" class="w-3.5 h-3.5"></i> WA
+                <i data-lucide="message-circle" class="w-4 h-4 text-white"></i>
               </button>
               <button
-                onclick="window.exportToExcel()"
-                class="flex-1 py-2 rounded-xl bg-blue-500 text-white font-bold text-[10px] flex items-center justify-center gap-1.5 shadow-lg shadow-blue-500/30 active:scale-95 transition-all"
+                onclick="window.exportToPDF()"
+                aria-label="Export PDF"
+                title="Export PDF"
+                class="h-11 w-full rounded-xl bg-blue-50 dark:bg-blue-500/10 text-palette-blue border border-blue-100 dark:border-blue-500/20 font-black text-[10px] flex items-center justify-center gap-1.5 active:scale-95 transition-all"
               >
-                <i data-lucide="download" class="w-3.5 h-3.5"></i> Excel
+                <i data-lucide="file-down" class="w-4 h-4"></i>
               </button>
-            </div>
+          </div>
           </div>
 
           <div
-            class="bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden"
+            class="bg-white/90 dark:bg-slate-900/90 rounded-2xl shadow-sm border border-slate-200/70 dark:border-slate-800 overflow-hidden backdrop-blur-xl"
           >
             <div class="overflow-x-auto hide-scrollbar">
-              <table class="w-full text-left border-collapse min-w-[600px]">
+              <table class="w-full text-left border-collapse min-w-[680px]">
                 <thead>
                   <tr
-                    class="bg-slate-100 dark:bg-slate-900 text-[10px] uppercase tracking-widest text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-700"
+                    class="bg-slate-50 dark:bg-slate-950/80 text-[10px] uppercase tracking-widest text-slate-500 dark:text-slate-400 border-b border-slate-200/70 dark:border-slate-800"
                   >
-                    <th class="p-4 font-black w-10 text-center" scope="col">
+                    <th class="p-3.5 font-black w-10 text-center" scope="col">
                       No
                     </th>
-                    <th class="p-4 font-black min-w-[140px]" scope="col">
+                    <th class="p-3.5 font-black min-w-[160px]" scope="col">
                       Nama Santri
                     </th>
-                    <th class="p-4 font-black text-center" scope="col">
+                    <th class="p-3.5 font-black text-center" scope="col">
                       Shalat
                     </th>
                     <th
-                      class="p-4 font-black text-center bg-cyan-50 dark:bg-cyan-900/20 text-cyan-700 dark:text-cyan-400"
+                      class="p-3.5 font-black text-center text-slate-600 dark:text-slate-300"
                       scope="col"
                     >
                       Sekolah
                     </th>
-                    <th class="p-4 font-black text-center" scope="col">
+                    <th class="p-3.5 font-black text-center" scope="col">
                       KBM Asrama
                     </th>
-                    <th class="p-4 font-black text-center" scope="col">
+                    <th class="p-3.5 font-black text-center" scope="col">
                       Sunnah
                     </th>
                     <th
-                      class="p-4 font-black text-center text-indigo-500"
+                      class="p-3.5 font-black text-center text-slate-700 dark:text-slate-200"
                       scope="col"
                     >
                       Nilai
@@ -1659,12 +1679,12 @@
                 </thead>
                 <tbody
                   id="daily-recap-tbody"
-                  class="text-xs divide-y divide-slate-100 dark:divide-slate-700"
+                  class="text-xs divide-y divide-slate-100 dark:divide-slate-800"
                 ></tbody>
               </table>
             </div>
             <div
-              class="p-3 bg-slate-50 dark:bg-slate-900/50 flex items-center justify-center gap-2 text-[10px] text-slate-400 font-medium border-t border-slate-100 dark:border-slate-700"
+              class="p-3 bg-slate-50/80 dark:bg-slate-950/60 flex items-center justify-center gap-2 text-[10px] text-slate-400 font-medium border-t border-slate-100 dark:border-slate-800"
             >
               <i data-lucide="info" class="w-3 h-3"></i> Kalkulasi nilai
               bergantung pada bobot kehadiran tiap sesi
@@ -1674,11 +1694,11 @@
 
         <div
           id="analysis-section"
-          class="hidden animate-fade-in flex flex-col lg:grid lg:grid-cols-12 lg:gap-6 lg:items-start"
+          class="hidden animate-fade-in flex flex-col lg:grid lg:grid-cols-12 lg:gap-5 lg:items-start"
         >
           <!-- Control Card (Wadah Utama) -->
           <div
-            class="mb-6 lg:col-span-4 bg-white dark:bg-slate-800 rounded-[2rem] border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden flex flex-col"
+            class="mb-5 lg:mb-0 lg:col-span-4 bg-white/90 dark:bg-slate-900/90 rounded-2xl border border-slate-200/70 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col backdrop-blur-xl"
           >
             <!-- 1. Search Section -->
             <div class="p-5 pb-4">
@@ -1688,14 +1708,14 @@
                 Pilih Santri
               </label>
               <div
-                class="relative flex items-center h-12 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 shadow-inner group focus-within:ring-4 focus-within:ring-indigo-500/10 focus-within:border-indigo-500 transition-all"
+                class="relative flex items-center h-12 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/50 group focus-within:ring-4 focus-within:ring-palette-blue/10 focus-within:border-palette-blue transition-all"
               >
                 <div
                   class="w-11 h-full flex items-center justify-center shrink-0 pointer-events-none"
                 >
                   <i
                     data-lucide="search"
-                    class="w-4 h-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors"
+                    class="w-4 h-4 text-slate-400 group-focus-within:text-palette-blue transition-colors"
                   ></i>
                 </div>
 
@@ -1735,32 +1755,32 @@
 
               <!-- Wadah Filter Bergaya Segmented Control iOS -->
               <div
-                class="grid grid-cols-4 gap-1.5 p-1.5 bg-slate-100/80 dark:bg-slate-900/80 rounded-2xl border border-slate-200/50 dark:border-slate-800"
+                class="grid grid-cols-4 gap-1 p-1 bg-slate-100/80 dark:bg-slate-950/60 rounded-xl border border-slate-200/50 dark:border-slate-800"
               >
                 <button
                   onclick="window.setAnalysisMode('daily')"
-                  class="anl-btn active-mode h-10 rounded-xl text-[10px] font-black transition-all duration-300"
+                  class="anl-btn active-mode h-9 rounded-lg text-[10px] font-black transition-all duration-300"
                   data-mode="daily"
                 >
                   Harian
                 </button>
                 <button
                   onclick="window.setAnalysisMode('weekly')"
-                  class="anl-btn h-10 rounded-xl text-[10px] font-black text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 transition-all duration-300"
+                  class="anl-btn h-9 rounded-lg text-[10px] font-black text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 transition-all duration-300"
                   data-mode="weekly"
                 >
                   Pekan
                 </button>
                 <button
                   onclick="window.setAnalysisMode('monthly')"
-                  class="anl-btn h-10 rounded-xl text-[10px] font-black text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 transition-all duration-300"
+                  class="anl-btn h-9 rounded-lg text-[10px] font-black text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 transition-all duration-300"
                   data-mode="monthly"
                 >
                   Bulan
                 </button>
                 <button
                   onclick="window.setAnalysisMode('semester')"
-                  class="anl-btn h-10 rounded-xl text-[10px] font-black text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 transition-all duration-300"
+                  class="anl-btn h-9 rounded-lg text-[10px] font-black text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 transition-all duration-300"
                   data-mode="semester"
                 >
                   Sem
@@ -1771,32 +1791,72 @@
             <!-- 3. Date Range Footer -->
             <!-- Dibuat dengan nuansa Indigo tipis agar selaras dengan warna brand/tema aktif -->
             <div
-              class="bg-indigo-50/60 dark:bg-indigo-900/10 border-t border-indigo-100 dark:border-indigo-500/10 px-5 py-3.5 flex items-center justify-center gap-2"
+              class="bg-slate-50/80 dark:bg-slate-950/60 border-t border-slate-100 dark:border-slate-800 px-5 py-3"
             >
-              <i
-                data-lucide="calendar-clock"
-                class="w-4 h-4 text-indigo-500"
-              ></i>
-              <span
-                id="analysis-date-range"
-                class="text-[10px] font-black uppercase tracking-widest text-indigo-600 dark:text-indigo-400 mt-0.5"
-              >
-                -
-              </span>
+              <button onclick="window.togglePeriodMenu('analysis')" type="button" class="w-full h-11 rounded-xl bg-white/80 dark:bg-slate-900/70 border border-slate-200/70 dark:border-slate-700 flex items-center gap-2 px-3 active:scale-[0.99] transition-all">
+                <i
+                  data-lucide="calendar-clock"
+                  class="w-3.5 h-3.5 text-slate-400 shrink-0"
+                ></i>
+                <span
+                  id="analysis-date-range"
+                  class="flex-1 text-center text-[10px] font-black uppercase tracking-wider text-slate-600 dark:text-slate-300 truncate"
+                >
+                  -
+                </span>
+              </button>
+              <div id="analysis-period-menu" class="hidden period-popover"></div>
             </div>
           </div>
 
           <div
             id="analysis-result"
-            class="hidden animate-slide-up lg:col-span-8 flex flex-col gap-6"
+            class="hidden animate-slide-up lg:col-span-8 flex flex-col gap-5"
           >
+            <div class="bg-white/90 dark:bg-slate-900/90 rounded-2xl border border-slate-200/70 dark:border-slate-800 shadow-sm p-5 backdrop-blur-xl">
+              <div class="flex items-start justify-between gap-4">
+                <div class="flex items-center gap-3 min-w-0">
+                  <div id="anl-profile-icon" class="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 dark:text-slate-300 shrink-0">
+                    <i data-lucide="user-round" class="w-5 h-5"></i>
+                  </div>
+                  <div class="min-w-0">
+                    <p class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-0.5">Profil Santri</p>
+                    <h2 id="anl-student-name" class="text-lg font-black text-slate-900 dark:text-white truncate">-</h2>
+                    <div class="flex items-center gap-1.5 mt-1 min-w-0">
+                      <span id="anl-student-class" class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-[9px] font-black text-slate-600 dark:text-slate-300 uppercase">-</span>
+                      <span id="anl-student-asrama" class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-[9px] font-black text-slate-600 dark:text-slate-300 uppercase truncate max-w-[150px]">-</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="text-right shrink-0">
+                  <p class="text-[9px] font-black uppercase tracking-widest text-slate-400">Status</p>
+                  <p id="anl-student-status" class="text-xs font-black text-emerald-600 dark:text-emerald-400 mt-1">Stabil</p>
+                </div>
+              </div>
+              <div class="grid grid-cols-3 gap-2 mt-4">
+                <div class="rounded-xl bg-slate-50 dark:bg-slate-950/50 border border-slate-100 dark:border-slate-800 p-3">
+                  <p class="text-[9px] font-black uppercase tracking-wider text-slate-400">Data</p>
+                  <p id="anl-total-records" class="text-lg font-black text-slate-900 dark:text-white tabular-nums">0</p>
+                </div>
+                <div class="rounded-xl bg-slate-50 dark:bg-slate-950/50 border border-slate-100 dark:border-slate-800 p-3">
+                  <p class="text-[9px] font-black uppercase tracking-wider text-slate-400">Catatan</p>
+                  <p id="anl-issue-count" class="text-lg font-black text-amber-600 dark:text-amber-400 tabular-nums">0</p>
+                </div>
+                <div class="rounded-xl bg-slate-50 dark:bg-slate-950/50 border border-slate-100 dark:border-slate-800 p-3 min-w-0">
+                  <p class="text-[9px] font-black uppercase tracking-wider text-slate-400">Dominan</p>
+                  <p id="anl-dominant-issue" class="text-sm font-black text-slate-800 dark:text-slate-200 truncate mt-1">-</p>
+                </div>
+              </div>
+              <div id="anl-badges" class="flex flex-wrap gap-2 mt-4"></div>
+            </div>
+
             <!-- 1. HERO CARD: Total Kehadiran (Simple, Clean, & Consistent) -->
             <div
-              class="mb-6 bg-white dark:bg-slate-800 p-6 rounded-[2rem] shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col gap-5 text-center relative overflow-hidden"
+              class="bg-white/90 dark:bg-slate-900/90 p-6 rounded-2xl shadow-sm border border-slate-200/70 dark:border-slate-800 flex flex-col gap-5 text-center relative overflow-hidden"
             >
               <!-- Garis Aksen Tipis di Atas Card (Opsional, pemanis yang selaras dengan tema) -->
               <div
-                class="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-indigo-500 via-purple-500 to-emerald-500"
+                class="absolute top-0 inset-x-0 h-1 bg-palette-blue"
               ></div>
 
               <!-- Label Atas -->
@@ -1805,7 +1865,7 @@
                   class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"
                 ></span>
                 <p
-                  class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]"
+                    class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]"
                 >
                   Total Kehadiran
                 </p>
@@ -1815,7 +1875,7 @@
               <div class="flex flex-col items-center justify-center gap-3">
                 <h2
                   id="anl-total-score"
-                  class="text-6xl font-black text-slate-800 dark:text-white tracking-tighter tabular-nums leading-none"
+                  class="text-6xl font-black text-slate-900 dark:text-white tracking-tighter tabular-nums leading-none"
                 >
                   0<span
                     class="text-3xl text-slate-400 dark:text-slate-500 font-bold"
@@ -1823,9 +1883,7 @@
                   >
                 </h2>
 
-                <div
-                  class="px-4 py-1.5 rounded-full bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-100 dark:border-indigo-800"
-                >
+                <div class="px-4 py-1.5 rounded-full bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700">
                   <span
                     id="anl-verdict"
                     class="text-indigo-600 dark:text-indigo-400 font-black text-[10px] uppercase tracking-widest"
@@ -1867,7 +1925,42 @@
             </div>
 
             <!-- 2. METRIC CARDS GRID -->
-            <div class="grid grid-cols-1 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 md:col-span-2" id="anl-issue-breakdown"></div>
+
+              <div class="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm border border-slate-200 dark:border-slate-700 md:col-span-2">
+                <div class="flex items-center justify-between gap-3 mb-4">
+                  <div>
+                    <h3 class="font-black text-slate-800 dark:text-slate-100 text-sm">Tren & Timeline</h3>
+                    <p id="anl-trend-text" class="text-[10px] font-bold text-slate-500 mt-0.5">-</p>
+                  </div>
+                  <div id="anl-trend-pill" class="px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-700 text-[10px] font-black text-slate-500">0%</div>
+                </div>
+                <canvas id="anl-trend-chart" class="w-full h-28" width="640" height="160"></canvas>
+              </div>
+
+              <div class="bg-white dark:bg-slate-800 rounded-2xl p-3 shadow-sm border border-slate-200 dark:border-slate-700">
+                <div class="flex items-center justify-between gap-3 mb-3">
+                  <div>
+                    <h3 class="font-black text-slate-800 dark:text-slate-100 text-sm">Timeline</h3>
+                    <p class="text-[10px] font-bold text-slate-500 mt-0.5">Aktivitas ringkas sesuai rentang</p>
+                  </div>
+                  <i data-lucide="list-checks" class="w-4 h-4 text-palette-blue"></i>
+                </div>
+                <div id="anl-timeline" class="grid grid-cols-1 gap-1.5"></div>
+              </div>
+
+              <div class="bg-white dark:bg-slate-800 rounded-2xl p-3 shadow-sm border border-slate-200 dark:border-slate-700">
+                <div class="flex items-center justify-between gap-3 mb-3">
+                  <div>
+                    <h3 class="font-black text-slate-800 dark:text-slate-100 text-sm">Ibadah Sunnah</h3>
+                    <p class="text-[10px] font-bold text-slate-500 mt-0.5">Bento amalan</p>
+                  </div>
+                  <i data-lucide="sparkles" class="w-4 h-4 text-amber-500"></i>
+                </div>
+                <div id="anl-sunnah-detail" class="grid grid-cols-2 gap-1.5"></div>
+              </div>
+
               <!-- Metric: KBM Sekolah -->
               <div
                 class="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col gap-4"
@@ -2114,14 +2207,82 @@
           </div>
         </div>
       </div>
+      </div>
 
       <style>
+        .report-lang-rotator {
+          position: relative;
+        }
+        .report-lang-rotator span {
+          position: absolute;
+          inset: 0 auto auto 0;
+          animation: reportLangFade 6s ease-in-out infinite;
+        }
+        .report-lang-rotator .report-lang-ar {
+          display: none !important;
+        }
+        .report-lang-rotator .report-lang-ar-fixed,
+        .report-lang-rotator .report-lang-id {
+          animation: reportLangFade 6s ease-in-out infinite;
+        }
+        .report-lang-rotator .report-lang-id {
+          animation-delay: 3s;
+          opacity: 0;
+        }
+        @keyframes reportLangFade {
+          0%, 42% { opacity: 1; transform: translateY(0); }
+          50%, 92% { opacity: 0; transform: translateY(-6px); }
+          100% { opacity: 1; transform: translateY(0); }
+        }
+        .report-action-bar {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) 46px 46px;
+          gap: 8px;
+          align-items: stretch;
+        }
+        @media (min-width: 640px) {
+          .report-action-bar {
+            grid-template-columns: minmax(0, 1fr) 52px 52px;
+          }
+        }
+        .period-popover {
+          position: fixed;
+          left: 50%;
+          top: 50%;
+          z-index: 9999;
+          width: min(360px, calc(100vw - 32px));
+          max-height: min(460px, calc(100vh - 96px));
+          transform: translate(-50%, -50%);
+          overflow: hidden;
+          border-radius: 20px;
+          border: 1px solid rgba(226, 232, 240, 0.9);
+          background: rgba(255, 255, 255, 0.98);
+          box-shadow: 0 24px 70px rgba(15, 23, 42, 0.18);
+          padding: 10px;
+          backdrop-filter: blur(18px);
+        }
+        .period-backdrop {
+          position: fixed;
+          inset: 0;
+          z-index: 9998;
+          background: rgba(15, 23, 42, 0.32);
+          backdrop-filter: blur(4px);
+        }
+        .dark .period-popover {
+          border-color: rgba(51, 65, 85, 0.9);
+          background: rgba(15, 23, 42, 0.98);
+        }
         .rpt-btn.active-mode,
         .anl-btn.active-mode {
           background-color: var(--color-brand) !important;
           color: white !important;
-          box-shadow: 0 4px 12px var(--color-brand-ring) !important;
+          box-shadow: 0 8px 20px -14px rgba(12, 129, 228, 0.55) !important;
           border: none;
+        }
+        .dark .rpt-btn.active-mode,
+        .dark .anl-btn.active-mode {
+          background-color: var(--color-brand) !important;
+          color: #ffffff !important;
         }
       </style>
 

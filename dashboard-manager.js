@@ -269,6 +269,10 @@ window.renderSlotList = function () {
     const item = clone.querySelector(".slot-item");
     const access = window.isSlotAccessible(s.id, appState.date);
     const stats = window.calculateSlotStats(s.id);
+    const slotData = appState.attendanceData?.[appState.date]?.[s.id];
+    const isPresenceInProgress =
+      slotData?.__requiresReview === true &&
+      slotData?.__reviewConfirmed !== true;
 
     // 1. Terapkan Tema Unik per Sesi
     // Hapus class default jika ada, lalu tambah gradient spesifik
@@ -371,8 +375,14 @@ window.renderSlotList = function () {
         badge.textContent = "Selesai";
         badge.className +=
           " text-emerald-700 bg-emerald-100/80 border-emerald-200";
+      } else if (isPresenceInProgress) {
+        badge.innerHTML = `<span class="inline-flex items-center gap-1"><i data-lucide="loader-circle" class="w-3 h-3 animate-spin"></i>Proses</span>`;
+        badge.className =
+          "slot-status-badge text-[10px] font-bold px-2.5 py-0.5 rounded-lg inline-block bg-amber-400 text-white border border-amber-300 shadow-sm";
       } else {
         badge.textContent = "Belum Diisi";
+        badge.className +=
+          " text-white bg-red-600 border-red-500";
       }
 
       let percent = 0;
@@ -1683,19 +1693,21 @@ window.renderSchoolStatsWidget = function () {
 window.verifyLocationCached = async function () {
   const cache = JSON.parse(localStorage.getItem(GPS_CACHE_KEY) || "null");
 
-  if (cache && Date.now() - cache.timestamp < GPS_CACHE_DURATION) {
-    return true;
+  if (
+    cache &&
+    cache.distance !== undefined &&
+    Date.now() - cache.timestamp < GPS_CACHE_DURATION
+  ) {
+    if (
+      cache.isInside === true &&
+      Number(cache.distance) <= GEO_CONFIG.maxRadiusMeters
+    ) {
+      return true;
+    }
+    localStorage.removeItem(GPS_CACHE_KEY);
   }
 
   await window.verifyLocation();
-
-  localStorage.setItem(
-    GPS_CACHE_KEY,
-    JSON.stringify({
-      timestamp: Date.now(),
-    }),
-  );
-
   return true;
 };
 

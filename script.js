@@ -1100,6 +1100,10 @@ window.renderSlotList = function () {
     const item = clone.querySelector(".slot-item");
     const access = window.isSlotAccessible(s.id, appState.date);
     const stats = window.calculateSlotStats(s.id);
+    const slotData = appState.attendanceData?.[appState.date]?.[s.id];
+    const isPresenceInProgress =
+      slotData?.__requiresReview === true &&
+      slotData?.__reviewConfirmed !== true;
 
     const iconContainer = clone.querySelector(".slot-icon-bg");
     const iconEl = clone.querySelector(".slot-icon");
@@ -1222,6 +1226,12 @@ window.renderSlotList = function () {
           Selesai
         </span>`;
         badge.className = "slot-status-badge text-[9px] font-black px-2 py-0.5 rounded-full bg-white/90 text-emerald-950 border border-white/30 shadow-sm";
+      } else if (isPresenceInProgress) {
+        badge.innerHTML = `<span class="flex items-center gap-1">
+          <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="animate-spin"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+          Proses
+        </span>`;
+        badge.className = "slot-status-badge text-[9px] font-black px-2 py-0.5 rounded-full bg-amber-400 text-white border border-amber-300 shadow-md";
       } else if (isCurrentRunningSlot) {
         badge.innerHTML = `<span class="flex items-center gap-1">
           <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-unlock text-current"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>
@@ -1476,7 +1486,6 @@ window.calculateSlotStats = function (slotId, customDate = null) {
     const status = slotData[id]?.status?.[mainAct.id];
 
     if (status) {
-      stats.isFilled = true;
       if (status === "Hadir") stats.h++;
       else if (status === "Telat") stats.t++;
       else if (status === "Izin") stats.i++;
@@ -1486,6 +1495,11 @@ window.calculateSlotStats = function (slotId, customDate = null) {
       stats.total++; // Ini jumlah anak yang SUDAH diabsen
     }
   });
+
+  stats.isFilled =
+    slotData.__reviewConfirmed === true ||
+    (slotData.__requiresReview !== true &&
+      stats.total === FILTERED_SANTRI.length);
 
   return stats;
 };
@@ -1640,11 +1654,16 @@ window.openAttendance = async function () {
     window.updateConnectionStatusUI();
   }
 
+  const listContainer = document.getElementById("attendance-list-container");
+  if (listContainer) {
+    listContainer.dataset.attendanceRenderKey = "";
+    listContainer.scrollTop = 0;
+  }
+
   window.renderAttendanceList();
 
   // Morphing bottom search bar on scroll
   const bottomBar = document.getElementById("att-bottom-bar");
-  const listContainer = document.getElementById("attendance-list-container");
   const searchInput = document.getElementById("att-search");
   
   if (listContainer && bottomBar) {
@@ -1688,6 +1707,7 @@ window.openAttendance = async function () {
 window.closeAttendance = function () {
   const viewMain = document.getElementById("view-main");
   const viewAttendance = document.getElementById("view-attendance");
+  if (window.clearAttendanceReviewGate) window.clearAttendanceReviewGate();
   
   viewMain.classList.remove("hidden");
   viewAttendance.classList.remove("animate-slide-up-custom");
@@ -1710,10 +1730,25 @@ window.renderAttendanceList = function () {
   const slot = SLOT_WAKTU[appState.currentSlotId];
   const dateKey = appState.date;
   const currentDay = new Date(appState.date).getDay();
+  const attendanceRenderKey = `${dateKey}:${slot.id}`;
+  const isNewAttendanceView =
+    container.dataset.attendanceRenderKey !== attendanceRenderKey;
 
   if (!appState.attendanceData[dateKey]) appState.attendanceData[dateKey] = {};
   if (!appState.attendanceData[dateKey][slot.id])
     appState.attendanceData[dateKey][slot.id] = {};
+
+  if (isNewAttendanceView) {
+    if (container._attendanceReviewScrollHandler) {
+      container.removeEventListener(
+        "scroll",
+        container._attendanceReviewScrollHandler,
+      );
+      delete container._attendanceReviewScrollHandler;
+    }
+    container.scrollTop = 0;
+    container.dataset.attendanceRenderKey = attendanceRenderKey;
+  }
 
   const dbSlot = appState.attendanceData[dateKey][slot.id];
   let hasAutoChanges = false;
@@ -1734,6 +1769,8 @@ window.renderAttendanceList = function () {
     const id = String(santri.nis || santri.id);
     if (!dbSlot[id]) {
       hasAutoChanges = true;
+      dbSlot.__requiresReview = true;
+      dbSlot.__reviewConfirmed = false;
 
       const defStatus = {};
       slot.activities.forEach((a) => {
@@ -1969,7 +2006,7 @@ window.renderAttendanceList = function () {
     roomRow.className = "flex items-center gap-1.5 mt-1.5 min-w-0";
     roomLabel.className =
       "meta-chip inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-300 text-[8px] font-black uppercase tracking-wide border border-slate-200/70 dark:border-slate-700/70 max-w-[64px]";
-    roomLabel.innerHTML = `<i data-lucide="layers-3" class="w-2.5 h-2.5 shrink-0"></i><span class="meta-chip-text">${window.sanitizeHTML(kelasText)}</span>`;
+    roomLabel.innerHTML = `<i data-lucide="school" class="w-2.5 h-2.5 shrink-0"></i><span class="meta-chip-text">${window.sanitizeHTML(kelasText)}</span>`;
     roomValue.className =
       "meta-chip inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-300 text-[8px] font-bold border border-slate-200/70 dark:border-slate-700/70 max-w-[150px]";
     roomValue.innerHTML = `<i data-lucide="home" class="w-2.5 h-2.5 shrink-0"></i><span class="meta-chip-text">${window.sanitizeHTML(asramaText)}</span>`;
@@ -2122,6 +2159,7 @@ window.renderAttendanceList = function () {
   });
 
   container.appendChild(fragment);
+  if (isNewAttendanceView) container.scrollTop = 0;
 
   // ==========================================
   // SUMMARY WIDGET - Clean badges
@@ -2214,7 +2252,33 @@ window.renderAttendanceList = function () {
     return dbSlot[id];
   }).length;
 
-  if (initializedCount === FILTERED_SANTRI.length || hasAutoChanges) {
+  if (
+    initializedCount === FILTERED_SANTRI.length &&
+    !hasAutoChanges &&
+    dbSlot.__requiresReview !== true &&
+    dbSlot.__reviewConfirmed !== true
+  ) {
+    dbSlot.__reviewConfirmed = true;
+  }
+
+  const needsReview =
+    initializedCount === FILTERED_SANTRI.length &&
+    dbSlot.__requiresReview === true &&
+    dbSlot.__reviewConfirmed !== true;
+
+  if (window.renderAttendanceReviewGate) {
+    window.renderAttendanceReviewGate(
+      container,
+      dateKey,
+      slot.id,
+      needsReview,
+    );
+  }
+
+  if (
+    (initializedCount === FILTERED_SANTRI.length || hasAutoChanges) &&
+    !needsReview
+  ) {
     window.saveData();
   }
   if (window.refreshIcons) window.refreshIcons();
@@ -2594,6 +2658,73 @@ window.exportToExcel = function () {
   window.logActivity("Export Data", `Mengexport data ke Excel`);
 };
 
+window.exportToPDF = function () {
+  if (!appState.selectedClass || FILTERED_SANTRI.length === 0) {
+    return window.showToast("Pilih kelas terlebih dahulu", "warning");
+  }
+
+  const table = document.querySelector("#report-section table");
+  if (!table) {
+    return window.showToast("Tabel laporan belum siap", "warning");
+  }
+
+  const rangeLabel =
+    document.getElementById("report-date-range")?.textContent || appState.date;
+  const title = `Laporan Presensi ${appState.selectedClass}`;
+  const printedAt = new Date().toLocaleString("id-ID", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
+
+  const printWindow = window.open("", "_blank");
+  if (!printWindow) {
+    return window.showToast("Izinkan pop-up untuk membuat PDF", "warning");
+  }
+
+  printWindow.document.write(`
+    <!doctype html>
+    <html>
+      <head>
+        <meta charset="utf-8" />
+        <title>${window.sanitizeHTML(title)}</title>
+        <style>
+          * { box-sizing: border-box; }
+          body { font-family: Inter, Arial, sans-serif; color: #0f172a; margin: 32px; }
+          header { display: flex; justify-content: space-between; gap: 24px; align-items: flex-end; margin-bottom: 24px; border-bottom: 2px solid #e2e8f0; padding-bottom: 16px; }
+          h1 { margin: 0; font-size: 22px; letter-spacing: -0.02em; }
+          p { margin: 4px 0 0; color: #64748b; font-size: 12px; font-weight: 700; }
+          table { width: 100%; border-collapse: collapse; font-size: 11px; }
+          th { background: #f8fafc; color: #475569; text-transform: uppercase; letter-spacing: .08em; font-size: 9px; text-align: left; }
+          th, td { border: 1px solid #e2e8f0; padding: 8px; vertical-align: middle; }
+          td { color: #334155; }
+          tr:nth-child(even) td { background: #fbfdff; }
+          .meta { text-align: right; }
+          @media print { body { margin: 18mm; } }
+        </style>
+      </head>
+      <body>
+        <header>
+          <div>
+            <h1>${window.sanitizeHTML(title)}</h1>
+            <p>${window.sanitizeHTML(rangeLabel)}</p>
+          </div>
+          <div class="meta">
+            <p>Dicetak ${window.sanitizeHTML(printedAt)}</p>
+            <p>Mode: ${window.sanitizeHTML(appState.reportMode || "daily")}</p>
+          </div>
+        </header>
+        ${table.outerHTML}
+      </body>
+    </html>
+  `);
+  printWindow.document.close();
+  printWindow.focus();
+  setTimeout(() => printWindow.print(), 250);
+
+  window.showToast("Siap dicetak sebagai PDF", "success");
+  window.logActivity("Export Data", "Membuat laporan PDF");
+};
+
 window.viewRekapBulanan = function () {
   const modal = document.getElementById("modal-rekap");
   if (modal) {
@@ -2897,21 +3028,32 @@ window.saveData = function () {
 
       const indicator = document.getElementById("save-indicator");
       if (appState.settings.autoSave && indicator) {
-        indicator.innerHTML = '<i data-lucide="save" class="w-3.5 h-3.5 text-amber-500"></i>';
-        if (window.lucide) window.lucide.createIcons();
+        const reviewStatus =
+          indicator.dataset.attendanceReviewStatus === "idle"
+            ? ""
+            : indicator.dataset.attendanceReviewStatus;
+        if (!reviewStatus) {
+          indicator.innerHTML = '<i data-lucide="save" class="w-3.5 h-3.5 text-amber-500"></i>';
+          if (window.lucide) window.lucide.createIcons();
+        }
         
         setTimeout(() => {
           try {
             localStorage.setItem(APP_CONFIG.storageKey, dataStr);
             if (indicator) {
-              indicator.innerHTML = '<i data-lucide="save" class="w-3.5 h-3.5 text-emerald-400"></i>';
-              if (window.lucide) window.lucide.createIcons();
-              setTimeout(() => {
-                if (indicator) {
-                  indicator.innerHTML = '<i data-lucide="save" class="w-3.5 h-3.5 text-slate-400"></i>';
-                  if (window.lucide) window.lucide.createIcons();
-                }
-              }, 1500);
+              if (indicator.dataset.attendanceReviewStatus) {
+                const latestReviewStatus = indicator.dataset.attendanceReviewStatus;
+                window.setAttendanceSaveIndicator?.(latestReviewStatus);
+              } else {
+                indicator.innerHTML = '<i data-lucide="save" class="w-3.5 h-3.5 text-emerald-400"></i>';
+                if (window.lucide) window.lucide.createIcons();
+                setTimeout(() => {
+                  if (indicator && !indicator.dataset.attendanceReviewStatus) {
+                    indicator.innerHTML = '<i data-lucide="save" class="w-3.5 h-3.5 text-slate-400"></i>';
+                    if (window.lucide) window.lucide.createIcons();
+                  }
+                }, 1500);
+              }
             }
           } catch (innerErr) {
             console.error("Inner save error:", innerErr);
@@ -3396,6 +3538,15 @@ window.getPredikat = function (grade) {
   return "Maqbul";
 };
 
+window.getPredikatMeaning = function (grade) {
+  if (grade === "A") return "Sempurna";
+  if (grade === "A-") return "Istimewa";
+  if (grade === "B+" || grade === "B") return "Baik Sekali";
+  if (grade === "B-" || grade === "C+") return "Baik";
+  if (grade === "C") return "Cukup";
+  return "Kurang";
+};
+
 window.updateReportTab = function () {
   const tbody = document.getElementById("daily-recap-tbody");
   const rangeLabel = document.getElementById("report-date-range");
@@ -3403,51 +3554,55 @@ window.updateReportTab = function () {
 
   if (thead) {
     let headerHTML = `
-            <th class="p-3 font-bold w-8 text-center">No</th>
-            <th class="p-3 font-bold min-w-[140px]">Nama Santri</th>
+            <th class="p-3.5 font-black w-10 text-center">No</th>
+            <th class="p-3.5 font-black min-w-[160px]"><span class="inline-flex items-center gap-1.5"><i data-lucide="user-round" class="w-3.5 h-3.5"></i> Santri</span></th>
         `;
 
     if (appState.reportMode === "daily") {
       headerHTML += `
-                <th class="p-3 text-center">Shalat</th>
-                <th class="p-3 text-center">Sekolah</th>
-                <th class="p-3 text-center">Ma'had</th>
-                <th class="p-3 text-center">Sunnah</th>
+                <th class="p-3.5 font-black text-center"><span class="inline-flex items-center gap-1.5"><i data-lucide="moon" class="w-3.5 h-3.5 text-emerald-500"></i> Shalat</span></th>
+                <th class="p-3.5 font-black text-center"><span class="inline-flex items-center gap-1.5"><i data-lucide="graduation-cap" class="w-3.5 h-3.5 text-cyan-500"></i> Sekolah</span></th>
+                <th class="p-3.5 font-black text-center"><span class="inline-flex items-center gap-1.5"><i data-lucide="book-open" class="w-3.5 h-3.5 text-blue-500"></i> Ma'had</span></th>
+                <th class="p-3.5 font-black text-center"><span class="inline-flex items-center gap-1.5"><i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-500"></i> Sunnah</span></th>
+                <th class="p-3.5 font-black text-center"><span class="inline-flex items-center gap-1.5"><i data-lucide="gauge" class="w-3.5 h-3.5 text-palette-blue"></i> Nilai</span></th>
             `;
     } else if (
       appState.reportMode === "weekly" ||
       appState.reportMode === "monthly"
     ) {
       headerHTML += `
-                <th class="p-3 text-center">Shalat %</th>
-                <th class="p-3 text-center">Sekolah %</th>
-                <th class="p-3 text-center">Ma'had %</th>
-                <th class="p-3 text-center">Sunnah %</th>
+                <th class="p-3.5 font-black text-center"><span class="inline-flex items-center gap-1.5"><i data-lucide="moon" class="w-3.5 h-3.5 text-emerald-500"></i> Shalat</span></th>
+                <th class="p-3.5 font-black text-center"><span class="inline-flex items-center gap-1.5"><i data-lucide="graduation-cap" class="w-3.5 h-3.5 text-cyan-500"></i> Sekolah</span></th>
+                <th class="p-3.5 font-black text-center"><span class="inline-flex items-center gap-1.5"><i data-lucide="book-open" class="w-3.5 h-3.5 text-blue-500"></i> Ma'had</span></th>
+                <th class="p-3.5 font-black text-center"><span class="inline-flex items-center gap-1.5"><i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-500"></i> Sunnah</span></th>
+                <th class="p-3.5 font-black text-center"><span class="inline-flex items-center gap-1.5"><i data-lucide="gauge" class="w-3.5 h-3.5 text-palette-blue"></i> Nilai</span></th>
             `;
     } else if (appState.reportMode === "semester") {
       headerHTML += `
-                <th class="p-3 text-center">Shalat</th>
-                <th class="p-3 text-center">Sekolah</th>
-                <th class="p-3 text-center">Ma'had</th>
-                <th class="p-3 text-center">Sunnah</th>
-                <th class="p-3 text-center">Grade</th>
+                <th class="p-3.5 font-black text-center"><span class="inline-flex items-center gap-1.5"><i data-lucide="moon" class="w-3.5 h-3.5 text-emerald-500"></i> Shalat</span></th>
+                <th class="p-3.5 font-black text-center"><span class="inline-flex items-center gap-1.5"><i data-lucide="graduation-cap" class="w-3.5 h-3.5 text-cyan-500"></i> Sekolah</span></th>
+                <th class="p-3.5 font-black text-center"><span class="inline-flex items-center gap-1.5"><i data-lucide="book-open" class="w-3.5 h-3.5 text-blue-500"></i> Ma'had</span></th>
+                <th class="p-3.5 font-black text-center"><span class="inline-flex items-center gap-1.5"><i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-500"></i> Sunnah</span></th>
+                <th class="p-3.5 font-black text-center"><span class="inline-flex items-center gap-1.5"><i data-lucide="award" class="w-3.5 h-3.5 text-palette-blue"></i> Grade</span></th>
             `;
     }
 
     thead.innerHTML = headerHTML;
+    if (window.lucide) window.lucide.createIcons();
   }
 
   if (!tbody) return;
   tbody.innerHTML = "";
 
+  window.syncPeriodPicker("report");
   const range = window.getReportDateRange(appState.reportMode);
   if (rangeLabel) rangeLabel.textContent = range.label;
 
-  const colspan = appState.reportMode === "semester" ? 7 : 6;
+  const colspan = 7;
 
   if (!appState.selectedClass || FILTERED_SANTRI.length === 0) {
     tbody.innerHTML =
-      '<tr><td colspan="${colspan}" class="p-4 text-center text-xs text-slate-400">Pilih kelas terlebih dahulu</td></tr>';
+      `<tr><td colspan="${colspan}" class="p-4 text-center text-xs text-slate-400">Pilih kelas terlebih dahulu</td></tr>`;
     return;
   }
 
@@ -3572,9 +3727,9 @@ window.updateReportTab = function () {
   // RENDER with DocumentFragment
   const fragment = document.createDocumentFragment();
   const makeBar = (pct, color) => `
-        <div class="flex flex-col items-center">
-            <span class="text-[10px] font-bold ${pct < 60 ? "text-red-500" : "text-slate-600"}">${pct}%</span>
-            <div class="w-12 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+        <div class="flex flex-col items-center gap-1">
+            <span class="text-[10px] font-black ${pct < 60 ? "text-red-500" : "text-slate-700 dark:text-slate-200"}">${pct}%</span>
+            <div class="w-14 h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                 <div class="h-full ${color} transition-all duration-300" style="width: ${pct}%"></div>
             </div>
         </div>`;
@@ -3636,12 +3791,12 @@ window.updateReportTab = function () {
 
     const tr = document.createElement("tr");
     tr.className =
-      "hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors border-b border-slate-50 dark:border-slate-700/50";
+      "group hover:bg-blue-50/40 dark:hover:bg-slate-800/70 transition-colors border-b border-slate-100/80 dark:border-slate-800";
 
     let shalatCol, schoolCol, kbmCol, sunnahCol;
 
     if (appState.reportMode === "daily") {
-      const dateKey = appState.date;
+      const dateKey = appState.reportDate || appState.date;
       const dayData = appState.attendanceData[dateKey] || {};
 
       let badges = "";
@@ -3687,8 +3842,22 @@ window.updateReportTab = function () {
 
       schoolCol = `<div class="flex justify-center"><span class="w-6 h-6 flex items-center justify-center rounded-lg ${schColor} text-[10px] font-black shadow-sm" aria-label="Sekolah: ${stSchool || "Belum diisi"}">${schLabel}</span></div>`;
 
-      kbmCol = `<span class="font-bold text-slate-600 dark:text-slate-400">${stats.mahad.h}</span>`;
-      sunnahCol = `<span class="font-bold text-slate-600 dark:text-slate-400">${stats.sunnah.y}</span>`;
+      const kbmTotal = stats.mahad.total || 0;
+      const sunnahTotal = stats.sunnah.total || 0;
+      kbmCol = `
+        <div class="inline-flex items-center gap-2 rounded-xl bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 px-2.5 py-1.5 min-w-[76px] justify-center">
+          <i data-lucide="book-open-check" class="w-3.5 h-3.5 text-blue-500"></i>
+          <span class="font-black text-blue-700 dark:text-blue-300">${stats.mahad.h}</span>
+          <span class="text-[9px] font-bold text-blue-400">/${kbmTotal}</span>
+        </div>
+      `;
+      sunnahCol = `
+        <div class="inline-flex items-center gap-2 rounded-xl bg-amber-50 dark:bg-amber-500/10 border border-amber-100 dark:border-amber-500/20 px-2.5 py-1.5 min-w-[76px] justify-center">
+          <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-500"></i>
+          <span class="font-black text-amber-700 dark:text-amber-300">${stats.sunnah.y}</span>
+          <span class="text-[9px] font-bold text-amber-400">/${sunnahTotal}</span>
+        </div>
+      `;
     } else {
       const pctShalat = stats.shalat.total
         ? Math.round((stats.shalat.h / stats.shalat.total) * 100)
@@ -3720,76 +3889,46 @@ window.updateReportTab = function () {
     let gradeCells = "";
 
     if (appState.reportMode === "semester") {
+      const renderGrade = (gradeValue, predikatValue, colorClass) => `
+        <div class="inline-flex items-center gap-2 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 px-3 py-2 min-w-[96px] justify-center">
+          <span class="w-8 h-8 rounded-xl bg-white dark:bg-slate-900 flex items-center justify-center font-black ${colorClass} text-sm shadow-sm">${gradeValue}</span>
+          <span class="text-left">
+            <span class="block text-[10px] font-black text-slate-700 dark:text-slate-200">${predikatValue}</span>
+            <span class="block text-[9px] font-bold text-slate-400">${window.getPredikatMeaning(gradeValue)}</span>
+          </span>
+        </div>`;
       gradeCells = `
                 <td class="p-3 text-center">
-        
-                    <div class="font-black text-lg">
-                        ${shalatGrade}
-                    </div>
-        
-                    <div class="text-[9px] text-slate-500">
-                        ${shalatPredikat}
-                    </div>
-        
+                    ${renderGrade(shalatGrade, shalatPredikat, "text-emerald-500")}
                 </td>
         
                 <td class="p-3 text-center">
-        
-                    <div class="font-black text-lg">
-                        ${sekolahGrade}
-                    </div>
-        
-                    <div class="text-[9px] text-slate-500">
-                        ${sekolahPredikat}
-                    </div>
-        
+                    ${renderGrade(sekolahGrade, sekolahPredikat, "text-cyan-500")}
                 </td>
         
                 <td class="p-3 text-center">
-        
-                    <div class="font-black text-lg">
-                        ${mahadGrade}
-                    </div>
-        
-                    <div class="text-[9px] text-slate-500">
-                        ${mahadPredikat}
-                    </div>
+                    ${renderGrade(mahadGrade, mahadPredikat, "text-blue-500")}
         
                 </td>
 
                 <td class="p-3 text-center">
-
-                    <div class="font-black text-lg">
-                        ${sunnahGrade}
-                    </div>
-                
-                    <div class="text-[9px] text-slate-500">
-                        ${sunnahPredikat}
-                    </div>
+                    ${renderGrade(sunnahGrade, sunnahPredikat, "text-amber-500")}
                 
                 </td>
         
                 <td class="p-3 text-center">
-        
-                    <div class="font-black ${scoreColor} text-lg">
-                        ${grade}
-                    </div>
-        
-                    <div class="text-[9px] text-slate-500">
-                        ${predikat}
-                    </div>
-        
+                    ${renderGrade(grade, predikat, scoreColor)}
                 </td>
             `;
     }
 
     tr.innerHTML = `
-            <td class="p-3 text-center text-slate-500 text-[10px] font-bold">
-                ${idx + 1}
+            <td class="p-3.5 text-center">
+                <span class="inline-flex w-6 h-6 items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 text-[10px] font-black group-hover:bg-white dark:group-hover:bg-slate-700 transition-colors">${idx + 1}</span>
             </td>
         
-            <td class="p-3">
-                <div class="font-bold text-slate-700 dark:text-slate-200 text-xs">
+            <td class="p-3.5">
+                <div class="font-black text-slate-800 dark:text-slate-100 text-xs">
                     ${window.sanitizeHTML(s.nama)}
                 </div>
             </td>
@@ -3798,20 +3937,26 @@ window.updateReportTab = function () {
               appState.reportMode === "semester"
                 ? gradeCells
                 : `
-                    <td class="p-3 text-center align-middle">
+                    <td class="p-3.5 text-center align-middle">
                         ${shalatCol}
                     </td>
         
-                    <td class="p-3 text-center align-middle bg-cyan-50/30 dark:bg-cyan-900/10 border-x border-cyan-100 dark:border-cyan-900/20">
+                    <td class="p-3.5 text-center align-middle bg-cyan-50/30 dark:bg-cyan-900/10 border-x border-cyan-100 dark:border-cyan-900/20">
                         ${schoolCol}
                     </td>
         
-                    <td class="p-3 text-center align-middle">
+                    <td class="p-3.5 text-center align-middle">
                         ${kbmCol}
                     </td>
         
-                    <td class="p-3 text-center align-middle">
+                    <td class="p-3.5 text-center align-middle">
                         ${sunnahCol}
+                    </td>
+
+                    <td class="p-3.5 text-center align-middle">
+                        <div class="inline-flex min-w-12 justify-center rounded-xl bg-slate-50 dark:bg-slate-800 px-2.5 py-1.5 border border-slate-100 dark:border-slate-700">
+                            <span class="font-black ${scoreColor} text-sm">${finalScore}</span>
+                        </div>
                     </td>
                 `
             }
@@ -3820,6 +3965,7 @@ window.updateReportTab = function () {
   });
 
   tbody.appendChild(fragment);
+  if (window.lucide) window.lucide.createIcons();
 };
 
 window.updateProfileStats = function () {
@@ -4030,6 +4176,15 @@ window.startClock = function () {
         window.updateDashboard();
       }
       lastRealDate = currentRealDate; // Update referensi tanggal nyata
+    }
+
+    const realCurrentSlot = window.determineCurrentSlot();
+    if (
+      appState.date === currentRealDate &&
+      appState.currentSlotId !== realCurrentSlot
+    ) {
+      appState.currentSlotId = realCurrentSlot;
+      window.updateDashboard();
     }
 
     try {
@@ -4394,18 +4549,19 @@ window.setAnalysisMode = function (mode) {
     }
   });
 
+  window.syncPeriodPicker("analysis");
   window.runAnalysis();
 };
 
 // 3. Helper: Mendapatkan Rentang Tanggal
-window.getDateRange = function (mode) {
-  const today = new Date(appState.date); // Gunakan tanggal dari Date Picker dashboard
+window.getDateRange = function (mode, baseDate) {
+  const today = new Date(baseDate || appState.date);
   let start = new Date(today);
   let end = new Date(today);
   let label = "";
 
   if (mode === "daily") {
-    label = window.formatDate(appState.date);
+    label = window.formatDate(window.getLocalDateStr(today));
   } else if (mode === "weekly") {
     const day = today.getDay(); // 0 (Sun) - 6 (Sat)
     // Adjust agar Senin jadi hari pertama (Opsional, tergantung kebiasaan pondok)
@@ -4448,6 +4604,165 @@ window.getDateRange = function (mode) {
   return { start, end, label };
 };
 
+window.syncPeriodPicker = function (scope) {
+  const mode = scope === "analysis" ? appState.analysisMode : appState.reportMode;
+  const dateValue =
+    scope === "analysis"
+      ? appState.analysisDate || appState.date
+      : appState.reportDate || appState.date;
+  const button = document.getElementById(
+    scope === "analysis" ? "analysis-date-range" : "report-date-range",
+  );
+  if (!button) return;
+
+  const range = window.getDateRange(mode, dateValue);
+  button.textContent = range.label;
+  button.title = "Pilih periode";
+  window.renderPeriodMenu(scope);
+};
+
+window.handleReportPeriodChange = function (value) {
+  if (!value) return;
+  appState.reportDate = value.length === 7 ? `${value}-01` : value;
+  window.syncPeriodPicker("report");
+  window.updateReportTab();
+};
+
+window.handleAnalysisPeriodChange = function (value) {
+  if (!value) return;
+  appState.analysisDate = value.length === 7 ? `${value}-01` : value;
+  window.syncPeriodPicker("analysis");
+  window.runAnalysis();
+};
+
+window.togglePeriodMenu = function (scope) {
+  const menu = document.getElementById(
+    scope === "analysis" ? "analysis-period-menu" : "report-period-menu",
+  );
+  if (!menu) return;
+  const other = document.getElementById(
+    scope === "analysis" ? "report-period-menu" : "analysis-period-menu",
+  );
+  if (other) other.classList.add("hidden");
+  window.renderPeriodMenu(scope);
+  const willOpen = menu.classList.contains("hidden");
+  document.querySelectorAll(".period-popover").forEach((el) => el.classList.add("hidden"));
+  if (willOpen) {
+    if (menu.parentElement !== document.body) {
+      document.body.appendChild(menu);
+    }
+    menu.classList.remove("hidden");
+    window.ensurePeriodBackdrop(scope);
+  } else {
+    window.closePeriodMenu(scope);
+  }
+};
+
+window.ensurePeriodBackdrop = function (scope) {
+  let backdrop = document.getElementById("period-backdrop");
+  if (!backdrop) {
+    backdrop = document.createElement("div");
+    backdrop.id = "period-backdrop";
+    backdrop.className = "period-backdrop";
+    document.body.appendChild(backdrop);
+  }
+  backdrop.onclick = () => window.closePeriodMenu(scope);
+};
+
+window.closePeriodMenu = function (scope) {
+  const menu = document.getElementById(`${scope}-period-menu`);
+  if (menu) menu.classList.add("hidden");
+  const backdrop = document.getElementById("period-backdrop");
+  if (backdrop) backdrop.remove();
+};
+
+window.selectPeriodDate = function (scope, value) {
+  if (scope === "analysis") {
+    appState.analysisDate = value;
+    window.syncPeriodPicker("analysis");
+    window.runAnalysis();
+  } else {
+    appState.reportDate = value;
+    window.syncPeriodPicker("report");
+    window.updateReportTab();
+  }
+  const menu = document.getElementById(`${scope}-period-menu`);
+  window.closePeriodMenu(scope);
+};
+
+window.renderPeriodMenu = function (scope) {
+  const mode = scope === "analysis" ? appState.analysisMode : appState.reportMode;
+  const dateValue =
+    scope === "analysis"
+      ? appState.analysisDate || appState.date
+      : appState.reportDate || appState.date;
+  const menu = document.getElementById(`${scope}-period-menu`);
+  if (!menu) return;
+
+  const base = new Date(dateValue);
+  const toDateStr = (date) => window.getLocalDateStr(date);
+  const optionButton = (label, value, active = false) => `
+    <button type="button" onclick="window.selectPeriodDate('${scope}', '${value}')"
+      class="w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl text-left transition-all ${active ? "bg-palette-blue text-white shadow-sm shadow-blue-500/20" : "text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"}">
+      <span class="text-xs font-black truncate">${window.sanitizeHTML(label)}</span>
+      ${active ? '<i data-lucide="check" class="w-3.5 h-3.5"></i>' : ""}
+    </button>`;
+
+  let options = [];
+  if (mode === "daily") {
+    for (let offset = -10; offset <= 10; offset++) {
+      const date = new Date(base);
+      date.setDate(base.getDate() + offset);
+      const value = toDateStr(date);
+      const label = offset === 0 ? `Hari ini - ${window.formatDate(value)}` : window.formatDate(value);
+      options.push(optionButton(label, value, value === dateValue));
+    }
+  } else if (mode === "weekly") {
+    for (let offset = -8; offset <= 8; offset++) {
+      const date = new Date(base);
+      date.setDate(base.getDate() + offset * 7);
+      const value = toDateStr(date);
+      const range = window.getDateRange("weekly", value);
+      options.push(optionButton(range.label, value, value === dateValue));
+    }
+  } else if (mode === "monthly") {
+    for (let offset = -12; offset <= 12; offset++) {
+      const date = new Date(base.getFullYear(), base.getMonth() + offset, 1);
+      const value = toDateStr(date);
+      const range = window.getDateRange("monthly", value);
+      options.push(optionButton(range.label, value, value.slice(0, 7) === dateValue.slice(0, 7)));
+    }
+  } else {
+    const y = base.getFullYear();
+    [
+      [`Semester Genap ${y - 2}`, `${y - 2}-01-01`],
+      [`Semester Ganjil ${y - 2}`, `${y - 2}-07-01`],
+      [`Semester Genap ${y - 1}`, `${y - 1}-01-01`],
+      [`Semester Ganjil ${y - 1}`, `${y - 1}-07-01`],
+      [`Semester Genap ${y}`, `${y}-01-01`],
+      [`Semester Ganjil ${y}`, `${y}-07-01`],
+      [`Semester Genap ${y + 1}`, `${y + 1}-01-01`],
+      [`Semester Ganjil ${y + 1}`, `${y + 1}-07-01`],
+    ].forEach(([label, value]) => {
+      const same =
+        new Date(value).getFullYear() === base.getFullYear() &&
+        Math.floor(new Date(value).getMonth() / 6) === Math.floor(base.getMonth() / 6);
+      options.push(optionButton(label, value, same));
+    });
+  }
+
+  menu.innerHTML = `
+    <div class="flex items-center justify-between px-2 pb-2">
+      <p class="text-[10px] font-black uppercase tracking-widest text-slate-400">Pilih ${mode === "daily" ? "hari" : mode === "weekly" ? "pekan" : mode === "monthly" ? "bulan" : "semester"}</p>
+      <button type="button" onclick="window.closePeriodMenu('${scope}')" class="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800">
+        <i data-lucide="x" class="w-3.5 h-3.5"></i>
+      </button>
+    </div>
+    <div class="grid gap-1 overflow-y-auto custom-scrollbar pr-1" style="max-height: 340px">${options.join("")}</div>
+  `;
+  if (window.lucide) window.lucide.createIcons();
+};
+
 // 4. ENGINE ANALISIS UTAMA
 window.runAnalysis = function () {
   const santriId = document.getElementById("analysis-santri").value;
@@ -4460,29 +4775,48 @@ window.runAnalysis = function () {
   document.getElementById("analysis-result").classList.remove("hidden");
   document.getElementById("analysis-empty").classList.add("hidden");
 
-  const range = window.getDateRange(appState.analysisMode);
+  window.syncPeriodPicker("analysis");
+  const range = window.getDateRange(
+    appState.analysisMode,
+    appState.analysisDate || appState.date,
+  );
   document.getElementById("analysis-date-range").textContent = range.label;
 
+  const selectedSantri = FILTERED_SANTRI.find(
+    (s) => String(s.nis || s.id) === String(santriId),
+  );
+
   let stats = {
-    shalat: {
-      hadir: 0,
+    school: {
+      h: 0,
+      m: 0,
       total: 0,
     },
-
-    sekolah: {
-      hadir: 0,
+    fardu: {
+      h: 0,
+      m: 0,
       total: 0,
     },
-
-    mahad: {
-      hadir: 0,
+    kbm: {
+      h: 0,
+      m: 0,
       total: 0,
     },
-
     sunnah: {
-      ya: 0,
+      y: 0,
+      t: 0,
       total: 0,
     },
+    issues: {
+      Sakit: 0,
+      Izin: 0,
+      Pulang: 0,
+      Alpa: 0,
+      Telat: 0,
+    },
+    sunnahByAct: {},
+    timeline: [],
+    events: [],
   };
 
   let curr = new Date(range.start);
@@ -4499,6 +4833,9 @@ window.runAnalysis = function () {
 
     const dayData = appState.attendanceData[safeDateKey];
     const dayNum = curr.getDay();
+    let dayGood = 0;
+    let dayTotal = 0;
+    let dayIssues = 0;
 
     if (dayData) {
       Object.values(SLOT_WAKTU).forEach((slot) => {
@@ -4510,22 +4847,34 @@ window.runAnalysis = function () {
 
             const st = sData.status[act.id];
             if (!st) return;
+            stats.events.push({
+              date: safeDateKey,
+              slot: slot.label || slot.id,
+              activity: act.label || act.id,
+              status: st,
+            });
 
             if (act.category === "school") {
               stats.school.total++;
+              dayTotal++;
               if (st === "Hadir" || st === "Telat") stats.school.h++;
               else stats.school.m++;
+              if (st === "Hadir" || st === "Telat") dayGood++;
             } else if (act.category === "fardu") {
               stats.fardu.total++;
+              dayTotal++;
               if (st === "Hadir" || st === "Telat") {
                 stats.fardu.h++;
+                dayGood++;
               } else {
                 stats.fardu.m++;
               }
             } else if (act.category === "kbm") {
               stats.kbm.total++;
+              dayTotal++;
               if (st === "Hadir" || st === "Telat") {
                 stats.kbm.h++;
+                dayGood++;
               } else {
                 stats.kbm.m++;
               }
@@ -4533,11 +4882,42 @@ window.runAnalysis = function () {
               act.category === "sunnah" ||
               act.category === "dependent"
             ) {
-              if (st === "Ya" || st === "Hadir") stats.sunnah.y++;
-              else stats.sunnah.t++;
+              stats.sunnah.total++;
+              dayTotal++;
+              const sunnahKey = String(act.label || act.id).toLowerCase();
+              if (!stats.sunnahByAct[sunnahKey]) {
+                stats.sunnahByAct[sunnahKey] = {
+                  label: act.label || act.id,
+                  y: 0,
+                  t: 0,
+                  total: 0,
+                };
+              }
+              stats.sunnahByAct[sunnahKey].total++;
+              if (st === "Ya" || st === "Hadir") {
+                stats.sunnah.y++;
+                stats.sunnahByAct[sunnahKey].y++;
+                dayGood++;
+              } else {
+                stats.sunnah.t++;
+                stats.sunnahByAct[sunnahKey].t++;
+              }
+            }
+
+            if (Object.prototype.hasOwnProperty.call(stats.issues, st)) {
+              stats.issues[st]++;
+              if (st !== "Telat") dayIssues++;
             }
           });
         }
+      });
+    }
+
+    if (dayTotal > 0) {
+      stats.timeline.push({
+        date: safeDateKey,
+        score: Math.round((dayGood / dayTotal) * 100),
+        issues: dayIssues,
       });
     }
 
@@ -4555,18 +4935,15 @@ window.runAnalysis = function () {
   window.renderBar("kbm", stats.kbm.h, stats.kbm.m);
   window.renderBar("sunnah", stats.sunnah.y, stats.sunnah.t);
 
-  const pctShalat = stats.shalat.total
-    ? Math.round((stats.shalat.h / stats.shalat.total) * 100)
+  const pctSchool = stats.school.total
+    ? Math.round((stats.school.h / stats.school.total) * 100)
     : 0;
-
-  const pctSekolah = stats.sekolah.total
-    ? Math.round((stats.sekolah.h / stats.sekolah.total) * 100)
+  const pctFardu = stats.fardu.total
+    ? Math.round((stats.fardu.h / stats.fardu.total) * 100)
     : 0;
-
-  const pctMahad = stats.mahad.total
-    ? Math.round((stats.mahad.h / stats.mahad.total) * 100)
+  const pctKbm = stats.kbm.total
+    ? Math.round((stats.kbm.h / stats.kbm.total) * 100)
     : 0;
-
   const pctSunnah = stats.sunnah.total
     ? Math.round((stats.sunnah.y / stats.sunnah.total) * 100)
     : 0;
@@ -4592,8 +4969,188 @@ window.runAnalysis = function () {
   }
 
   const finalScore = divider ? Math.round(totalScore / divider) : 0;
+  const totalRecords =
+    stats.school.total + stats.fardu.total + stats.kbm.total + stats.sunnah.total;
+  const issueCount = Object.values(stats.issues).reduce((sum, count) => sum + count, 0);
+  const dominantIssue = Object.entries(stats.issues).sort((a, b) => b[1] - a[1])[0];
+  const midpoint = Math.ceil(stats.timeline.length / 2);
+  const firstHalf = stats.timeline.slice(0, midpoint);
+  const secondHalf = stats.timeline.slice(midpoint);
+  const avgScore = (items) =>
+    items.length
+      ? Math.round(items.reduce((sum, item) => sum + item.score, 0) / items.length)
+      : 0;
+  const trendDelta = avgScore(secondHalf.length ? secondHalf : stats.timeline) - avgScore(firstHalf);
 
   document.getElementById("anl-total-score").textContent = `${finalScore}%`;
+  document.getElementById("stat-hadir-mini").textContent =
+    stats.school.h + stats.fardu.h + stats.kbm.h + stats.sunnah.y;
+  document.getElementById("stat-masalah-mini").textContent = issueCount;
+
+  const profileName = document.getElementById("anl-student-name");
+  const profileClass = document.getElementById("anl-student-class");
+  const profileAsrama = document.getElementById("anl-student-asrama");
+  const profileStatus = document.getElementById("anl-student-status");
+  const profileRecords = document.getElementById("anl-total-records");
+  const profileIssues = document.getElementById("anl-issue-count");
+  const profileDominant = document.getElementById("anl-dominant-issue");
+  const profileIcon = document.getElementById("anl-profile-icon");
+
+  if (selectedSantri) {
+    if (profileName) profileName.textContent = selectedSantri.nama || "-";
+    if (profileClass) profileClass.textContent = selectedSantri.kelas || selectedSantri.rombel || "-";
+    if (profileAsrama) profileAsrama.textContent = selectedSantri.asrama || "-";
+  }
+  if (profileRecords) profileRecords.textContent = totalRecords;
+  if (profileIssues) profileIssues.textContent = issueCount;
+  if (profileDominant) {
+    profileDominant.textContent = dominantIssue && dominantIssue[1] > 0 ? dominantIssue[0] : "Tidak ada";
+  }
+  if (profileStatus) {
+    profileStatus.textContent =
+      finalScore >= 90 ? "Sangat baik" : finalScore >= 75 ? "Baik" : finalScore >= 60 ? "Perlu dampingan" : "Prioritas";
+    profileStatus.className =
+      finalScore >= 90
+        ? "text-xs font-black text-emerald-600 dark:text-emerald-400 mt-1"
+        : finalScore >= 75
+          ? "text-xs font-black text-blue-600 dark:text-blue-400 mt-1"
+          : finalScore >= 60
+            ? "text-xs font-black text-amber-600 dark:text-amber-400 mt-1"
+            : "text-xs font-black text-red-600 dark:text-red-400 mt-1";
+  }
+  if (profileIcon) {
+    const issueIcon =
+      stats.issues.Sakit >= Math.max(stats.issues.Izin, stats.issues.Pulang, stats.issues.Alpa)
+        ? "thermometer"
+        : stats.issues.Izin >= Math.max(stats.issues.Pulang, stats.issues.Alpa)
+          ? "clipboard-check"
+          : stats.issues.Pulang >= stats.issues.Alpa
+            ? "home"
+            : "alert-triangle";
+    const iconName = issueCount === 0 && finalScore >= 90 ? "flame" : issueIcon;
+    const iconColor =
+      issueCount === 0 && finalScore >= 90
+        ? "text-orange-500 bg-orange-50 dark:bg-orange-500/10"
+        : finalScore >= 75
+          ? "text-blue-500 bg-blue-50 dark:bg-blue-500/10"
+          : finalScore >= 60
+            ? "text-amber-500 bg-amber-50 dark:bg-amber-500/10"
+            : "text-red-500 bg-red-50 dark:bg-red-500/10";
+    profileIcon.className = `w-12 h-12 rounded-2xl ${iconColor} flex items-center justify-center shrink-0`;
+    profileIcon.innerHTML = `<i data-lucide="${iconName}" class="w-5 h-5"></i>`;
+  }
+
+  const issueBreakdown = document.getElementById("anl-issue-breakdown");
+  if (issueBreakdown) {
+    const issueMeta = {
+      Sakit: ["thermometer", "bg-amber-50 dark:bg-amber-500/10 border-amber-100 dark:border-amber-500/20 text-amber-600 dark:text-amber-300"],
+      Izin: ["clipboard-check", "bg-blue-50 dark:bg-blue-500/10 border-blue-100 dark:border-blue-500/20 text-blue-600 dark:text-blue-300"],
+      Pulang: ["home", "bg-purple-50 dark:bg-purple-500/10 border-purple-100 dark:border-purple-500/20 text-purple-600 dark:text-purple-300"],
+      Alpa: ["alert-triangle", "bg-red-50 dark:bg-red-500/10 border-red-100 dark:border-red-500/20 text-red-600 dark:text-red-300"],
+    };
+    issueBreakdown.innerHTML = Object.entries(issueMeta)
+      .map(([label, [icon, colorClass]]) => `
+        <div class="rounded-2xl border p-3 ${colorClass}">
+          <div class="flex items-center justify-between">
+            <i data-lucide="${icon}" class="w-4 h-4"></i>
+            <span class="text-xl font-black tabular-nums">${stats.issues[label]}</span>
+          </div>
+          <p class="text-[10px] font-black uppercase tracking-wider mt-2">${label}</p>
+        </div>
+      `)
+      .join("");
+  }
+
+  const trendText = document.getElementById("anl-trend-text");
+  const trendPill = document.getElementById("anl-trend-pill");
+  if (trendText) {
+    trendText.textContent = stats.timeline.length
+      ? `${stats.timeline.length} hari data, ${trendDelta >= 0 ? "naik" : "turun"} ${Math.abs(trendDelta)} poin`
+      : "Belum ada data timeline";
+  }
+  if (trendPill) {
+    trendPill.textContent = `${trendDelta >= 0 ? "+" : ""}${trendDelta}%`;
+    trendPill.className =
+      trendDelta >= 0
+        ? "px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-500/10 text-[10px] font-black text-emerald-600 dark:text-emerald-300"
+        : "px-2.5 py-1 rounded-full bg-red-50 dark:bg-red-500/10 text-[10px] font-black text-red-600 dark:text-red-300";
+  }
+
+  window.renderAnalysisTrendChart(stats.timeline);
+
+  const timelineEl = document.getElementById("anl-timeline");
+  if (timelineEl) {
+    const statusTone = {
+      Hadir: "bg-emerald-50 dark:bg-emerald-500/10 border-emerald-100 dark:border-emerald-500/20 text-emerald-700 dark:text-emerald-300",
+      Ya: "bg-emerald-50 dark:bg-emerald-500/10 border-emerald-100 dark:border-emerald-500/20 text-emerald-700 dark:text-emerald-300",
+      Telat: "bg-teal-50 dark:bg-teal-500/10 border-teal-100 dark:border-teal-500/20 text-teal-700 dark:text-teal-300",
+      Sakit: "bg-amber-50 dark:bg-amber-500/10 border-amber-100 dark:border-amber-500/20 text-amber-700 dark:text-amber-300",
+      Izin: "bg-blue-50 dark:bg-blue-500/10 border-blue-100 dark:border-blue-500/20 text-blue-700 dark:text-blue-300",
+      Pulang: "bg-purple-50 dark:bg-purple-500/10 border-purple-100 dark:border-purple-500/20 text-purple-700 dark:text-purple-300",
+      Alpa: "bg-red-50 dark:bg-red-500/10 border-red-100 dark:border-red-500/20 text-red-700 dark:text-red-300",
+      Tidak: "bg-slate-50 dark:bg-slate-700/40 border-slate-100 dark:border-slate-700 text-slate-500 dark:text-slate-300",
+    };
+    const events = stats.events.slice(-8);
+    timelineEl.innerHTML = events.length
+      ? events
+          .map((item) => `
+            <div class="rounded-lg border px-2.5 py-2 ${statusTone[item.status] || statusTone.Tidak}">
+              <div class="flex items-center justify-between gap-2">
+                <p class="text-[10px] font-black truncate">${window.sanitizeHTML(item.slot)}</p>
+                <span class="text-[9px] font-black uppercase">${window.sanitizeHTML(item.status)}</span>
+              </div>
+              <p class="text-[9px] font-bold opacity-75 truncate mt-0.5">${window.sanitizeHTML(item.activity)}</p>
+            </div>
+          `)
+          .join("")
+      : `<div class="sm:col-span-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-dashed border-slate-200 dark:border-slate-700 p-4 text-center text-[10px] font-bold text-slate-400">Belum ada timeline</div>`;
+  }
+
+  const sunnahDetail = document.getElementById("anl-sunnah-detail");
+  if (sunnahDetail) {
+    const items = Object.values(stats.sunnahByAct);
+    sunnahDetail.innerHTML = items.length
+      ? items
+          .map((item) => {
+            const pct = item.total ? Math.round((item.y / item.total) * 100) : 0;
+            return `
+              <div class="rounded-lg bg-amber-50/70 dark:bg-amber-500/10 border border-amber-100 dark:border-amber-500/20 p-2 min-h-[64px]">
+                <div class="flex items-start justify-between gap-2">
+                  <p class="text-[10px] font-black text-slate-800 dark:text-slate-100 truncate">${window.sanitizeHTML(item.label)}</p>
+                  <span class="text-[10px] font-black text-amber-600 dark:text-amber-300">${pct}%</span>
+                </div>
+                <div class="h-1 rounded-full bg-white/80 dark:bg-slate-800 overflow-hidden mt-1.5">
+                  <div class="h-full bg-amber-400" style="width:${pct}%"></div>
+                </div>
+                <p class="text-[9px] font-bold text-amber-700 dark:text-amber-300 mt-1">${item.y}/${item.total}</p>
+              </div>`;
+          })
+          .join("")
+      : `<div class="col-span-full rounded-xl bg-slate-50 dark:bg-slate-900 border border-dashed border-slate-200 dark:border-slate-700 p-4 text-center text-[10px] font-bold text-slate-400">Belum ada data sunnah</div>`;
+  }
+
+  const badgesEl = document.getElementById("anl-badges");
+  if (badgesEl) {
+    const badges = [];
+    const badgeClass = {
+      emerald: "bg-emerald-50 dark:bg-emerald-500/10 border-emerald-100 dark:border-emerald-500/20 text-emerald-700 dark:text-emerald-300",
+      amber: "bg-amber-50 dark:bg-amber-500/10 border-amber-100 dark:border-amber-500/20 text-amber-700 dark:text-amber-300",
+      blue: "bg-blue-50 dark:bg-blue-500/10 border-blue-100 dark:border-blue-500/20 text-blue-700 dark:text-blue-300",
+    };
+    if (finalScore >= 90) badges.push(["Mumtaz", "award", badgeClass.emerald]);
+    if (pctFardu >= 90) badges.push(["Fardhu Kuat", "moon", badgeClass.emerald]);
+    if (pctSunnah >= 80) badges.push(["Sunnah Aktif", "sparkles", badgeClass.amber]);
+    if (issueCount === 0) badges.push(["Tanpa Catatan", "shield-check", badgeClass.blue]);
+    if (trendDelta > 0) badges.push(["Tren Naik", "trending-up", badgeClass.emerald]);
+    if (!badges.length) badges.push(["Perlu Dampingan", "hand-heart", badgeClass.amber]);
+    badgesEl.innerHTML = badges
+      .map(([label, icon, colorClass]) => `
+        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[10px] font-black ${colorClass}">
+          <i data-lucide="${icon}" class="w-3 h-3"></i>${label}
+        </span>
+      `)
+      .join("");
+  }
 
   const elVerdict = document.getElementById("anl-verdict");
   if (finalScore >= 90) {
@@ -4618,14 +5175,93 @@ window.runAnalysis = function () {
     Math.round(pctKbm) + "%";
   document.getElementById("anl-score-sunnah").textContent =
     Math.round(pctSunnah) + "%";
+
+  if (window.lucide) window.lucide.createIcons();
+};
+
+window.renderAnalysisTrendChart = function (timeline) {
+  const canvas = document.getElementById("anl-trend-chart");
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+  const rect = canvas.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+  const width = Math.max(320, rect.width || canvas.width / dpr);
+  const height = Math.max(120, rect.height || canvas.height / dpr);
+
+  if (canvas.width !== width * dpr || canvas.height !== height * dpr) {
+    canvas.width = width * dpr;
+    canvas.height = height * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  ctx.clearRect(0, 0, width, height);
+  const isDark = document.documentElement.classList.contains("dark");
+  const data = (timeline || []).slice(-14);
+  const pad = { top: 14, right: 16, bottom: 22, left: 28 };
+  const chartW = width - pad.left - pad.right;
+  const chartH = height - pad.top - pad.bottom;
+
+  ctx.strokeStyle = isDark ? "rgba(148,163,184,.16)" : "rgba(148,163,184,.22)";
+  ctx.lineWidth = 1;
+  ctx.font = "700 10px Inter, sans-serif";
+  ctx.fillStyle = isDark ? "#94a3b8" : "#64748b";
+  [0, 50, 100].forEach((tick) => {
+    const y = pad.top + chartH - (tick / 100) * chartH;
+    ctx.beginPath();
+    ctx.moveTo(pad.left, y);
+    ctx.lineTo(width - pad.right, y);
+    ctx.stroke();
+    ctx.fillText(String(tick), 4, y + 3);
+  });
+
+  if (!data.length) {
+    ctx.fillStyle = isDark ? "#64748b" : "#94a3b8";
+    ctx.textAlign = "center";
+    ctx.fillText("Belum ada data tren", width / 2, height / 2);
+    ctx.textAlign = "left";
+    return;
+  }
+
+  const points = data.map((item, idx) => {
+    const x = pad.left + (data.length === 1 ? chartW / 2 : (idx / (data.length - 1)) * chartW);
+    const y = pad.top + chartH - (item.score / 100) * chartH;
+    return { x, y, score: item.score };
+  });
+
+  const grad = ctx.createLinearGradient(0, pad.top, 0, pad.top + chartH);
+  grad.addColorStop(0, "rgba(12,129,228,.22)");
+  grad.addColorStop(1, "rgba(12,129,228,0)");
+  ctx.beginPath();
+  points.forEach((pt, idx) => (idx ? ctx.lineTo(pt.x, pt.y) : ctx.moveTo(pt.x, pt.y)));
+  ctx.lineTo(points[points.length - 1].x, pad.top + chartH);
+  ctx.lineTo(points[0].x, pad.top + chartH);
+  ctx.closePath();
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  ctx.beginPath();
+  points.forEach((pt, idx) => (idx ? ctx.lineTo(pt.x, pt.y) : ctx.moveTo(pt.x, pt.y)));
+  ctx.strokeStyle = "#0C81E4";
+  ctx.lineWidth = 3;
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  ctx.stroke();
+
+  points.forEach((pt) => {
+    ctx.beginPath();
+    ctx.arc(pt.x, pt.y, 3.5, 0, Math.PI * 2);
+    ctx.fillStyle = pt.score >= 75 ? "#10b981" : pt.score >= 55 ? "#f59e0b" : "#ef4444";
+    ctx.fill();
+    ctx.strokeStyle = isDark ? "#0f172a" : "#ffffff";
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+  });
 };
 
 // 5. Render Bar Helper
 window.renderBar = function (type, good, bad) {
   const total = good + bad;
   if (total === 0) {
-    document.getElementById(`bar-${type}-h`).style.width = "0%";
-    document.getElementById(`txt-${type}-h`).textContent = "0";
     // Untuk Sunnah id nya beda (y/t) tapi kita mapping manual disini biar gampang
     if (type === "sunnah") {
       document.getElementById(`bar-${type}-y`).style.width = "0%";
@@ -4633,6 +5269,8 @@ window.renderBar = function (type, good, bad) {
       document.getElementById(`bar-${type}-t`).style.width = "0%";
       document.getElementById(`txt-${type}-t`).textContent = "0";
     } else {
+      document.getElementById(`bar-${type}-h`).style.width = "0%";
+      document.getElementById(`txt-${type}-h`).textContent = "0";
       document.getElementById(`bar-${type}-m`).style.width = "0%";
       document.getElementById(`txt-${type}-m`).textContent = "0";
     }
@@ -4894,13 +5532,14 @@ window.setReportMode = function (mode) {
     }
   });
 
+  window.syncPeriodPicker("report");
   window.updateReportTab(); // Refresh tabel
 };
 
 // 2. Helper Range Tanggal (Update support Yearly)
 window.getReportDateRange = function (mode) {
-  const today = new Date(appState.date);
-  const range = window.getDateRange(mode);
+  const today = new Date(appState.reportDate || appState.date);
+  const range = window.getDateRange(mode, appState.reportDate || appState.date);
   // Override labels with shorter format for the report view
   if (mode === "monthly") {
     const months = [
@@ -5304,7 +5943,6 @@ window.savePermitLogic = function () {
     return window.showToast("Tanggal mulai wajib diisi", "warning");
 
   let permitData = {
-    id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
     category: currentPermitTab, // sakit, izin, pulang
     reason: reason,
     start_date: startDate,
@@ -5345,7 +5983,9 @@ window.savePermitLogic = function () {
 
   // Simpan Loop
   selectedNis.forEach((nis) => {
-    appState.permits.push({ ...permitData, nis: nis });
+    const uniqueId =
+      Date.now().toString() + Math.random().toString(36).substr(2, 5);
+    appState.permits.push({ ...permitData, id: uniqueId, nis: nis });
   });
 
   localStorage.setItem(APP_CONFIG.permitKey, JSON.stringify(appState.permits));
@@ -6941,8 +7581,18 @@ window.verifyLocationCached = async function () {
   if (window.gpsBypassEnabled) return true;
   const cache = JSON.parse(localStorage.getItem(GPS_CACHE_KEY) || "null");
 
-  if (cache && cache.distance !== undefined && Date.now() - cache.timestamp < GPS_CACHE_DURATION) {
-    return true;
+  if (
+    cache &&
+    cache.distance !== undefined &&
+    Date.now() - cache.timestamp < GPS_CACHE_DURATION
+  ) {
+    if (
+      cache.isInside === true &&
+      Number(cache.distance) <= GEO_CONFIG.maxRadiusMeters
+    ) {
+      return true;
+    }
+    localStorage.removeItem(GPS_CACHE_KEY);
   }
 
   await window.verifyLocation();
@@ -6951,32 +7601,26 @@ window.verifyLocationCached = async function () {
 
 window.switchReportView = function (view) {
   const report = document.getElementById("report-section");
-
   const analysis = document.getElementById("analysis-section");
-
   const btnReport = document.getElementById("report-view-btn");
-
   const btnAnalysis = document.getElementById("analysis-view-btn");
+  const activeClass =
+    "px-3 sm:px-4 py-2 flex items-center justify-center gap-2 rounded-full bg-palette-blue text-white text-xs font-black shadow-sm shadow-blue-500/20 transition-all duration-300 active:scale-[0.98]";
+  const inactiveClass =
+    "px-3 sm:px-4 py-2 flex items-center justify-center gap-2 rounded-full text-xs font-black text-slate-500 hover:text-palette-blue dark:hover:text-white transition-all duration-300 active:scale-[0.98]";
 
   if (view === "report") {
     report.classList.remove("hidden");
-
     analysis.classList.add("hidden");
-
-    btnReport.classList.add("bg-white", "dark:bg-slate-700");
-
-    btnAnalysis.classList.remove("bg-white", "dark:bg-slate-700");
+    if (btnReport) btnReport.className = activeClass;
+    if (btnAnalysis) btnAnalysis.className = inactiveClass;
   } else {
     report.classList.add("hidden");
-
     analysis.classList.remove("hidden");
-
-    btnAnalysis.classList.add("bg-white", "dark:bg-slate-700");
-
-    btnReport.classList.remove("bg-white", "dark:bg-slate-700");
+    if (btnAnalysis) btnAnalysis.className = activeClass;
+    if (btnReport) btnReport.className = inactiveClass;
 
     window.populateAnalysisDropdown();
-
     window.runAnalysis();
   }
 };

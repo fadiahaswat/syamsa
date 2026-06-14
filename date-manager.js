@@ -77,6 +77,15 @@ window.startClock = function () {
       lastRealDate = currentRealDate; // Update referensi tanggal nyata
     }
 
+    const realCurrentSlot = window.determineCurrentSlot();
+    if (
+      appState.date === currentRealDate &&
+      appState.currentSlotId !== realCurrentSlot
+    ) {
+      appState.currentSlotId = realCurrentSlot;
+      window.updateDashboard();
+    }
+
     try {
       window.checkScheduledNotifications();
     } catch (e) {

@@ -72,6 +72,144 @@ window.getCurrentActorName = function () {
   );
 };
 
+window.getAttendanceSlotData = function (dateKey, slotId) {
+  return appState.attendanceData?.[dateKey]?.[slotId] || null;
+};
+
+window.markAttendanceReviewConfirmed = function (dateKey, slotId) {
+  const slotData = window.getAttendanceSlotData(dateKey, slotId);
+  if (!slotData) return;
+
+  slotData.__reviewConfirmed = true;
+  slotData.__requiresReview = false;
+  slotData.__reviewedAt = new Date().toISOString();
+  slotData.__reviewedBy = window.getCurrentActorName();
+  window.saveData();
+  window.setAttendanceSaveIndicator("success");
+  setTimeout(() => {
+    const currentSlotData = window.getAttendanceSlotData(dateKey, slotId);
+    if (currentSlotData?.__reviewConfirmed === true) {
+      window.setAttendanceSaveIndicator("saved");
+    }
+  }, 900);
+  window.updateDashboard();
+};
+
+window.setAttendanceSaveIndicator = function (status) {
+  const indicator = document.getElementById("save-indicator");
+  if (!indicator) return;
+
+  if (indicator.dataset.attendanceReviewStatus === status) return;
+
+  if (status === "idle") {
+    delete indicator.dataset.attendanceReviewStatus;
+  } else {
+    indicator.dataset.attendanceReviewStatus = status;
+  }
+
+  const states = {
+    notStarted: {
+      title: "Belum dipresensi",
+      className:
+        "flex items-center justify-center p-2 rounded-lg bg-red-500 border-0 shrink-0 text-white shadow-lg shadow-red-950/20 transition-all duration-300 ease-out",
+      icon: "save",
+    },
+    pending: {
+      title: "Proses presensi, scroll sampai bawah",
+      className:
+        "flex items-center justify-center p-2 rounded-lg bg-amber-400 border-0 shrink-0 text-white shadow-lg shadow-amber-950/20 transition-all duration-300 ease-out",
+      icon: "loader-circle",
+      spin: true,
+    },
+    success: {
+      title: "Presensi selesai dicek",
+      className:
+        "flex items-center justify-center p-2 rounded-lg bg-emerald-500 border-0 shrink-0 text-white shadow-lg shadow-emerald-950/20 transition-all duration-300 ease-out scale-105",
+      icon: "check",
+    },
+    saved: {
+      title: "Presensi tersimpan",
+      className:
+        "flex items-center justify-center p-2 rounded-lg bg-emerald-500 border-0 shrink-0 text-white shadow-lg shadow-emerald-950/20 transition-all duration-300 ease-out",
+      icon: "save",
+    },
+    idle: {
+      title: "Status Autosave",
+      className:
+        "flex items-center justify-center p-2 rounded-lg bg-white/5 border border-white/5 shrink-0 text-slate-400",
+      icon: "save",
+    },
+  };
+
+  const state = states[status] || states.idle;
+  indicator.className = state.className;
+  indicator.title = state.title;
+  indicator.setAttribute("aria-label", state.title);
+  indicator.innerHTML = `<i data-lucide="${state.icon}" class="w-3.5 h-3.5${state.spin ? " animate-spin" : ""}"></i>`;
+
+  if (window.refreshIcons) window.refreshIcons();
+};
+
+window.renderAttendanceReviewGate = function (
+  scrollContainer,
+  dateKey,
+  slotId,
+  needsReview,
+) {
+  if (scrollContainer && scrollContainer._attendanceReviewScrollHandler) {
+    scrollContainer.removeEventListener(
+      "scroll",
+      scrollContainer._attendanceReviewScrollHandler,
+    );
+    delete scrollContainer._attendanceReviewScrollHandler;
+  }
+
+  const slotData = window.getAttendanceSlotData(dateKey, slotId);
+  const confirmed = slotData?.__reviewConfirmed === true;
+
+  if (needsReview && !confirmed) {
+    window.setAttendanceSaveIndicator("notStarted");
+
+    if (scrollContainer) {
+      const confirmWhenAtBottom = () => {
+        if (scrollContainer.scrollTop > 12) {
+          window.setAttendanceSaveIndicator("pending");
+        }
+        const atBottom =
+          scrollContainer.scrollTop + scrollContainer.clientHeight >=
+          scrollContainer.scrollHeight - 24;
+        if (atBottom) {
+          scrollContainer.removeEventListener("scroll", confirmWhenAtBottom);
+          delete scrollContainer._attendanceReviewScrollHandler;
+          window.markAttendanceReviewConfirmed(dateKey, slotId);
+        }
+      };
+      scrollContainer._attendanceReviewScrollHandler = confirmWhenAtBottom;
+      scrollContainer.addEventListener("scroll", confirmWhenAtBottom, {
+        passive: true,
+      });
+    }
+  } else {
+    window.setAttendanceSaveIndicator("saved");
+  }
+};
+
+window.clearAttendanceReviewGate = function () {
+  const container = document.getElementById("attendance-list-container");
+  if (container && container._attendanceReviewScrollHandler) {
+    container.removeEventListener(
+      "scroll",
+      container._attendanceReviewScrollHandler,
+    );
+    delete container._attendanceReviewScrollHandler;
+  }
+  const indicator = document.getElementById("save-indicator");
+  if (indicator) {
+    delete indicator.dataset.attendanceReviewStatus;
+    window.setAttendanceSaveIndicator("idle");
+  }
+};
+
 window.refreshIcons = function () {
   clearTimeout(lucideTimeout);
   lucideTimeout = setTimeout(() => {
@@ -198,6 +336,8 @@ let appState = {
   analysisSantriId: null,
   filterProblemOnly: false,
   date: window.getLocalDateStr(),
+  reportDate: window.getLocalDateStr(),
+  analysisDate: window.getLocalDateStr(),
   timesheetViewDate: window.getLocalDateStr(),
   activityLog: [],
   settings: {

@@ -41,10 +41,16 @@ window.openAttendance = async function () {
 
   const slot = SLOT_WAKTU[appState.currentSlotId];
   document.getElementById("att-slot-title").textContent = slot.label;
+  const listContainer = document.getElementById("attendance-list-container");
+  if (listContainer) {
+    listContainer.dataset.attendanceRenderKey = "";
+    listContainer.scrollTop = 0;
+  }
   window.renderAttendanceList();
 };
 
 window.closeAttendance = function () {
+  if (window.clearAttendanceReviewGate) window.clearAttendanceReviewGate();
   document.getElementById("view-attendance").classList.add("hidden");
   document.getElementById("view-main").classList.remove("hidden");
   window.updateDashboard();
@@ -60,10 +66,25 @@ window.renderAttendanceList = function () {
   const slot = SLOT_WAKTU[appState.currentSlotId];
   const dateKey = appState.date;
   const currentDay = new Date(appState.date).getDay();
+  const attendanceRenderKey = `${dateKey}:${slot.id}`;
+  const isNewAttendanceView =
+    container.dataset.attendanceRenderKey !== attendanceRenderKey;
 
   if (!appState.attendanceData[dateKey]) appState.attendanceData[dateKey] = {};
   if (!appState.attendanceData[dateKey][slot.id])
     appState.attendanceData[dateKey][slot.id] = {};
+
+  if (isNewAttendanceView) {
+    if (container._attendanceReviewScrollHandler) {
+      container.removeEventListener(
+        "scroll",
+        container._attendanceReviewScrollHandler,
+      );
+      delete container._attendanceReviewScrollHandler;
+    }
+    container.scrollTop = 0;
+    container.dataset.attendanceRenderKey = attendanceRenderKey;
+  }
 
   const dbSlot = appState.attendanceData[dateKey][slot.id];
   let hasAutoChanges = false;
@@ -84,6 +105,8 @@ window.renderAttendanceList = function () {
     const id = String(santri.nis || santri.id);
     if (!dbSlot[id]) {
       hasAutoChanges = true;
+      dbSlot.__requiresReview = true;
+      dbSlot.__reviewConfirmed = false;
 
       const defStatus = {};
       slot.activities.forEach((a) => {
@@ -337,7 +360,7 @@ window.renderAttendanceList = function () {
     roomRow.className = "flex items-center gap-1.5 mt-1.5 min-w-0";
     roomLabel.className =
       "meta-chip inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-300 text-[8px] font-black uppercase tracking-wide border border-slate-200/70 dark:border-slate-700/70 max-w-[64px]";
-    roomLabel.innerHTML = `<i data-lucide="layers-3" class="w-2.5 h-2.5 shrink-0"></i><span class="meta-chip-text">${window.sanitizeHTML(kelasText)}</span>`;
+    roomLabel.innerHTML = `<i data-lucide="school" class="w-2.5 h-2.5 shrink-0"></i><span class="meta-chip-text">${window.sanitizeHTML(kelasText)}</span>`;
     roomValue.className =
       "meta-chip inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-300 text-[8px] font-bold border border-slate-200/70 dark:border-slate-700/70 max-w-[150px]";
     roomValue.innerHTML = `<i data-lucide="home" class="w-2.5 h-2.5 shrink-0"></i><span class="meta-chip-text">${window.sanitizeHTML(asramaText)}</span>`;
@@ -490,6 +513,7 @@ window.renderAttendanceList = function () {
   });
 
   container.appendChild(fragment);
+  if (isNewAttendanceView) container.scrollTop = 0;
   if (window.lucide) window.lucide.createIcons();
 
   // ==========================================
@@ -583,7 +607,33 @@ window.renderAttendanceList = function () {
     return dbSlot[id];
   }).length;
 
-  if (initializedCount === FILTERED_SANTRI.length || hasAutoChanges) {
+  if (
+    initializedCount === FILTERED_SANTRI.length &&
+    !hasAutoChanges &&
+    dbSlot.__requiresReview !== true &&
+    dbSlot.__reviewConfirmed !== true
+  ) {
+    dbSlot.__reviewConfirmed = true;
+  }
+
+  const needsReview =
+    initializedCount === FILTERED_SANTRI.length &&
+    dbSlot.__requiresReview === true &&
+    dbSlot.__reviewConfirmed !== true;
+
+  if (window.renderAttendanceReviewGate) {
+    window.renderAttendanceReviewGate(
+      container,
+      dateKey,
+      slot.id,
+      needsReview,
+    );
+  }
+
+  if (
+    (initializedCount === FILTERED_SANTRI.length || hasAutoChanges) &&
+    !needsReview
+  ) {
     window.saveData();
   }
   if (window.refreshIcons) window.refreshIcons();

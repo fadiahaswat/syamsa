@@ -64,18 +64,24 @@ window.exportToPDF = function() {
   let totalSakit = 0;
   let totalIzin = 0;
   let totalAlpa = 0;
-  let totalStudents = FILTERED_SANTRI.length;
+  let totalRequiredStatus = 0;
   
   const tableRows = FILTERED_SANTRI.map((s, idx) => {
     const id = String(s.nis || s.id);
     const statuses = Object.values(SLOT_WAKTU).map(slot => {
       const mainActId = slot.activities[0]?.id || "shalat";
-      const status = data[slot.id]?.[id]?.status?.[mainActId] || "-";
+      const isActiveSlot = !window.isSlotHoliday(slot.id, dateKey);
+      const status = isActiveSlot
+        ? data[slot.id]?.[id]?.status?.[mainActId] || "-"
+        : "Libur";
       
-      if (status === "Hadir" || status === "Ya" || status === "Telat") totalHadir++;
-      else if (status === "Sakit") totalSakit++;
-      else if (status === "Izin" || status === "Pulang") totalIzin++;
-      else if (status === "Alpa") totalAlpa++;
+      if (isActiveSlot) {
+        totalRequiredStatus++;
+        if (status === "Hadir" || status === "Ya" || status === "Telat") totalHadir++;
+        else if (status === "Sakit") totalSakit++;
+        else if (status === "Izin" || status === "Pulang") totalIzin++;
+        else if (status === "Alpa") totalAlpa++;
+      }
       
       return `
         <td class="px-3 py-2 text-center border border-slate-350">
@@ -98,9 +104,7 @@ window.exportToPDF = function() {
     <th class="px-3 py-2 text-center border border-slate-350 text-xs font-black uppercase bg-slate-100">${slot.label}</th>
   `).join("");
   
-  const totalSlots = Object.keys(SLOT_WAKTU).length;
-  const grandTotalStatus = totalStudents * totalSlots;
-  const pctHadir = grandTotalStatus > 0 ? Math.round((totalHadir / grandTotalStatus) * 100) : 0;
+  const pctHadir = totalRequiredStatus > 0 ? Math.round((totalHadir / totalRequiredStatus) * 100) : 0;
   const actorName = window.getCurrentActorName
     ? window.getCurrentActorName()
     : "Musyrif Kelas";

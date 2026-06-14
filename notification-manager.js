@@ -177,7 +177,11 @@ window.checkScheduledNotifications = function () {
     let incomplete = false;
     Object.keys(SLOT_WAKTU).forEach((slotId) => {
       const slotData = appState.attendanceData?.[yesterdayStr]?.[slotId];
-      if (!slotData || Object.keys(slotData).length === 0) {
+      const filledCount = FILTERED_SANTRI.filter((s) => {
+        const id = String(s.nis || s.id);
+        return !!slotData?.[id];
+      }).length;
+      if (!slotData || filledCount < FILTERED_SANTRI.length) {
         incomplete = true;
       }
     });
@@ -197,7 +201,10 @@ window.checkScheduledNotifications = function () {
       let diffMins = (limit.endH - h) * 60 + (limit.endM - m);
       if (diffMins === 15) {
         const slotData = appState.attendanceData?.[appState.date]?.[slotId] || {};
-        const filledCount = Object.keys(slotData).length;
+        const filledCount = FILTERED_SANTRI.filter((s) => {
+          const id = String(s.nis || s.id);
+          return !!slotData[id];
+        }).length;
         if (FILTERED_SANTRI.length > 0 && filledCount < FILTERED_SANTRI.length) {
           window.sendLocalNotification(
             "Santri Belum Lengkap 👥",
