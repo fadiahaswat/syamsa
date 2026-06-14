@@ -197,12 +197,7 @@ window.renderPermitList = function () {
   });
 };
 
-window.checkActivePermit = function (nis, currentDateStr, currentSlotId) {
-  const permit = appState.permits.find(
-    (p) => String(p.nis) === String(nis) && p.is_active && (p.status === undefined || p.status === "approved"),
-  );
-  if (!permit) return null;
-
+window.evaluatePermitForSlot = function (permit, currentDateStr, currentSlotId) {
   // --- LOGIKA SAKIT ---
   if (permit.category === "sakit") {
     // Validasi Awal Tanggal
@@ -283,6 +278,36 @@ window.checkActivePermit = function (nis, currentDateStr, currentSlotId) {
       note: `[${label}] ${permit.reason}`,
     };
   }
+};
+
+window.checkActivePermit = function (nis, currentDateStr, currentSlotId) {
+  const activePermits = (appState.permits || [])
+    .filter((p) => {
+      const status = String(p.status || "approved").toLowerCase();
+      return (
+        String(p.nis) === String(nis) &&
+        p.is_active &&
+        status === "approved"
+      );
+    })
+    .sort((a, b) => {
+      const byStart = String(b.start_date || "").localeCompare(
+        String(a.start_date || ""),
+      );
+      if (byStart !== 0) return byStart;
+      return String(b.id || "").localeCompare(String(a.id || ""));
+    });
+
+  for (const permit of activePermits) {
+    const evaluated = window.evaluatePermitForSlot(
+      permit,
+      currentDateStr,
+      currentSlotId,
+    );
+    if (evaluated) return evaluated;
+  }
+
+  return null;
 };
 
 
@@ -988,7 +1013,7 @@ window.submitAddPermit = function() {
     audit_trail: [
       {
         action: "Dibuat",
-        by: "Musyrif " + (appState.user?.name || "Admin"),
+        by: "Musyrif " + (window.getCurrentActorName ? window.getCurrentActorName() : "Admin"),
         time: new Date().toISOString()
       }
     ],
@@ -1111,7 +1136,7 @@ window.filterPermitsTabList = function() {
         <!-- Action Buttons if Pending -->
         ${p.status === "pending" ? `
           <div class="flex gap-2 mt-4">
-            <button onclick="window.rejectPermit('	ext-red-500')" onclick="window.rejectPermit('${p.id}')" class="flex-1 py-2 text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/20 border border-red-100 dark:border-red-900/30 font-bold rounded-2xl text-xs transition-colors hover:bg-red-100 dark:hover:bg-red-950/40">
+            <button onclick="window.rejectPermit('${p.id}')" class="flex-1 py-2 text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/20 border border-red-100 dark:border-red-900/30 font-bold rounded-2xl text-xs transition-colors hover:bg-red-100 dark:hover:bg-red-950/40">
               Tolak
             </button>
             <button onclick="window.approvePermit('${p.id}')" class="flex-1 py-2 text-white bg-blue-500 font-bold rounded-2xl text-xs transition-colors hover:bg-blue-600 shadow-md">
@@ -1139,7 +1164,7 @@ window.approvePermit = function(id) {
     if (!appState.permits[idx].audit_trail) appState.permits[idx].audit_trail = [];
     appState.permits[idx].audit_trail.push({
       action: "Disetujui",
-      by: "Musyrif " + (appState.user?.name || "Admin"),
+      by: "Musyrif " + (window.getCurrentActorName ? window.getCurrentActorName() : "Admin"),
       time: new Date().toISOString()
     });
     localStorage.setItem(APP_CONFIG.permitKey, JSON.stringify(appState.permits));
@@ -1157,7 +1182,7 @@ window.rejectPermit = function(id) {
     if (!appState.permits[idx].audit_trail) appState.permits[idx].audit_trail = [];
     appState.permits[idx].audit_trail.push({
       action: "Ditolak",
-      by: "Musyrif " + (appState.user?.name || "Admin"),
+      by: "Musyrif " + (window.getCurrentActorName ? window.getCurrentActorName() : "Admin"),
       time: new Date().toISOString()
     });
     localStorage.setItem(APP_CONFIG.permitKey, JSON.stringify(appState.permits));

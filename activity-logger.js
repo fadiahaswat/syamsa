@@ -37,10 +37,13 @@ window.kirimLaporanWA = function () {
 
   const dateKey = appState.date;
   const attendance = appState.attendanceData[dateKey];
+  const actorName = window.getCurrentActorName
+    ? window.getCurrentActorName()
+    : "Ustadz Binaan";
   
   let msg = `*LAPORAN HARIAN GABUNGAN - KELAS ${appState.selectedClass}*\n`;
   msg += `📅 Tanggal: ${window.formatDate(dateKey)}\n`;
-  msg += `👤 Musyrif: ${appState.user?.name || "Ustadz Binaan"}\n`;
+  msg += `👤 Musyrif: ${actorName}\n`;
   msg += `===================================\n\n`;
 
   Object.values(SLOT_WAKTU).forEach(slot => {

@@ -101,6 +101,9 @@ window.exportToPDF = function() {
   const totalSlots = Object.keys(SLOT_WAKTU).length;
   const grandTotalStatus = totalStudents * totalSlots;
   const pctHadir = grandTotalStatus > 0 ? Math.round((totalHadir / grandTotalStatus) * 100) : 0;
+  const actorName = window.getCurrentActorName
+    ? window.getCurrentActorName()
+    : "Musyrif Kelas";
 
   const htmlContent = `
     <!DOCTYPE html>
@@ -138,7 +141,7 @@ window.exportToPDF = function() {
 
         <div class="text-center mb-6">
           <h2 class="text-xl font-black uppercase tracking-wider text-slate-800">Laporan Presensi Santri Harian</h2>
-          <p class="text-sm font-bold text-slate-550 mt-1">Kelas Binaan: ${appState.selectedClass} | Musyrif: ${appState.user?.name || "Ustadz Admin"}</p>
+          <p class="text-sm font-bold text-slate-550 mt-1">Kelas Binaan: ${appState.selectedClass} | Musyrif: ${actorName}</p>
         </div>
 
         <div class="grid grid-cols-4 gap-4 mb-6 text-center">
@@ -185,7 +188,7 @@ window.exportToPDF = function() {
           <div class="text-right">
             <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Dibuat Oleh</p>
             <div class="h-16"></div>
-            <p class="text-sm font-black border-t border-slate-900 pt-1 mt-1">${appState.user?.name || "Musyrif Kelas"}</p>
+            <p class="text-sm font-black border-t border-slate-900 pt-1 mt-1">${actorName}</p>
           </div>
         </div>
 

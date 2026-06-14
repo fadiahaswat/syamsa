@@ -138,10 +138,114 @@ body {
 
 /* Active Tab Indicator */
 .nav-btn.active {
-  color: #10b981;
+  color: #0c81e4;
 }
 .nav-btn.active i {
   fill: currentColor;
+}
+
+.activity-container {
+  scroll-padding-inline: 0.25rem;
+}
+
+.activity-container .btn-wrapper {
+  flex: 0 0 44px;
+  width: 44px;
+}
+
+.activity-container .btn-status {
+  box-sizing: border-box;
+  flex: 0 0 2.75rem;
+  width: 2.75rem;
+  height: 2.75rem;
+  overflow: visible;
+}
+
+.activity-container .lbl-status {
+  font-size: 8px;
+  max-width: 44px;
+}
+
+.meta-chip {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.meta-chip-text {
+  display: inline-block;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.meta-chip-marquee {
+  padding-left: 100%;
+  max-width: none;
+  overflow: visible;
+  text-overflow: clip;
+  animation: meta-chip-marquee 5.5s linear infinite;
+}
+
+@keyframes meta-chip-marquee {
+  0%,
+  18% {
+    transform: translateX(0);
+  }
+  82%,
+  100% {
+    transform: translateX(-100%);
+  }
+}
+
+.dashboard-name-wrap {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.dashboard-name-text {
+  display: inline-block;
+  max-width: 100%;
+  white-space: nowrap;
+}
+
+.dashboard-name-marquee {
+  padding-left: 100%;
+  max-width: none;
+  overflow: visible;
+  animation: dashboard-name-marquee 8s linear infinite;
+}
+
+@keyframes dashboard-name-marquee {
+  0%,
+  16% {
+    transform: translateX(0);
+  }
+  84%,
+  100% {
+    transform: translateX(-100%);
+  }
+}
+
+@media (min-width: 640px) {
+  .activity-container .btn-wrapper {
+    flex-basis: 58px;
+    width: 58px;
+  }
+
+  .activity-container .btn-status {
+    flex-basis: 3.5rem;
+    width: 3.5rem;
+    height: 3.5rem;
+  }
+
+  .activity-container .lbl-status {
+    font-size: 9px;
+    max-width: 58px;
+  }
 }
 
 /* Progress Bar Transition */

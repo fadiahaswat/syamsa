@@ -1,7 +1,6 @@
 {
   "name": "presensi",
   "version": "1.0.0",
-  "main": "main.js",
   "scripts": {
     "build:css": "npx tailwindcss -i ./src/input.css -o ./output.css --minify",
     "watch:css": "npx tailwindcss -i ./src/input.css -o ./output.css --watch",

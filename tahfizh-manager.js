@@ -194,7 +194,10 @@ function syncSiswaFromMainApp() {
     if (!activeClass) return;
 
     // Hanya ambil santri dari kelas aktif Musyrif
-    const classStudents = MASTER_SANTRI.filter(s => s.kelas === activeClass);
+    const classStudents = MASTER_SANTRI.filter(s => {
+        const kelas = String(s.kelas || s.rombel || '').trim();
+        return kelas === activeClass;
+    });
 
     // Map properti program dari spreadsheet Tahfizh jika sudah pernah dimuat
     TahfizhState.rawSantriList = classStudents.map(s => {

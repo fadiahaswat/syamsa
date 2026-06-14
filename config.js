@@ -15,6 +15,52 @@ window.APP_CREDENTIALS = {
 };
 
 // ==========================================
+// LOKASI & GPS
+// ==========================================
+window.APP_LOCATION = {
+  gpsCacheKey: "presensi_gps_cache",
+  gpsCacheDurationMs: 15 * 60 * 1000,
+  useGeofencing: true,
+  maxRadiusMeters: 50,
+  defaultPrayerLocation: {
+    label: "Wirobrajan, Yogyakarta",
+    lat: -7.807757,
+    lng: 110.350915,
+  },
+  qiblaFallbackLocation: {
+    lat: -7.801389,
+    lng: 110.364444,
+  },
+  geofenceLocations: [
+    {
+      name: "Masjid Jami' Mu'allimin",
+      lat: -7.807757309250455,
+      lng: 110.35091531948025,
+    },
+    {
+      name: "Aula Asrama 10",
+      lat: -7.807645469455366,
+      lng: 110.35180282962452,
+    },
+    {
+      name: "Mushola Asrama 8",
+      lat: -7.806781091907755,
+      lng: 110.34871697299599,
+    },
+    {
+      name: "Masjid Hajah Yuliana",
+      lat: -7.807337010430911,
+      lng: 110.26653812830205,
+    },
+    {
+      name: "Kantor Muhammadiyah Supeno",
+      lat: -7.8163746365704725,
+      lng: 110.37986454893164,
+    },
+  ],
+};
+
+// ==========================================
 // MODE AUTENTIKASI
 // ==========================================
 window.APP_AUTH = {

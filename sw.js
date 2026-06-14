@@ -1,11 +1,12 @@
-const CACHE_NAME = "musyrif-app-v183-syamsa-login-splash";
+const CACHE_NAME = "musyrif-app-v185-runtime-assets";
 const ASSETS_TO_CACHE = [
   "./",
   "./index.html",
   "./output.css",
   "./config.js",
-  "./script.js",
+  "./app-core.js",
   "./qibla.js",
+  "./script.js",
   "./icon.svg",
   "./icon.webp",
   "./icon.png",

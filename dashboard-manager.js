@@ -585,17 +585,15 @@ window.drawDonutChart = function () {
     });
   }
 
-  const divider = activeSlots > 0 ? activeSlots : 1;
-
   const setLegend = (id, val) => {
     const el = document.getElementById(id);
     if (el) el.textContent = val;
   };
 
-  setLegend("legend-hadir", Math.round(stats.h / divider));
-  setLegend("legend-sakit", Math.round(stats.s / divider));
-  setLegend("legend-izin", Math.round(stats.i / divider));
-  setLegend("legend-alpa", Math.round(stats.a / divider));
+  setLegend("legend-hadir", stats.h);
+  setLegend("legend-sakit", stats.s);
+  setLegend("legend-izin", stats.i);
+  setLegend("legend-alpa", stats.a);
 
   if (totalPeristiwa === 0 || radius === 0) {
     if (radius > 0) {
@@ -3328,4 +3326,3 @@ if (document.readyState === "loading") {
 } else {
   window.updateConnectionStatus();
 }
-

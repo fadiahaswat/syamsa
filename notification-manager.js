@@ -211,7 +211,10 @@ window.checkScheduledNotifications = function () {
   // 7. Ada data izin yang belum diverifikasi (ada_izin_belum_verif)
   // Dicek jam 09:00 pagi dan 16:00 sore
   if (types.ada_izin_belum_verif && m === 0 && (h === 9 || h === 16)) {
-    const pendingPermits = (appState.permits || []).filter(p => p.status === "Pending" || p.status === "Perlu Verifikasi");
+    const pendingPermits = (appState.permits || []).filter((p) => {
+      const status = String(p.status || "").toLowerCase();
+      return status === "pending" || status === "perlu verifikasi";
+    });
     if (pendingPermits.length > 0) {
       window.sendLocalNotification(
         "Verifikasi Izin Santri 📝",

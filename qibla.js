@@ -38,13 +38,19 @@ window.calculateQiblaDistance = function (lat, lng) {
   return R * c;
 };
 
-// Main function to open and init Qibla Modal
-window.openQiblaModal = function () {
-  const modal = document.getElementById("modal-qibla");
-  if (!modal) return;
+// Main function to open and init Qibla Page
+window.openQiblaPage = function () {
+  const viewMain = document.getElementById("view-main");
+  const viewQibla = document.getElementById("view-qibla");
+  if (!viewQibla) return;
 
-  modal.classList.remove("hidden");
-  modal.classList.add("flex");
+  viewQibla.classList.remove("hidden");
+  viewQibla.classList.add("flex");
+  viewQibla.scrollTop = 0;
+  if (window.lucide) window.lucide.createIcons();
+  setTimeout(() => {
+    if (viewMain) viewMain.classList.add("hidden");
+  }, 250);
   
   // Show GPS loading
   document.getElementById("qibla-loading").classList.remove("hidden");
@@ -73,9 +79,12 @@ window.openQiblaModal = function () {
       },
       (error) => {
         console.error("GPS error for Qibla:", error);
-        // Fallback using average coordinates of Yogyakarta/Indonesia if GPS fails
-        const fallbackLat = -7.801389; 
-        const fallbackLng = 110.364444;
+        const fallbackLocation = window.APP_LOCATION?.qiblaFallbackLocation || {
+          lat: -7.801389,
+          lng: 110.364444,
+        };
+        const fallbackLat = fallbackLocation.lat;
+        const fallbackLng = fallbackLocation.lng;
 
         window.qiblaAngle = window.calculateQiblaBearing(fallbackLat, fallbackLng);
         window.qiblaDistance = window.calculateQiblaDistance(fallbackLat, fallbackLng);
@@ -96,14 +105,19 @@ window.openQiblaModal = function () {
   }
 };
 
-window.closeQiblaModal = function () {
-  const modal = document.getElementById("modal-qibla");
-  if (modal) {
-    modal.classList.add("hidden");
-    modal.classList.remove("flex");
+window.closeQiblaPage = function () {
+  const viewMain = document.getElementById("view-main");
+  const viewQibla = document.getElementById("view-qibla");
+  if (viewMain) viewMain.classList.remove("hidden");
+  if (viewQibla) {
+    viewQibla.classList.add("hidden");
+    viewQibla.classList.remove("flex");
   }
   window.stopCompassListener();
 };
+
+window.openQiblaModal = window.openQiblaPage;
+window.closeQiblaModal = window.closeQiblaPage;
 
 // Initialize Compass Sensor
 window.initCompass = function () {

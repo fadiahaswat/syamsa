@@ -404,7 +404,6 @@ window.handleLogin = async function () {
 window.handleGoogleCallback = function (response) {
   try {
     const profile = window.parseJwt(response.credential);
-    console.log(profile);
     const userEmail = profile.email;
     if (!userEmail) {
       return window.showToast("Google tidak mengirim alamat email.", "error");
@@ -506,6 +505,12 @@ window.startGreetingLoop = function () {
   const el = document.getElementById("dash-title-sub-greeting");
   if (!el) return;
 
+  const activeGreetingKey = `${window.currentSessionGreeting || ""}:${window.currentSessionGreetingHour ?? ""}`;
+  if (window.greetingLoopGreetingKey === activeGreetingKey && window.greetingIntervalId) {
+    return;
+  }
+  window.greetingLoopGreetingKey = activeGreetingKey;
+
   if (window.greetingIntervalId) {
     clearTimeout(window.greetingIntervalId);
   }
@@ -517,12 +522,14 @@ window.startGreetingLoop = function () {
     const hour = window.currentSessionGreetingHour !== undefined ? window.currentSessionGreetingHour : new Date().getHours();
     const translation = getGreetingTranslation(arabic, hour);
 
-    // 1. Fade out
+    // 1. Fade out with a small vertical drift for a softer language switch.
+    el.style.transition = "opacity 420ms ease, transform 420ms ease";
+    el.style.transform = "translateY(-4px)";
     el.classList.add("opacity-0");
 
     window.greetingIntervalId = setTimeout(() => {
       // Reset translation/scroll styles
-      el.style.transition = "";
+      el.style.transition = "opacity 420ms ease, transform 420ms ease";
       el.style.transform = "";
 
       if (showTranslation) {
@@ -655,13 +662,12 @@ window.updateDashboard = function () {
         const cleanName = musyrifName.replace(/^(ustadz|ustad|ust\.|ust\b)/i, "").trim();
         const words = cleanName.split(/\s+/).filter(w => w.length > 0);
         if (words.length > 0) {
-          // Ambil maksimal 2 kata pertama dari nama ustadz
-          const targetName = words.slice(0, 2).join(" ");
-          displayName = "Ustadz " + targetName;
+          displayName = "Ustadz " + words.slice(0, 2).join(" ");
         }
       }
     }
-    elTitleGreet.innerHTML = `<span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-700 to-teal-500 dark:from-emerald-400 dark:to-teal-300 font-black">${displayName}!</span>`;
+    const nameMarqueeClass = displayName.length > 24 ? "dashboard-name-marquee" : "";
+    elTitleGreet.innerHTML = `<span class="dashboard-name-wrap"><span class="dashboard-name-text ${nameMarqueeClass} text-transparent bg-clip-text bg-gradient-to-r from-emerald-700 to-teal-500 dark:from-emerald-400 dark:to-teal-300 font-black">${displayName}!</span></span>`;
   }
 
   // 2. Main Card Logic
@@ -725,10 +731,35 @@ window.updateDashboard = function () {
       appState.currentSlotId,
       appState.date,
     );
+    const isHoliday = window.isSlotHoliday(appState.currentSlotId, appState.date);
     const timeEl = document.getElementById("dash-card-time");
+    const heroActionBtn = mainCard.querySelector("button");
 
-    if (access.locked) {
+    if (isHoliday) {
       mainCard.classList.add("opacity-80", "grayscale");
+      if (badgeDot && badgeText) {
+        badgeDot.className = "w-1.5 h-1.5 rounded-full bg-slate-300";
+        badgeText.textContent = "Libur";
+      }
+      if (timeEl) {
+        timeEl.innerHTML = `<i data-lucide="calendar-x" class="w-3 h-3"></i> Libur hari ini`;
+      }
+      if (heroActionBtn) {
+        heroActionBtn.className =
+          "w-14 h-14 rounded-2xl bg-white/20 text-white/70 flex items-center justify-center shadow-sm border border-white/10 cursor-not-allowed transition-all duration-300 group/btn";
+        heroActionBtn.onclick = (event) => {
+          event.stopPropagation();
+          window.showToast(`Kegiatan ${slot.label} libur pada hari ini.`, "info");
+        };
+      }
+      mainCard.onclick = () =>
+        window.showToast(`Kegiatan ${slot.label} libur pada hari ini.`, "info");
+    } else if (access.locked) {
+      mainCard.classList.add("opacity-80", "grayscale");
+      if (heroActionBtn) {
+        heroActionBtn.className =
+          "w-14 h-14 rounded-2xl bg-white/20 text-white/70 flex items-center justify-center shadow-sm border border-white/10 transition-all duration-300 group/btn";
+      }
       if (access.reason === "wait") {
         timeEl.innerHTML = `<i data-lucide="clock" class="w-3 h-3"></i> Belum Masuk Waktu`;
         mainCard.onclick = () => window.showToast("Belum masuk waktu " + slot.label, "warning");
@@ -745,6 +776,14 @@ window.updateDashboard = function () {
     } else {
       timeEl.innerHTML = `<i data-lucide="clock" class="w-3 h-3"></i> ${slot.subLabel}`;
       mainCard.classList.remove("opacity-80", "grayscale");
+      if (heroActionBtn) {
+        heroActionBtn.className =
+          "w-14 h-14 rounded-2xl bg-white text-slate-900 flex items-center justify-center shadow-lg shadow-white/10 hover:scale-110 hover:rotate-3 active:scale-95 transition-all duration-300 group/btn";
+        heroActionBtn.onclick = (event) => {
+          event.stopPropagation();
+          window.openAttendance();
+        };
+      }
       mainCard.onclick = () => window.openAttendance();
     }
   }
@@ -1223,8 +1262,11 @@ window.renderSlotList = function () {
       }
     }
 
-    // Always open Bento Detail modal when any slot card is clicked
+    // Open detail for active slots; holiday cards answer immediately.
     item.onclick = () => {
+      if (isHoliday) {
+        return window.showToast(`Kegiatan ${s.label} libur pada hari ini.`, "info");
+      }
       window.openBentoModal(s, access, stats);
     };
 
@@ -1815,24 +1857,79 @@ window.renderAttendanceList = function () {
     const infoSection = clone.querySelector(".info-section");
     infoSection.className = "flex items-center gap-3.5";
 
-    // AVATAR - Compact with ring effect
+    // AVATAR - Stable personality marker per santri.
     const avatarEl = clone.querySelector(".santri-avatar");
-    const initials = santri.nama.substring(0, 2).toUpperCase();
+    const avatarOptions = [
+      { icon: "🌿", class: "from-emerald-50 to-teal-100 text-emerald-700 dark:from-emerald-900/30 dark:to-teal-900/30 dark:text-emerald-300" },
+      { icon: "✨", class: "from-sky-50 to-blue-100 text-sky-700 dark:from-sky-900/30 dark:to-blue-900/30 dark:text-sky-300" },
+      { icon: "📘", class: "from-indigo-50 to-violet-100 text-indigo-700 dark:from-indigo-900/30 dark:to-violet-900/30 dark:text-indigo-300" },
+      { icon: "🕌", class: "from-cyan-50 to-slate-100 text-cyan-700 dark:from-cyan-900/30 dark:to-slate-800 dark:text-cyan-300" },
+      { icon: "⭐", class: "from-amber-50 to-yellow-100 text-amber-700 dark:from-amber-900/30 dark:to-yellow-900/20 dark:text-amber-300" },
+    ];
+    const avatarSeed = Array.from(String(santri.id || santri.nis || santri.nama || id)).reduce(
+      (sum, char) => sum + char.charCodeAt(0),
+      0,
+    );
+    const avatar = avatarOptions[avatarSeed % avatarOptions.length];
     avatarEl.className =
-      "w-10 h-10 rounded-xl bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-700 dark:to-slate-800 flex items-center justify-center font-black text-xs text-slate-500 dark:text-slate-400 shadow-inner shrink-0 ring-1 ring-white/50 dark:ring-black/20";
-    avatarEl.textContent = initials;
+      `w-10 h-10 rounded-xl bg-gradient-to-br ${avatar.class} flex items-center justify-center text-lg shadow-inner shrink-0 ring-1 ring-white/70 dark:ring-white/10 cursor-pointer hover:scale-105 transition-transform`;
+    avatarEl.textContent = avatar.icon;
+    avatarEl.onclick = () => { if (window.openStudentDetail) window.openStudentDetail(id); };
+    const iconAvatarOptions = [
+      { icon: "user-round", class: "from-sky-50 to-blue-100 text-sky-700 dark:from-sky-900/30 dark:to-blue-900/30 dark:text-sky-300" },
+      { icon: "book-open", class: "from-indigo-50 to-violet-100 text-indigo-700 dark:from-indigo-900/30 dark:to-violet-900/30 dark:text-indigo-300" },
+      { icon: "sparkles", class: "from-amber-50 to-yellow-100 text-amber-700 dark:from-amber-900/30 dark:to-yellow-900/20 dark:text-amber-300" },
+      { icon: "leaf", class: "from-emerald-50 to-teal-100 text-emerald-700 dark:from-emerald-900/30 dark:to-teal-900/30 dark:text-emerald-300" },
+      { icon: "graduation-cap", class: "from-cyan-50 to-slate-100 text-cyan-700 dark:from-cyan-900/30 dark:to-slate-800 dark:text-cyan-300" },
+      { icon: "badge-check", class: "from-teal-50 to-emerald-100 text-teal-700 dark:from-teal-900/30 dark:to-emerald-900/20 dark:text-teal-300" },
+      { icon: "notebook-tabs", class: "from-violet-50 to-fuchsia-100 text-violet-700 dark:from-violet-900/30 dark:to-fuchsia-900/20 dark:text-violet-300" },
+      { icon: "shield-check", class: "from-slate-50 to-slate-200 text-slate-600 dark:from-slate-800 dark:to-slate-700 dark:text-slate-300" },
+      { icon: "map-pin", class: "from-rose-50 to-pink-100 text-rose-700 dark:from-rose-900/30 dark:to-pink-900/20 dark:text-rose-300" },
+      { icon: "circle-user-round", class: "from-blue-50 to-cyan-100 text-blue-700 dark:from-blue-900/30 dark:to-cyan-900/20 dark:text-blue-300" },
+      { icon: "school", class: "from-orange-50 to-amber-100 text-orange-700 dark:from-orange-900/30 dark:to-amber-900/20 dark:text-orange-300" },
+      { icon: "scan-face", class: "from-lime-50 to-green-100 text-lime-700 dark:from-lime-900/30 dark:to-green-900/20 dark:text-lime-300" },
+    ];
+    const iconAvatar = iconAvatarOptions[avatarSeed % iconAvatarOptions.length];
+    const profileStats = { Hadir: 0, Sakit: 0, Izin: 0, Pulang: 0, Alpa: 0, Telat: 0 };
+    Object.values(appState.attendanceData || {}).forEach((dateSlots) => {
+      Object.values(dateSlots || {}).forEach((slotRecords) => {
+        const record = slotRecords?.[id];
+        Object.values(record?.status || {}).forEach((status) => {
+          if (profileStats[status] !== undefined) profileStats[status] += 1;
+        });
+      });
+    });
+    const issueStatus = ["Sakit", "Izin", "Pulang", "Alpa", "Telat"].sort(
+      (a, b) => profileStats[b] - profileStats[a],
+    )[0];
+    const profileAvatar =
+      profileStats[issueStatus] >= 2
+        ? {
+            Sakit: { icon: "heart-pulse", class: "text-rose-500" },
+            Izin: { icon: "file-text", class: "text-blue-500" },
+            Pulang: { icon: "home", class: "text-purple-500" },
+            Alpa: { icon: "alert-triangle", class: "text-red-500" },
+            Telat: { icon: "clock-alert", class: "text-amber-500" },
+          }[issueStatus]
+        : profileStats.Hadir >= 2 || currentStatus === "Hadir"
+          ? { icon: "flame", class: "text-orange-500" }
+          : { icon: iconAvatar.icon, class: "text-slate-500 dark:text-slate-300" };
+    avatarEl.className =
+      "w-10 h-10 rounded-xl bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-300 flex items-center justify-center shadow-inner shrink-0 cursor-pointer hover:scale-105 hover:bg-slate-200 dark:hover:bg-slate-700 transition-transform";
+    avatarEl.innerHTML = `<i data-lucide="${profileAvatar.icon}" class="w-5 h-5 ${profileAvatar.class}"></i>`;
 
     // NAME & INFO
     const nameContainer = clone.querySelector(".name-container");
-    nameContainer.className = "flex-1";
+    nameContainer.className = "flex-1 min-w-0";
 
     const nameRow = clone.querySelector(".name-row");
-    nameRow.className = "flex items-center gap-2 mb-1";
+    nameRow.className = "flex items-center gap-2";
 
     const nameText = clone.querySelector(".santri-name");
     nameText.className =
-      "font-bold text-slate-800 dark:text-white text-sm leading-tight line-clamp-1";
+      "font-bold text-slate-800 dark:text-white text-sm leading-tight line-clamp-1 cursor-pointer hover:underline hover:text-emerald-505 transition-all";
     nameText.textContent = window.sanitizeHTML(santri.nama);
+    nameText.onclick = () => { if (window.openStudentDetail) window.openStudentDetail(id); };
 
     // BADGE - Only for active permit (inline conditional)
     const badgeContainer = clone.querySelector(".badge-container");
@@ -1858,19 +1955,24 @@ window.renderAttendanceList = function () {
       badgeContainer.appendChild(badge);
     }
 
-    // ROOM INFO
+    // Room metadata is intentionally hidden to keep this card header clean.
     const roomRow = clone.querySelector(".room-row");
-    roomRow.className = "flex items-center gap-2";
+    roomRow.className = "hidden";
 
     const roomLabel = clone.querySelector(".room-label");
-    roomLabel.className =
-      "px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-700 text-[8px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide";
-    roomLabel.textContent = "KAMAR";
+    roomLabel.textContent = "";
 
     const roomValue = clone.querySelector(".santri-kamar");
+    roomValue.textContent = "";
+    const kelasText = String(santri.kelas || "-");
+    const asramaText = String(santri.asrama || "-");
+    roomRow.className = "flex items-center gap-1.5 mt-1.5 min-w-0";
+    roomLabel.className =
+      "meta-chip inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-300 text-[8px] font-black uppercase tracking-wide border border-slate-200/70 dark:border-slate-700/70 max-w-[64px]";
+    roomLabel.innerHTML = `<i data-lucide="layers-3" class="w-2.5 h-2.5 shrink-0"></i><span class="meta-chip-text">${window.sanitizeHTML(kelasText)}</span>`;
     roomValue.className =
-      "text-[10px] font-medium text-slate-500 dark:text-slate-400";
-    roomValue.textContent = santri.asrama || santri.kelas || "-";
+      "meta-chip inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-300 text-[8px] font-bold border border-slate-200/70 dark:border-slate-700/70 max-w-[150px]";
+    roomValue.innerHTML = `<i data-lucide="home" class="w-2.5 h-2.5 shrink-0"></i><span class="meta-chip-text">${window.sanitizeHTML(asramaText)}</span>`;
 
     // EDIT NOTE BUTTON
     const editBtn = clone.querySelector(".btn-edit-note");
@@ -1879,13 +1981,19 @@ window.renderAttendanceList = function () {
 
     // ACTIVITY BUTTONS SECTION - HORIZONTAL LAYOUT
     const btnCont = clone.querySelector(".activity-container");
-    btnCont.className = "flex gap-3 overflow-x-auto hide-scrollbar pb-2 pt-1";
+    const visibleActivities = slot.activities.filter((act) => {
+      if (act.showOnDays && !act.showOnDays.includes(currentDay)) return false;
+      if (act.onlyRamadhan && !window.isRamadhan(dateKey)) return false;
+      return true;
+    });
+    const isCenteredActivityRow = visibleActivities.length <= 3;
+    const activityAlignClass = isCenteredActivityRow
+      ? "justify-center gap-5 sm:gap-6"
+      : "justify-between gap-2 sm:gap-2.5";
+    btnCont.className = `flex ${activityAlignClass} overflow-x-auto hide-scrollbar px-1 pb-2 pt-1`;
     btnCont.innerHTML = "";
 
-    slot.activities.forEach((act) => {
-      if (act.showOnDays && !act.showOnDays.includes(currentDay)) return;
-      if (act.onlyRamadhan && !window.isRamadhan(dateKey)) return;
-
+    visibleActivities.forEach((act) => {
       const isActivityLibur = window.isActivityHoliday(
         dateKey,
         slot.id,
@@ -1899,7 +2007,7 @@ window.renderAttendanceList = function () {
       const bClone = tplBtn.content.cloneNode(true);
       const btnWrapper = bClone.querySelector(".btn-wrapper");
       btnWrapper.className =
-        "flex flex-col items-center gap-1.5 cursor-pointer group select-none w-full";
+        "flex flex-col items-center gap-1 cursor-pointer group select-none w-11 sm:w-[58px] shrink-0";
 
       const btn = bClone.querySelector(".btn-status");
       const lbl = bClone.querySelector(".lbl-status");
@@ -1909,7 +2017,7 @@ window.renderAttendanceList = function () {
       const hasPermitConflict =
         activePermit && ["fardu", "kbm", "school"].includes(act.category);
 
-      let btnClass = `btn-status w-14 h-14 rounded-2xl flex items-center justify-center shadow-sm transition-all active:scale-95 border-[2.5px] font-black text-base ${uiBtn.class}`;
+      let btnClass = `btn-status w-11 h-11 sm:w-14 sm:h-14 shrink-0 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-sm transition-all active:scale-95 border-[2.5px] font-black text-sm sm:text-base ${uiBtn.class}`;
 
       let ringClass = "";
       if (curr === "Hadir" || curr === "Ya") {
@@ -1939,7 +2047,7 @@ window.renderAttendanceList = function () {
 
       if (isLibur) {
         btn.className =
-          "btn-status w-14 h-14 rounded-2xl flex items-center justify-center border-2 border-slate-300 bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500 dark:border-slate-700 grayscale opacity-70";
+          "btn-status w-11 h-11 sm:w-14 sm:h-14 shrink-0 rounded-xl sm:rounded-2xl flex items-center justify-center border-2 border-slate-300 bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500 dark:border-slate-700 grayscale opacity-70";
       }
 
       if (hasPermitConflict) {
@@ -4129,12 +4237,7 @@ window.renderPermitList = function () {
   });
 };
 
-window.checkActivePermit = function (nis, currentDateStr, currentSlotId) {
-  const permit = appState.permits.find(
-    (p) => String(p.nis) === String(nis) && p.is_active,
-  );
-  if (!permit) return null;
-
+window.evaluatePermitForSlot = function (permit, currentDateStr, currentSlotId) {
   // --- LOGIKA SAKIT ---
   if (permit.category === "sakit") {
     // Validasi Awal Tanggal
@@ -4215,6 +4318,36 @@ window.checkActivePermit = function (nis, currentDateStr, currentSlotId) {
       note: `[${label}] ${permit.reason}`,
     };
   }
+};
+
+window.checkActivePermit = function (nis, currentDateStr, currentSlotId) {
+  const activePermits = (appState.permits || [])
+    .filter((p) => {
+      const status = String(p.status || "approved").toLowerCase();
+      return (
+        String(p.nis) === String(nis) &&
+        p.is_active &&
+        status === "approved"
+      );
+    })
+    .sort((a, b) => {
+      const byStart = String(b.start_date || "").localeCompare(
+        String(a.start_date || ""),
+      );
+      if (byStart !== 0) return byStart;
+      return String(b.id || "").localeCompare(String(a.id || ""));
+    });
+
+  for (const permit of activePermits) {
+    const evaluated = window.evaluatePermitForSlot(
+      permit,
+      currentDateStr,
+      currentSlotId,
+    );
+    if (evaluated) return evaluated;
+  }
+
+  return null;
 };
 
 // ==========================================
@@ -6869,10 +7002,14 @@ window.initSalatHijriWidget = async function () {
     gpsGregorianEl.textContent = targetDate.toLocaleDateString('id-ID', options);
   }
 
-  // Koordinat Default (Masjid Jami' Mu'allimin Yogyakarta)
-  let lat = -7.807757;
-  let lng = 110.350915;
-  let locationLabel = "Wirobrajan, Yogyakarta";
+  const defaultPrayerLocation = window.APP_LOCATION?.defaultPrayerLocation || {
+    label: "Wirobrajan, Yogyakarta",
+    lat: -7.807757,
+    lng: 110.350915,
+  };
+  let lat = defaultPrayerLocation.lat;
+  let lng = defaultPrayerLocation.lng;
+  let locationLabel = defaultPrayerLocation.label;
 
   // Coba dapatkan lokasi asli pengguna
   try {
@@ -6903,11 +7040,11 @@ window.initSalatHijriWidget = async function () {
         }
       }
     } catch (geoErr) {
-      console.log("Gagal reverse geocode:", geoErr);
+      console.warn("Gagal reverse geocode:", geoErr);
       locationLabel = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
     }
   } catch (locErr) {
-    console.log("Menggunakan lokasi default (Yogyakarta):", locErr.message);
+    console.warn("Menggunakan lokasi default:", locErr.message);
   }
 
   // Update subtitle

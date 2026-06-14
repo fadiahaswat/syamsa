@@ -39,40 +39,14 @@ const APP_CONFIG = {
 // KONFIGURASI LOKASI (GEOFENCING)
 // ==========================================
 
-const GPS_CACHE_KEY = "presensi_gps_cache";
+const GPS_CACHE_KEY = window.APP_LOCATION?.gpsCacheKey || "presensi_gps_cache";
 
-const GPS_CACHE_DURATION = 15 * 60 * 1000; // 15 menit
+const GPS_CACHE_DURATION = window.APP_LOCATION?.gpsCacheDurationMs || 15 * 60 * 1000;
 
 const GEO_CONFIG = {
-  useGeofencing: true, // Set ke false jika ingin mematikan fitur ini sementara
-  maxRadiusMeters: 50, // Radius toleransi dalam meter (misal: 50 meter)
-  locations: [
-    {
-      name: "Masjid Jami' Mu'allimin",
-      lat: -7.807757309250455, // GANTI DENGAN KOORDINAT ASLI
-      lng: 110.35091531948025, // GANTI DENGAN KOORDINAT ASLI
-    },
-    {
-      name: "Aula Asrama 10",
-      lat: -7.807645469455366, // GANTI DENGAN KOORDINAT ASLI
-      lng: 110.35180282962452, // GANTI DENGAN KOORDINAT ASLI
-    },
-    {
-      name: "Mushola Asrama 8",
-      lat: -7.806781091907755, // GANTI DENGAN KOORDINAT ASLI
-      lng: 110.34871697299599, // GANTI DENGAN KOORDINAT ASLI
-    },
-    {
-      name: "Masjid Hajah Yuliana",
-      lat: -7.807337010430911, // GANTI DENGAN KOORDINAT ASLI
-      lng: 110.26653812830205, // GANTI DENGAN KOORDINAT ASLI
-    },
-    {
-      name: "Kantor Muhammadiyah Supeno",
-      lat: -7.8163746365704725, // GANTI DENGAN KOORDINAT ASLI
-      lng: 110.37986454893164, // GANTI DENGAN KOORDINAT ASLI
-    },
-  ],
+  useGeofencing: window.APP_LOCATION?.useGeofencing !== false,
+  maxRadiusMeters: window.APP_LOCATION?.maxRadiusMeters || 50,
+  locations: window.APP_LOCATION?.geofenceLocations || [],
 };
 
 const UI_COLORS = {
@@ -87,6 +61,15 @@ window.sanitizeHTML = function (str) {
   const div = document.createElement("div");
   div.textContent = str;
   return div.textContent; // Return text, NOT innerHTML
+};
+
+window.getCurrentActorName = function () {
+  return (
+    appState.userProfile?.name ||
+    appState.userProfile?.email ||
+    MASTER_KELAS?.[appState.selectedClass]?.musyrif ||
+    "Admin"
+  );
 };
 
 window.refreshIcons = function () {
