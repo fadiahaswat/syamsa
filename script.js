@@ -4540,7 +4540,7 @@ window.renderPermitList = function () {
   // Filter izin aktif milik kelas ini
   let activePermits = appState.permits.filter((p) => {
     const isMyClass = classNisList.includes(p.nis);
-    const isActive = p.is_active;
+    const isActive = p.is_active !== false;
 
     // Cek jika ini sakit yang sudah sembuh (punya end_date)
     const isRecoveredSakit = p.category === "sakit" && p.end_date !== null;
@@ -4615,13 +4615,18 @@ window.renderPermitList = function () {
 };
 
 window.evaluatePermitForSlot = function (permit, currentDateStr, currentSlotId) {
+  if (!permit || !currentDateStr || !currentSlotId) return null;
+  const currentOrder = SESSION_ORDER[currentSlotId] ?? 0;
+  const startOrder = SESSION_ORDER[permit.start_session] ?? 0;
+  const endOrder = SESSION_ORDER[permit.end_session] ?? 999;
+
   // --- LOGIKA SAKIT ---
   if (permit.category === "sakit") {
     // Validasi Awal Tanggal
     if (currentDateStr < permit.start_date) return null;
     if (
       currentDateStr === permit.start_date &&
-      SESSION_ORDER[currentSlotId] < SESSION_ORDER[permit.start_session]
+      currentOrder < startOrder
     )
       return null;
 
@@ -4636,7 +4641,7 @@ window.evaluatePermitForSlot = function (permit, currentDateStr, currentSlotId) 
         // Contoh: End Session = Shubuh. Buka Ashar (2) > Shubuh (1) -> Sehat.
         // Tapi tunggu, "End Session" biasanya menandakan sesi TERAKHIR dia sakit.
         // Jadi: Jika Sesi Sekarang > Sesi Terakhir Sakit, maka Null.
-        if (SESSION_ORDER[currentSlotId] > SESSION_ORDER[permit.end_session]) {
+        if (currentOrder > endOrder) {
           return null;
         }
       }
@@ -4651,10 +4656,11 @@ window.evaluatePermitForSlot = function (permit, currentDateStr, currentSlotId) 
 
   // --- LOGIKA IZIN & PULANG ---
   else {
+    if (!permit.end_date) return null;
     if (currentDateStr < permit.start_date) return null;
     if (
       currentDateStr === permit.start_date &&
-      SESSION_ORDER[currentSlotId] < SESSION_ORDER[permit.start_session]
+      currentOrder < startOrder
     )
       return null;
 
@@ -4703,7 +4709,7 @@ window.checkActivePermit = function (nis, currentDateStr, currentSlotId) {
       const status = String(p.status || "approved").toLowerCase();
       return (
         String(p.nis) === String(nis) &&
-        p.is_active &&
+        p.is_active !== false &&
         status === "approved"
       );
     })
@@ -5794,28 +5800,134 @@ window.timesheetStreakTestMode = false;
 
 window.updateTimesheetStreakTestButton = function () {
   const btn = document.getElementById("ts-streak-test-toggle");
-  if (!btn) return;
   const enabled = window.timesheetStreakTestMode === true;
-  btn.classList.toggle("bg-orange-500", enabled);
-  btn.classList.toggle("text-white", enabled);
-  btn.classList.toggle("border-orange-400", enabled);
-  btn.classList.toggle("shadow-orange-500/20", enabled);
-  btn.classList.toggle("bg-slate-50", !enabled);
-  btn.classList.toggle("dark:bg-slate-800/60", !enabled);
-  btn.classList.toggle("text-slate-500", !enabled);
-  btn.classList.toggle("dark:text-slate-400", !enabled);
-  btn.setAttribute("aria-pressed", enabled ? "true" : "false");
+  if (btn) btn.setAttribute("aria-pressed", enabled ? "true" : "false");
+  const flame = document.getElementById("ts-streak-title-flame");
+  const streakEl = document.getElementById("ts-streak-count");
+  const streakCount = Number(streakEl?.textContent || 0);
+  if (flame) flame.classList.toggle("hidden", !(enabled || streakCount >= 3));
 };
 
 window.toggleTimesheetStreakTestMode = function () {
   window.timesheetStreakTestMode = !window.timesheetStreakTestMode;
+  if (window.showToast) {
+    window.showToast(
+      window.timesheetStreakTestMode ? "Mode testing streak aktif." : "Mode testing streak dimatikan.",
+      "info",
+    );
+  }
   window.renderTimesheetCalendar();
+};
+
+window.setupTimesheetSecretTrigger = function () {
+  const trigger = document.getElementById("timesheet-secret-trigger");
+  if (!trigger || trigger.dataset.secretReady === "true") return;
+  trigger.dataset.secretReady = "true";
+  let taps = 0;
+  let timer = null;
+  trigger.addEventListener("click", () => {
+    taps += 1;
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(() => {
+      taps = 0;
+      timer = null;
+    }, 1400);
+    if (taps >= 5) {
+      taps = 0;
+      if (timer) clearTimeout(timer);
+      timer = null;
+      window.toggleTimesheetStreakTestMode();
+    }
+  });
+};
+
+window.getTimesheetSlotEndMinutes = function (slotId) {
+  const slot = SLOT_WAKTU[slotId];
+  const match = String(slot?.subLabel || "").match(/-\s*(\d{1,2}):(\d{2})/);
+  if (match) return Number(match[1]) * 60 + Number(match[2]);
+  const ordered = Object.values(SLOT_WAKTU).sort((a, b) => a.startHour - b.startHour);
+  const idx = ordered.findIndex((s) => s.id === slotId);
+  const next = ordered[idx + 1];
+  return (next?.startHour ?? (slot?.startHour ?? 0) + 2) * 60;
+};
+
+window.getTimesheetMetrics = function (year, month, totalDays) {
+  const today = window.getLocalDateStr();
+  const now = new Date();
+  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+  let expected = 0;
+  let filled = 0;
+  let onTime = 0;
+  let timedEntries = 0;
+  let speedTotal = 0;
+  let speedEntries = 0;
+
+  for (let d = 1; d <= totalDays; d++) {
+    const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+    if (dateStr > today) continue;
+    Object.values(SLOT_WAKTU).forEach((slot) => {
+      if (window.isSlotHoliday(slot.id, dateStr)) return;
+      const slotStartMinutes = slot.startHour * 60;
+      const slotHasStarted = dateStr < today || nowMinutes >= slotStartMinutes;
+      if (!slotHasStarted) return;
+
+      const slotData = appState.attendanceData?.[dateStr]?.[slot.id] || {};
+      const slotStart = new Date(`${dateStr}T${String(slot.startHour).padStart(2, "0")}:00:00`);
+      const slotEndMinutes = window.getTimesheetSlotEndMinutes(slot.id);
+
+      FILTERED_SANTRI.forEach((s) => {
+        const id = String(s.nis || s.id);
+        expected += 1;
+        const entry = slotData[id];
+        if (!entry || Object.keys(entry.status || {}).length === 0) return;
+        filled += 1;
+
+        const updatedAt = entry.updatedAt ? new Date(entry.updatedAt) : null;
+        if (!updatedAt || Number.isNaN(updatedAt.getTime())) return;
+
+        const deltaMinutes = Math.max(0, Math.round((updatedAt - slotStart) / 60000));
+        speedTotal += deltaMinutes;
+        speedEntries += 1;
+
+        const inputDate = window.getLocalDateStr(updatedAt);
+        const inputMinutes = updatedAt.getHours() * 60 + updatedAt.getMinutes();
+        timedEntries += 1;
+        if (inputDate === dateStr && inputMinutes <= slotEndMinutes) onTime += 1;
+      });
+    });
+  }
+
+  return {
+    expected,
+    filled,
+    fillRate: expected > 0 ? Math.round((filled / expected) * 100) : 0,
+    avgSpeed: speedEntries > 0 ? Math.round(speedTotal / speedEntries) : null,
+    compliance: timedEntries > 0 ? Math.round((onTime / timedEntries) * 100) : 0,
+    onTime,
+    timedEntries,
+  };
+};
+
+window.renderTimesheetMetrics = function (year, month, totalDays) {
+  const metrics = window.getTimesheetMetrics(year, month, totalDays);
+  const fillRateEl = document.getElementById("ts-fill-rate");
+  const fillDetailEl = document.getElementById("ts-fill-rate-detail");
+  const speedEl = document.getElementById("ts-fill-speed");
+  const complianceEl = document.getElementById("ts-time-compliance");
+  const complianceDetailEl = document.getElementById("ts-time-compliance-detail");
+
+  if (fillRateEl) fillRateEl.textContent = `${metrics.fillRate}%`;
+  if (fillDetailEl) fillDetailEl.textContent = `${metrics.filled} dari ${metrics.expected} entri`;
+  if (speedEl) speedEl.textContent = metrics.avgSpeed === null ? "-" : `${metrics.avgSpeed}m`;
+  if (complianceEl) complianceEl.textContent = `${metrics.compliance}%`;
+  if (complianceDetailEl) complianceDetailEl.textContent = `${metrics.onTime} dari ${metrics.timedEntries} tepat waktu`;
 };
 
 window.renderTimesheetCalendar = function () {
   const container = document.getElementById("timesheet-calendar");
   const label = document.getElementById("timesheet-month-label");
   if (!container) return;
+  window.setupTimesheetSecretTrigger();
 
   container.innerHTML = "";
 
@@ -5934,10 +6046,6 @@ window.renderTimesheetCalendar = function () {
 
     if (status === "locked") monthlyLocked++;
 
-    const streakCount = streakInfo.days[dateStr] || 0;
-    const isTestingStreak = window.timesheetStreakTestMode === true && status === "completed";
-    const isStreak = streakCount >= 3 || isTestingStreak;
-
     let bgColor = "";
     let textColor = "";
 
@@ -5995,11 +6103,6 @@ ${borderClass}
     div.style.color = textColor;
 
     div.innerHTML = `
-        ${
-          isStreak
-            ? `<i data-lucide="flame" class="timesheet-streak-flame absolute bottom-1 right-1 w-3.5 h-3.5 drop-shadow-sm" title="${isTestingStreak ? "Mode testing streak" : `${streakCount} hari berturut-turut`}"></i>`
-            : ""
-        }
         <span>${d}</span>
         ${
           status === "today"
@@ -6031,7 +6134,11 @@ ${borderClass}
   if (partialEl) partialEl.textContent = monthlyPartial;
 
   if (lockedEl) lockedEl.textContent = monthlyLocked;
-  if (streakEl) streakEl.textContent = streakInfo.activeStreak >= 3 ? streakInfo.activeStreak : 0;
+  const visibleStreak = window.timesheetStreakTestMode
+    ? Math.max(streakInfo.activeStreak, 3)
+    : (streakInfo.activeStreak >= 3 ? streakInfo.activeStreak : 0);
+  if (streakEl) streakEl.textContent = visibleStreak;
+  window.renderTimesheetMetrics(year, month, totalDays);
   window.updateTimesheetStreakTestButton();
   if (window.lucide) window.lucide.createIcons();
 };
@@ -6361,6 +6468,201 @@ window.checkScheduledNotifications = function () {
   }
 };
 
+window.requestNotificationPermission = async function () {
+  if (!("Notification" in window)) {
+    return window.showToast("Browser Anda tidak mendukung notifikasi", "error");
+  }
+
+  if (Notification.permission === "granted") {
+    window.sendLocalNotification(
+      "Notifikasi Aktif",
+      "Anda akan diingatkan saat waktu presensi tiba.",
+      "info",
+      "notification-test",
+    );
+    return;
+  }
+
+  const permission = await Notification.requestPermission();
+  if (permission === "granted") {
+    window.showToast("Notifikasi berhasil diaktifkan!", "success");
+    window.sendLocalNotification(
+      "Assalamu'alaikum!",
+      "Sistem pengingat presensi Syamsa aktif.",
+      "info",
+      "notification-enabled",
+    );
+    document.getElementById("notif-badge")?.classList.add("hidden");
+  } else {
+    window.showToast("Izin notifikasi ditolak", "warning");
+  }
+};
+
+window.isNotificationTypeEnabled = function (key) {
+  const types = appState.settings.notificationTypes || {};
+  return types[key] !== false;
+};
+
+window.shouldSendScheduledNotification = function (key, now = new Date()) {
+  const minuteKey = `${window.getLocalDateStr(now)}-${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}-${key}`;
+  const storageKey = `syamsa_notification_sent_${minuteKey}`;
+  if (localStorage.getItem(storageKey) === "true") return false;
+  localStorage.setItem(storageKey, "true");
+  return true;
+};
+
+window.sendLocalNotification = function (title, body, type = "info", tag = title) {
+  if (!("Notification" in window)) return;
+  if (Notification.permission !== "granted") return;
+  if (appState.settings && appState.settings.notifications === false) return;
+
+  const options = {
+    body,
+    icon: "icon.webp",
+    badge: "icon.png",
+    vibrate: [160, 70, 160],
+    tag,
+    renotify: false,
+    data: { url: location.href, type },
+  };
+
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.ready
+      .then((registration) => registration.showNotification(title, options))
+      .catch(() => new Notification(title, options));
+    return;
+  }
+
+  new Notification(title, options);
+};
+
+window.getSlotEndMinutesForNotification = function (slotId) {
+  if (window.getTimesheetSlotEndMinutes) return window.getTimesheetSlotEndMinutes(slotId);
+  const slot = SLOT_WAKTU[slotId];
+  const match = String(slot?.subLabel || "").match(/-\s*(\d{1,2}):(\d{2})/);
+  if (match) return Number(match[1]) * 60 + Number(match[2]);
+  return ((slot?.startHour || 0) + 2) * 60;
+};
+
+window.getIncompleteAttendanceCountForDate = function (dateStr) {
+  let missing = 0;
+  Object.values(SLOT_WAKTU).forEach((slot) => {
+    if (window.isSlotHoliday(slot.id, dateStr)) return;
+    const slotData = appState.attendanceData?.[dateStr]?.[slot.id] || {};
+    FILTERED_SANTRI.forEach((s) => {
+      const id = String(s.nis || s.id);
+      if (!slotData[id] || Object.keys(slotData[id].status || {}).length === 0) missing += 1;
+    });
+  });
+  return missing;
+};
+
+window.checkScheduledNotifications = function () {
+  if (!("Notification" in window)) return;
+  if (Notification.permission !== "granted") return;
+  if (appState.settings && appState.settings.notifications === false) return;
+
+  const now = new Date();
+  const h = now.getHours();
+  const m = now.getMinutes();
+  const currentMinutes = h * 60 + m;
+
+  Object.values(SLOT_WAKTU).forEach((slot) => {
+    const startMinutes = slot.startHour * 60;
+    if (currentMinutes === startMinutes && window.isNotificationTypeEnabled("sesi_presensi_mulai")) {
+      const key = `slot-open-${slot.id}`;
+      if (window.shouldSendScheduledNotification(key, now)) {
+        window.sendLocalNotification(
+          `Sesi ${slot.label} telah terbuka`,
+          `Presensi ${slot.label} sudah bisa diisi untuk kelas aktif.`,
+          "session",
+          key,
+        );
+      }
+    }
+
+    const endMinutes = window.getSlotEndMinutesForNotification(slot.id);
+    if (endMinutes - currentMinutes === 10 && window.isNotificationTypeEnabled("sisa_10_menit")) {
+      const key = `slot-close-10-${slot.id}`;
+      if (window.shouldSendScheduledNotification(key, now)) {
+        window.sendLocalNotification(
+          "10 menit lagi sesi tutup",
+          `Segera selesaikan presensi ${slot.label} sebelum sesi terkunci.`,
+          "warning",
+          key,
+        );
+      }
+    }
+  });
+
+  if (window.todaySalatTimings && window.isNotificationTypeEnabled("pengingat_salat")) {
+    Object.entries(window.todaySalatTimings).forEach(([name, timeStr]) => {
+      const minutes = window.parseSalatTimeToMinutes?.(timeStr);
+      if (Number.isFinite(minutes) && minutes - currentMinutes === 15) {
+        const key = `salat-15-${name}`;
+        if (window.shouldSendScheduledNotification(key, now)) {
+          window.sendLocalNotification(
+            `15 menit menuju ${name}`,
+            `Bersiap masuk waktu ${name} pukul ${timeStr}.`,
+            "prayer",
+            key,
+          );
+        }
+      }
+    });
+  }
+
+  if ((h === 7 && m === 30) || (h === 20 && m === 0)) {
+    const lockDate = new Date();
+    lockDate.setDate(lockDate.getDate() - 3);
+    const lockDateStr = window.getLocalDateStr(lockDate);
+    const missing = window.getIncompleteAttendanceCountForDate(lockDateStr);
+    if (missing > 0 && window.isNotificationTypeEnabled("presensi_hampir_terkunci")) {
+      const key = `almost-locked-${lockDateStr}`;
+      if (window.shouldSendScheduledNotification(key, now)) {
+        window.sendLocalNotification(
+          "Presensi hampir terkunci",
+          `Presensi ${window.formatDate(lockDateStr)} masih kosong ${missing} entri. Segera lengkapi sebelum benar-benar terkunci.`,
+          "warning",
+          key,
+        );
+      }
+    }
+  }
+
+  if ((h === 6 && m === 30) || (h === 17 && m === 0)) {
+    const activePermits = (appState.permits || []).filter((p) => p.is_active !== false && ["sakit", "izin", "pulang"].includes(p.category));
+    if (activePermits.length > 0 && window.isNotificationTypeEnabled("cek_perizinan_aktif")) {
+      const key = `active-permit-check-${h}`;
+      if (window.shouldSendScheduledNotification(key, now)) {
+        window.sendLocalNotification(
+          "Cek kondisi santri berizin",
+          `Ada ${activePermits.length} santri sakit/izin/pulang. Pastikan sudah sembuh atau kembali bila waktunya.`,
+          "permit",
+          key,
+        );
+      }
+    }
+  }
+
+  if (h === 17 && m === 0 && window.isNotificationTypeEnabled("pengingat_puasa")) {
+    const tomorrow = new Date(now);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const tomorrowFasting = window.getFastingInfo?.(tomorrow);
+    if (tomorrowFasting) {
+      const key = "fasting-tomorrow";
+      if (window.shouldSendScheduledNotification(key, now)) {
+        window.sendLocalNotification(
+          "Besok jadwal puasa",
+          `Besok ${tomorrowFasting}. Pastikan santri siap niat dan sahur.`,
+          "fasting",
+          key,
+        );
+      }
+    }
+  }
+};
+
 // 2. Logika Pindah Tab (UI Change)
 window.setPermitTab = function (tab) {
   currentPermitTab = tab;
@@ -6494,13 +6796,13 @@ window.savePermitLogic = function () {
     // SAKIT: Open ended (end_date null)
     permitData.location = document.querySelector(
       'input[name="loc_sakit"]:checked',
-    ).value;
+    )?.value || "Asrama";
     permitData.end_date = null;
     permitData.status_label = "S";
   } else {
     // IZIN & PULANG: Punya Deadline
     const endDate = document.getElementById("permit-end-date").value;
-    const endTime = document.getElementById("permit-end-time").value;
+    const endTime = document.getElementById("permit-end-time").value || "17:00";
 
     if (!endDate)
       return window.showToast("Tanggal selesai wajib diisi", "warning");
@@ -7301,7 +7603,7 @@ window.renderActivePermitsWidget = function () {
   });
 
   relevantPermits.forEach((p) => {
-    let visualActive = p.is_active;
+    let visualActive = p.is_active !== false;
     const catSafe = (p.category || "").toLowerCase();
 
     // Logika Visual Selesai (Abu-abu)
@@ -7325,7 +7627,7 @@ window.renderActivePermitsWidget = function () {
       currentDate > p.end_date
     ) {
       visualActive = false;
-    } else if (!p.is_active) {
+    } else if (p.is_active === false) {
       visualActive = false; // Jika database bilang false, maka false
     }
 
@@ -7693,7 +7995,7 @@ window.renderPermitHistory = function () {
     if (p.source === "manual") {
       statusBadge = `<span class="shrink-0 px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 text-[9px] font-black border border-slate-200 dark:border-slate-600 uppercase tracking-wider">MANUAL</span>`;
     } else {
-      let isActive = p.is_active;
+      let isActive = p.is_active !== false;
       const cat = (p.category || "").toLowerCase();
       if (cat === "sakit" && p.end_date) isActive = false;
       if (
@@ -7813,7 +8115,7 @@ window.togglePermitStatus = function (id) {
   const permit = appState.permits.find((p) => p.id === id);
   if (!permit) return;
 
-  permit.is_active = !permit.is_active;
+  permit.is_active = permit.is_active === false;
 
   // Jika diaktifkan kembali, pastikan end_date dihapus jika itu permit Sakit (agar logic sembuh tidak bentrok)
   // Atau biarkan apa adanya jika itu izin berjangka.
@@ -7847,7 +8149,7 @@ window.openEditHistory = function (id) {
   document.getElementById("edit-permit-reason").value = permit.reason || "";
   document.getElementById("edit-permit-start").value = permit.start_date || "";
   document.getElementById("edit-permit-end").value = permit.end_date || "";
-  document.getElementById("edit-permit-active").checked = permit.is_active;
+  document.getElementById("edit-permit-active").checked = permit.is_active !== false;
 
   // Buka Modal
   const modal = document.getElementById("modal-edit-permit");

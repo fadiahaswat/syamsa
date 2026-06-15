@@ -11,6 +11,7 @@ window.lastQiblaSoundTime = 0;
 window.qiblaOriginalThemeColors = null;
 window.compassTargetMode = "qibla";
 window.compassTargetName = "Kakbah";
+window.compassTargetRadius = null;
 
 // Lokasi Kakbah Makkah
 const MECCA_LAT = 21.422487;
@@ -182,6 +183,7 @@ window.openAsramaPage = function () {
     }
 
     window.compassTargetName = target.name || "Asrama";
+    window.compassTargetRadius = target.radiusMeters || target.radius || window.APP_LOCATION?.maxRadiusMeters || 50;
     window.qiblaAngle = window.calculateBearingTo(lat, lng, target.lat, target.lng);
     window.qiblaDistance = target.distance;
 
@@ -239,6 +241,7 @@ window.closeQiblaPage = function () {
   }
   window.restoreQiblaBrowserChrome();
   window.stopCompassListener();
+  window.compassTargetRadius = null;
 };
 
 window.setQiblaBrowserChrome = function (tone = "dark") {
@@ -325,6 +328,13 @@ window.setQiblaPrecisionState = function (state, diff = null, directionText = ""
   viewQibla.dataset.qiblaState = state;
   window.setQiblaBrowserChrome(["closer", "almost", "perfect", "locked"].includes(state) ? "green" : "dark");
   const isAsrama = window.compassTargetMode === "asrama";
+  const asramaRadius = window.compassTargetRadius || window.APP_LOCATION?.maxRadiusMeters || 50;
+  const asramaOutsideRadius = isAsrama && Number.isFinite(window.qiblaDistance) && window.qiblaDistance > asramaRadius;
+  const asramaRemaining = asramaOutsideRadius ? window.formatAsramaDistance(window.qiblaDistance - asramaRadius) : "";
+  if (asramaOutsideRadius && (state === "perfect" || state === "locked")) {
+    state = "almost";
+    directionText = `Arah sudah tepat, lanjut ${asramaRemaining} lagi sampai radius.`;
+  }
   if (subtitle) subtitle.textContent = isAsrama ? (window.compassTargetName || "Asrama") : "Syamsa";
   if (loading) loading.classList.toggle("hidden", state !== "searching");
   if (content) content.classList.toggle("hidden", state === "searching");
@@ -379,6 +389,7 @@ window.setQiblaPrecisionState = function (state, diff = null, directionText = ""
   }
 
   if (title) title.textContent = state === "almost" ? "Hampir Tepat" : (isAsrama ? "Ke Asrama" : "Cari Kiblat");
+  if (isAsrama && state === "almost" && asramaOutsideRadius && title) title.textContent = "Dekati Asrama";
   if (arrow) arrow.style.visibility = "visible";
   if (angleTxt && roundedDiff !== null) angleTxt.textContent = `${roundedDiff}\u00b0`;
   if (indicator) indicator.textContent = directionText;
@@ -517,6 +528,12 @@ window.updateCompassUI = function (heading) {
   const signedDiff = ((window.qiblaAngle - heading + 540) % 360) - 180;
   const diff = Math.abs(signedDiff);
   const directionText = signedDiff > 0 ? "ke kanan" : "ke kiri";
+  const isAsrama = window.compassTargetMode === "asrama";
+  const asramaRadius = window.compassTargetRadius || window.APP_LOCATION?.maxRadiusMeters || 50;
+  const asramaOutsideRadius = isAsrama && Number.isFinite(window.qiblaDistance) && window.qiblaDistance > asramaRadius;
+  const asramaRemainingText = asramaOutsideRadius
+    ? `Arah benar, lanjut ${window.formatAsramaDistance(window.qiblaDistance - asramaRadius)} lagi sampai radius.`
+    : directionText;
   const arrowScale = diff > 1 && diff <= 4 && !window.qiblaLocked ? 0.64 : 1;
   qiblaArrow.style.transform = `translate(-50%, -50%) rotate(${signedDiff}deg) scale(${arrowScale})`;
 
@@ -525,6 +542,11 @@ window.updateCompassUI = function (heading) {
   }
 
   if (window.qiblaLocked && diff <= 2) {
+    if (asramaOutsideRadius) {
+      window.qiblaLocked = false;
+      window.setQiblaPrecisionState("almost", diff, asramaRemainingText);
+      return;
+    }
     qiblaArrow.classList.add("qibla-active");
     if (alignmentIndicator) alignmentIndicator.classList.add("qibla-aligned");
     window.setQiblaPrecisionState("locked", diff, directionText);
@@ -535,10 +557,10 @@ window.updateCompassUI = function (heading) {
   // If phone is pointing to Qibla (within ±4 degrees)
   if (diff <= 4) {
     qiblaArrow.classList.add("qibla-active");
-    if (alignmentIndicator) alignmentIndicator.classList.add("qibla-aligned");
-    window.setQiblaPrecisionState(diff <= 1 ? "perfect" : "almost", diff, directionText);
+    if (alignmentIndicator) alignmentIndicator.classList.toggle("qibla-aligned", !asramaOutsideRadius);
+    window.setQiblaPrecisionState(asramaOutsideRadius ? "almost" : (diff <= 1 ? "perfect" : "almost"), diff, asramaOutsideRadius ? asramaRemainingText : directionText);
     window.playQiblaGuidanceSound(diff <= 1 ? "perfect" : "almost", diff);
-    if (diff <= 1 && !window.qiblaLockTimer) {
+    if (diff <= 1 && !asramaOutsideRadius && !window.qiblaLockTimer) {
       window.qiblaLockTimer = setTimeout(() => {
         window.qiblaLockTimer = null;
         if (document.getElementById("view-qibla")?.dataset.qiblaState === "perfect" && window.deviceHeading !== null) {

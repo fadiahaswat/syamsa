@@ -259,6 +259,37 @@ function updateTahfizhDummyToggleUI() {
     TDOM.dummyToggle.title = enabled ? 'Matikan data dummy Tahfizh' : 'Nyalakan data dummy Tahfizh';
 }
 
+async function toggleTahfizhDummyMode() {
+    const next = !TahfizhState.useDummyData;
+    setTahfizhDummyMode(next);
+    if (window.showToast) {
+        window.showToast(next ? 'Mode data dummy Tahfizh aktif.' : 'Mode data dummy Tahfizh dimatikan.', 'info');
+    }
+    await reloadTahfizhData();
+}
+
+function setupTahfizhSecretTrigger() {
+    const trigger = document.getElementById('tahfizh-secret-trigger');
+    if (!trigger || trigger.dataset.secretReady === 'true') return;
+    trigger.dataset.secretReady = 'true';
+    let taps = 0;
+    let timer = null;
+    trigger.addEventListener('click', () => {
+        taps += 1;
+        if (timer) clearTimeout(timer);
+        timer = setTimeout(() => {
+            taps = 0;
+            timer = null;
+        }, 1400);
+        if (taps >= 5) {
+            taps = 0;
+            if (timer) clearTimeout(timer);
+            timer = null;
+            toggleTahfizhDummyMode();
+        }
+    });
+}
+
 function generateTahfizhDummySetoran() {
     const baseDate = new Date();
     const classStudents = TahfizhState.rawSantriList.slice(0, Math.min(10, TahfizhState.rawSantriList.length));
@@ -819,31 +850,40 @@ function renderTahfizhTuntasAccordion() {
     for (const groupName in TahfizhState.classGroups) {
         if (groupName === 'Khusus Tahfizh' || groupName === 'Seluruh Santri') continue;
         const group = TahfizhState.classGroups[groupName];
-        const tuntasCount = group.santri.filter(s => s.isTuntas).length;
+        const tuntasSantri = group.santri.filter(s => s.isTuntas);
+        const belumSantri = group.santri.filter(s => !s.isTuntas);
+        const tuntasCount = tuntasSantri.length;
         const totalCount = group.santri.length;
-        const percentage = totalCount > 0 ? ((tuntasCount / totalCount) * 100).toFixed(0) : 0;
 
-        const clone = TDOM.tplAccordionItem.content.cloneNode(true);
-        setElementText(clone, '.data-group-name', groupName);
-        setElementText(clone, '.data-percentage-text', `${percentage}%`);
+        const renderList = (list, emptyText) => {
+            if (list.length === 0) {
+                return `<div class="rounded-xl border border-dashed border-slate-200 dark:border-slate-800 p-4 text-center text-xs font-bold text-slate-400">${emptyText}</div>`;
+            }
+            return `<div class="space-y-1.5">${list.map(s => `
+                <div class="flex items-center justify-between gap-2 rounded-xl bg-slate-50/80 dark:bg-slate-900/45 border border-slate-100 dark:border-slate-800 px-3 py-2">
+                    <span class="min-w-0 truncate text-xs font-black text-slate-700 dark:text-slate-200">${window.sanitizeHTML(s.nama)}</span>
+                    <span class="shrink-0 text-[9px] font-black uppercase tracking-wider text-slate-400">${window.sanitizeHTML(s.program || 'Tahfizh')}</span>
+                </div>`).join('')}</div>`;
+        };
 
-        const tuntasVal = clone.getElementById('badge-tuntas-val');
-        const belumVal = clone.getElementById('badge-belum-val');
-        if (tuntasVal) tuntasVal.textContent = tuntasCount;
-        if (belumVal) belumVal.textContent = totalCount - tuntasCount;
+        const card = document.createElement('div');
+        card.className = 'rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/35 p-3';
+        card.innerHTML = `
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+                <div>
+                    <h4 class="text-sm font-black text-slate-900 dark:text-white">${window.sanitizeHTML(groupName)}</h4>
+                    <p class="text-[10px] font-bold text-slate-400">${tuntasCount} tuntas, ${totalCount - tuntasCount} belum</p>
+                </div>
+                <div class="grid grid-cols-2 gap-1 rounded-xl bg-white dark:bg-slate-950/70 border border-slate-100 dark:border-slate-800 p-1">
+                    <button type="button" class="tahfizh-class-progress-tab rounded-lg px-3 py-1.5 text-[10px] font-black bg-orange-500 text-white" data-progress-target="belum">Belum</button>
+                    <button type="button" class="tahfizh-class-progress-tab rounded-lg px-3 py-1.5 text-[10px] font-black text-slate-500 dark:text-slate-400" data-progress-target="tuntas">Tuntas</button>
+                </div>
+            </div>
+            <div class="tahfizh-class-progress-panel" data-progress-panel="belum">${renderList(belumSantri, 'Semua santri sudah tuntas.')}</div>
+            <div class="tahfizh-class-progress-panel hidden" data-progress-panel="tuntas">${renderList(tuntasSantri, 'Belum ada santri tuntas.')}</div>
+        `;
 
-        const bar = clone.querySelector('.data-progress-bar');
-        if (bar) bar.style.width = `${percentage}%`;
-
-        const tuntasList = group.santri.filter(s => s.isTuntas).map(s => `<li>${s.nama}</li>`).join('') || '<li class="list-none text-slate-400 italic">Belum ada</li>';
-        const belumList = group.santri.filter(s => !s.isTuntas).map(s => `<li>${s.nama}</li>`).join('') || '<li class="list-none text-slate-400 italic">Semua tuntas</li>';
-
-        setElementText(clone, '.label-tuntas', `Sudah Tuntas (${tuntasCount})`);
-        setElementHTML(clone, '.list-tuntas', tuntasList);
-        setElementText(clone, '.label-belum', `Belum Tuntas (${totalCount - tuntasCount})`);
-        setElementHTML(clone, '.list-belum', belumList);
-
-        TDOM.tuntasTrackingAccordion.appendChild(clone);
+        TDOM.tuntasTrackingAccordion.appendChild(card);
     }
     
     if (window.lucide) window.lucide.createIcons();
@@ -1363,7 +1403,7 @@ function renderTahfizhJuzVisualBlocks(santri) {
         if (grid) {
             grid.innerHTML = Array(20).fill(0).map((_, i) => {
                 const colorClass = i < filledBlocks ? 'bg-orange-500 shadow-sm' : 'bg-slate-200 dark:bg-slate-800';
-                return `<div class="h-6 rounded-sm ${colorClass} transition-all duration-300 hover:scale-110" title="Halaman ${i+1}"></div>`;
+                return `<div class="aspect-square rounded-md ${colorClass} transition-all duration-300 hover:scale-110" title="Halaman ${i+1}"></div>`;
             }).join('');
         }
 
@@ -1632,11 +1672,11 @@ function renderTahfizhRaporDynamicGrid(santri) {
                     ${percentage >= 100 ? 'TUNTAS' : `${percentage}%`}
                 </span>
             </div>
-            <div class="grid grid-cols-10 gap-1">
+            <div class="grid grid-cols-5 gap-1.5">
                 ${Array(20).fill(0).map((_, i) => {
                     const isFilled = i < filledBlocks;
                     const blockColor = isFilled ? 'bg-orange-500 shadow-sm shadow-orange-100/30' : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700/60';
-                    return `<div class="h-6 rounded-md ${blockColor} transition-all hover:scale-110" title="Halaman ${i+1}"></div>`;
+                    return `<div class="aspect-square rounded-md ${blockColor} transition-all hover:scale-110" title="Halaman ${i+1}"></div>`;
                 }).join('')}
             </div>`;
         
@@ -1710,6 +1750,8 @@ function syncFormControls() {
 
 // Menangani Event Listeners modul Tahfizh
 function setupTahfizhEventListeners() {
+    setupTahfizhSecretTrigger();
+
     if (TDOM.setoranForm && !TDOM.setoranForm.dataset.hasListener) {
         TDOM.setoranForm.dataset.hasListener = "true";
         TDOM.setoranForm.addEventListener('submit', handleTahfizhFormSubmit);
@@ -1741,14 +1783,7 @@ function setupTahfizhEventListeners() {
 
     if (TDOM.dummyToggle && !TDOM.dummyToggle.dataset.hasListener) {
         TDOM.dummyToggle.dataset.hasListener = "true";
-        TDOM.dummyToggle.addEventListener('click', async () => {
-            const next = !TahfizhState.useDummyData;
-            setTahfizhDummyMode(next);
-            if (window.showToast) {
-                window.showToast(next ? 'Mode data dummy Tahfizh aktif.' : 'Mode data dummy Tahfizh dimatikan.', 'info');
-            }
-            await reloadTahfizhData();
-        });
+        TDOM.dummyToggle.addEventListener('click', toggleTahfizhDummyMode);
     }
 
     if (TDOM.helpButton && !TDOM.helpButton.dataset.hasListener) {
@@ -2038,6 +2073,23 @@ async function deleteTahfizhRowDirectly() {
 
 // Handler event klik dengan pendelegasian pada tab Tahfizh
 function handleTahfizhDelegatedClicks(e) {
+    const classProgressTab = e.target.closest('.tahfizh-class-progress-tab');
+    if (classProgressTab) {
+        const card = classProgressTab.closest('[class*="rounded-2xl"]');
+        const target = classProgressTab.dataset.progressTarget;
+        card?.querySelectorAll('.tahfizh-class-progress-tab').forEach(btn => {
+            const active = btn === classProgressTab;
+            btn.classList.toggle('bg-orange-500', active);
+            btn.classList.toggle('text-white', active);
+            btn.classList.toggle('text-slate-500', !active);
+            btn.classList.toggle('dark:text-slate-400', !active);
+        });
+        card?.querySelectorAll('.tahfizh-class-progress-panel').forEach(panel => {
+            panel.classList.toggle('hidden', panel.dataset.progressPanel !== target);
+        });
+        return;
+    }
+
     // 1. Akordeon kemajuan kelas
     const accBtn = e.target.closest('.accordion-button');
     if (accBtn) {
