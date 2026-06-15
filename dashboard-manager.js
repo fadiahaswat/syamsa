@@ -2296,13 +2296,20 @@ window.saveQuickSetoranEntry = function () {
       nis: String(studentId),
       Nis: String(studentId),
       NamaSantri: student.nama,
+      namaSantri: student.nama,
       kelas: appState.selectedClass || student.kelas,
+      jenis: type,
+      juz: juz,
+      surat: surah,
+      halaman: page,
       materi: `${type} Juz ${juz} Surah ${surah} Hal ${page}`,
       nilai: status === "Lancar" ? "Verified" : "Rejected",
       status: "Verified",
       Status: "Verified",
       musyrif: appState.userProfile ? appState.userProfile.email : "tester-musyrif@gmail.com",
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      source: "local",
+      localCreatedAt: new Date().toISOString()
     };
 
     list.unshift(newSetoran);

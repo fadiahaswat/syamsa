@@ -3550,10 +3550,10 @@ window.switchTab = function (tabName) {
   // 4. Update Style Tombol Navigasi
   document.querySelectorAll(".nav-btn").forEach((btn) => {
     if (btn.dataset.target === tabName) {
-      btn.classList.add("active", "text-emerald-500");
-      btn.classList.remove("text-slate-400");
+      btn.classList.add("active");
+      btn.classList.remove("text-emerald-500", "text-orange-500", "text-slate-400");
     } else {
-      btn.classList.remove("active", "text-emerald-500");
+      btn.classList.remove("active", "text-emerald-500", "text-orange-500");
       btn.classList.add("text-slate-400");
     }
   });
@@ -3574,6 +3574,8 @@ window.switchTab = function (tabName) {
     window.updateDashboard();
   } else if (tabName === "report") {
     window.updateReportTab();
+  } else if (tabName === "tahfizh") {
+    if (window.initTahfizhTab) window.initTahfizhTab();
   } else if (tabName === "profile") {
     appState.timesheetViewDate = appState.date; // <--- TAMBAHKAN INI
     window.updateProfileStats();

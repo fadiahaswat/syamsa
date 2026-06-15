@@ -33,6 +33,7 @@ const TahfizhConfig = {
     ],
     hafalanData: null // Akan diisi oleh referensi dari server
 };
+TahfizhConfig.dummyModeKey = 'tahfizh_dummy_mode';
 
 // State Modul Tahfizh
 const TahfizhState = {
@@ -51,6 +52,7 @@ const TahfizhState = {
     studentProgramMap: new Map(), // Memetakan Nama -> Program dari database Tahfizh
     chartInstance: null,
     countdownInterval: null,
+    useDummyData: false,
 };
 
 // DOM Cache untuk Tahfizh
@@ -94,6 +96,8 @@ function cacheTahfizhDOM() {
         filterTanggalAkhir: 'tahfizh-filter-tanggal-akhir',
         filterProgram: 'tahfizh-filter-program',
         filterKelas: 'tahfizh-filter-kelas',
+        historyModeLabel: 'tahfizh-history-mode-label',
+        dummyToggle: 'tahfizh-dummy-toggle',
 
         // -- Statistik Beranda --
         statsSantriAktif: 'tahfizh-stats-santri-aktif',
@@ -161,9 +165,11 @@ window.switchTahfizhSubTab = function(subtabName) {
     
     document.querySelectorAll('.tahfizh-sub-nav-btn').forEach(btn => {
         if (btn.dataset.subtab === subtabName) {
-            btn.className = "tahfizh-sub-nav-btn active flex-shrink-0 px-4 py-2.5 text-xs font-bold rounded-xl transition-all bg-white text-orange-600 shadow-sm border border-orange-100 dark:border-orange-950/20";
+            btn.classList.remove('active');
+            void btn.offsetWidth;
+            btn.classList.add('active');
         } else {
-            btn.className = "tahfizh-sub-nav-btn flex-shrink-0 px-4 py-2.5 text-xs font-bold rounded-xl transition-all text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200";
+            btn.classList.remove('active');
         }
     });
     
@@ -173,6 +179,7 @@ window.switchTahfizhSubTab = function(subtabName) {
 // Main entry point dari tab-manager
 async function initTahfizhTab() {
     cacheTahfizhDOM();
+    mountTahfizhHistoryOnHome();
     setupTahfizhEventListeners();
     setupAdditionalInputListeners();
     
@@ -184,6 +191,17 @@ async function initTahfizhTab() {
         syncSiswaFromMainApp();
         renderAllTahfizhUI();
     }
+}
+
+function mountTahfizhHistoryOnHome() {
+    const homePage = document.getElementById('tahfizh-page-beranda');
+    const historyPage = document.getElementById('tahfizh-page-riwayat');
+    if (!homePage || !historyPage || historyPage.dataset.mountedHome === 'true') return;
+
+    historyPage.dataset.mountedHome = 'true';
+    historyPage.classList.remove('tahfizh-page-content', 'hidden');
+    historyPage.classList.add('space-y-3');
+    homePage.appendChild(historyPage);
 }
 
 // Sinkronisasi data kelas & santri dari master data presensi
@@ -216,25 +234,90 @@ function syncSiswaFromMainApp() {
     TahfizhState.santriNameMap = new Map(TahfizhState.rawSantriList.map(s => [normalizeTahfizhName(s.nama), s.id]));
 }
 
+function isTahfizhDummyModeEnabled() {
+    return localStorage.getItem(TahfizhConfig.dummyModeKey) === 'true';
+}
+
+function setTahfizhDummyMode(enabled) {
+    localStorage.setItem(TahfizhConfig.dummyModeKey, enabled ? 'true' : 'false');
+    TahfizhState.useDummyData = enabled;
+    updateTahfizhDummyToggleUI();
+}
+
+function updateTahfizhDummyToggleUI() {
+    if (!TDOM.dummyToggle) return;
+    const enabled = TahfizhState.useDummyData;
+    TDOM.dummyToggle.classList.toggle('bg-orange-500', enabled);
+    TDOM.dummyToggle.classList.toggle('text-white', enabled);
+    TDOM.dummyToggle.classList.toggle('border-orange-400', enabled);
+    TDOM.dummyToggle.classList.toggle('shadow-orange-500/20', enabled);
+    TDOM.dummyToggle.classList.toggle('bg-white/80', !enabled);
+    TDOM.dummyToggle.classList.toggle('dark:bg-slate-900/80', !enabled);
+    TDOM.dummyToggle.classList.toggle('text-slate-500', !enabled);
+    TDOM.dummyToggle.classList.toggle('dark:text-slate-400', !enabled);
+    TDOM.dummyToggle.setAttribute('aria-pressed', enabled ? 'true' : 'false');
+    TDOM.dummyToggle.title = enabled ? 'Matikan data dummy Tahfizh' : 'Nyalakan data dummy Tahfizh';
+}
+
+function generateTahfizhDummySetoran() {
+    const baseDate = new Date();
+    const classStudents = TahfizhState.rawSantriList.slice(0, Math.min(10, TahfizhState.rawSantriList.length));
+    const suratJuz30 = ['An-Naba', "An-Nazi'at", 'Abasa', 'At-Takwir', 'Al-Infithor', 'Al-Muthoffifin', 'Al-Insyiqaq'];
+    const suratJuz29 = ['Al-Mulk', 'Al-Qalam', 'Al-Haqqah', 'Al-Maarij'];
+    const dummyRows = [];
+
+    classStudents.forEach((santri, idx) => {
+        const total = 2 + (idx % 4);
+        for (let i = 0; i < total; i++) {
+            const createdAt = new Date(baseDate);
+            createdAt.setDate(baseDate.getDate() - (idx + i));
+            createdAt.setHours(7 + (i % 5), (idx * 11 + i * 7) % 60, 0, 0);
+            const isMutqin = i === 0 && idx % 3 === 0;
+            const juz = isMutqin ? (idx % 2 === 0 ? 30 : 29) : (idx % 4 === 0 ? 29 : 30);
+            const suratList = juz === 29 ? suratJuz29 : suratJuz30;
+            dummyRows.push({
+                rowNumber: `dummy-${idx}-${i}`,
+                source: 'dummy',
+                localCreatedAt: createdAt.toISOString(),
+                timestamp: createdAt.toISOString(),
+                tanggal: createdAt.toISOString(),
+                santriId: santri.id,
+                namaSantri: santri.nama,
+                kelas: santri.kelas,
+                program: santri.program,
+                jenis: isMutqin ? 'Mutqin' : (i % 2 === 0 ? 'Ziyadah' : 'Murajaah'),
+                juz,
+                surat: suratList[(idx + i) % suratList.length],
+                halaman: isMutqin ? '' : (0.5 + ((idx + i) % 4) * 0.5).toFixed(1),
+                Status: i === total - 1 && idx % 5 === 0 ? 'Pending' : 'Verified',
+            });
+        }
+    });
+
+    return dummyRows;
+}
+
 // Mengambil data setoran hafalan & referensi dari localStorage (fallback ke metadata lokal jika kosong)
 async function reloadTahfizhData() {
     try {
         console.log("📥 Memuat data Tahfizh dari localStorage...");
+        TahfizhState.useDummyData = isTahfizhDummyModeEnabled();
         let localSetoran = localStorage.getItem('tahfizh_local_setoran');
         let localMetadata = localStorage.getItem('tahfizh_local_metadata');
 
-        if (!localSetoran || !localMetadata) {
+        if (!localSetoran) {
+            localStorage.setItem('tahfizh_local_setoran', JSON.stringify([]));
+            localSetoran = JSON.stringify([]);
+        }
+
+        if (!localMetadata) {
             console.log("📥 Database lokal kosong, memuat tahfizh_metadata.json...");
             const response = await fetch('./tahfizh_metadata.json');
             if (!response.ok) throw new Error('Gagal mengambil metadata lokal');
             const data = await response.json();
             
-            if (!localSetoran) {
-                localStorage.setItem('tahfizh_local_setoran', JSON.stringify(data.setoran || []));
-                localSetoran = JSON.stringify(data.setoran || []);
-            }
             if (!localMetadata) {
-                const metadata = { refJuz: data.refJuz || [], refSurat: data.refSurat || [], santri: data.santri || [] };
+                const metadata = { refJuz: data.refJuz || [], refSurat: data.refSurat || [] };
                 localStorage.setItem('tahfizh_local_metadata', JSON.stringify(metadata));
                 localMetadata = JSON.stringify(metadata);
             }
@@ -247,7 +330,7 @@ async function reloadTahfizhData() {
             setoran: parsedSetoran,
             refJuz: parsedMetadata.refJuz,
             refSurat: parsedMetadata.refSurat,
-            santri: parsedMetadata.santri
+            santri: []
         };
 
         processTahfizhResponse(data);
@@ -286,18 +369,24 @@ function processTahfizhResponse(response) {
     // 4. Proses Setoran
     if (response.setoran) {
         const activeStudentNames = new Set(TahfizhState.rawSantriList.map(s => normalizeTahfizhName(s.nama)));
+        const sourceSetoran = TahfizhState.useDummyData
+            ? [...response.setoran, ...generateTahfizhDummySetoran()]
+            : response.setoran;
         
-        // Hanya muat setoran untuk santri yang ada di kelas aktif Musyrif
-        const filteredSetoran = response.setoran.filter(item => {
-            const normName = normalizeTahfizhName(item.namaSantri || '');
-            return activeStudentNames.has(normName);
+        // Hanya muat setoran lokal untuk santri yang ada di kelas aktif Musyrif.
+        // Data seed/metadata lama tidak ikut ditampilkan di riwayat.
+        const filteredSetoran = sourceSetoran.filter(item => {
+            const localOwned = item.source === 'local' || (TahfizhState.useDummyData && item.source === 'dummy') || item.timestamp || item.localCreatedAt;
+            const normName = normalizeTahfizhName(item.namaSantri || item.NamaSantri || item.nama || '');
+            return localOwned && activeStudentNames.has(normName);
         });
 
         TahfizhState.allSetoran = filteredSetoran.map(item => ({
-            id: `row-${item.rowNumber}`,
-            santriId: TahfizhState.santriNameMap.get(normalizeTahfizhName(item.namaSantri || '')) || null,
-            createdAt: item.tanggal,
-            rowNumber: item.rowNumber,
+            id: `row-${item.rowNumber || item.RowNumber}`,
+            santriId: item.santriId || TahfizhState.santriNameMap.get(normalizeTahfizhName(item.namaSantri || item.NamaSantri || item.nama || '')) || null,
+            namaSantri: item.namaSantri || item.NamaSantri || item.nama || '',
+            createdAt: item.tanggal || item.Tanggal || item.timestamp,
+            rowNumber: item.rowNumber || item.RowNumber,
             status: item.Status || 'Verified',
             ...item
         }));
@@ -309,6 +398,7 @@ function processTahfizhResponse(response) {
     calculateTahfizhSantriStats();
     buildTahfizhClassGroups();
     renderAllTahfizhUI();
+    updateTahfizhDummyToggleUI();
 }
 
 function processHafalanReferens(refJuz, refSurat) {
@@ -493,6 +583,13 @@ function renderAllTahfizhUI() {
     renderTahfizhHistoryTable();
     renderTahfizhRekap();
     renderTahfizhAnalisisForm();
+    updateTahfizhDummyToggleUI();
+    if (TDOM.historyModeLabel) {
+        TDOM.historyModeLabel.textContent = TahfizhState.useDummyData ? 'Dummy' : 'Lokal';
+        TDOM.historyModeLabel.className = TahfizhState.useDummyData
+            ? 'px-2 py-0.5 rounded-md bg-orange-50 dark:bg-orange-500/10 text-[9px] font-black uppercase tracking-wider text-orange-600 dark:text-orange-400 border border-orange-100 dark:border-orange-500/20'
+            : 'px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-[9px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400';
+    }
     syncFormControls();
 }
 
@@ -611,10 +708,10 @@ function renderTahfizhJadwalPerpulangan() {
             </div>`).join('');
 
         cont.innerHTML = `
-            <div class="glass-card rounded-[2.5rem] p-6 sm:p-8 relative overflow-hidden group border border-orange-100/60 dark:border-orange-900/30 bg-gradient-to-br from-white via-orange-50/10 to-amber-50/5 dark:from-slate-900 dark:to-orange-950/5">
-                <div class="absolute top-0 right-0 w-64 h-64 bg-orange-100/20 dark:bg-orange-950/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
-                <div class="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
-                    <div class="lg:col-span-7 text-center lg:text-left space-y-4">
+            <div class="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-[1.75rem] p-4 sm:p-5 relative overflow-hidden group border border-white/60 dark:border-slate-700/50 shadow-sm">
+                <div class="absolute top-0 right-0 w-48 h-48 bg-orange-400/10 dark:bg-orange-500/10 rounded-full blur-[60px] -mr-16 -mt-16 pointer-events-none"></div>
+                <div class="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-4 items-center">
+                    <div class="lg:col-span-7 text-center lg:text-left space-y-3">
                         <div>
                             <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-50 dark:bg-orange-950/40 border border-orange-100 dark:border-orange-900/50 mb-3">
                                 <span class="relative flex h-2 w-2">
@@ -623,7 +720,7 @@ function renderTahfizhJadwalPerpulangan() {
                                 </span>
                                 <h4 class="text-[10px] font-bold text-orange-900 dark:text-orange-350 uppercase tracking-widest">Target Perpulangan</h4>
                             </div>
-                            <h2 class="text-3xl sm:text-4xl font-black text-slate-800 dark:text-white tracking-tight mb-2">${monthName}</h2>
+                            <h2 class="text-2xl sm:text-3xl font-black text-slate-800 dark:text-white tracking-tight mb-2">${monthName}</h2>
                             <div class="inline-flex items-center gap-2 text-xs font-medium text-slate-500 bg-slate-100/50 dark:bg-slate-800/50 px-4 py-2 rounded-xl border border-white/50 dark:border-slate-700">
                                 <i data-lucide="calendar" class="w-4 h-4 text-orange-500"></i>
                                 Deadline: <span class="font-bold font-mono text-slate-700 dark:text-slate-200">${deadlineStr} WIB</span>
@@ -632,7 +729,7 @@ function renderTahfizhJadwalPerpulangan() {
                         <div id="tahfizh-countdown-timer" class="flex flex-wrap justify-center lg:justify-start gap-3 sm:gap-4"></div>
                     </div>
                     <div class="lg:col-span-5 relative">
-                        <div class="bg-white/50 dark:bg-slate-950/50 backdrop-blur-md rounded-3xl p-6 border border-white dark:border-slate-800 shadow-md">
+                        <div class="bg-slate-50/80 dark:bg-slate-900/40 rounded-2xl p-3 border border-slate-100 dark:border-slate-700/50">
                             <div class="flex items-center gap-3 mb-4 border-b border-orange-50/50 dark:border-orange-950/20 pb-3">
                                 <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-amber-600 flex items-center justify-center text-white shadow-lg shadow-orange-500/20">
                                     <i data-lucide="book-open" class="w-5 h-5"></i>
@@ -663,13 +760,13 @@ function renderTahfizhJadwalPerpulangan() {
             if (timerEl) {
                 timerEl.innerHTML = [d, h, m, s].map((val, i) => `
                     <div class="flex flex-col items-center">
-                        <div class="w-16 h-16 bg-white dark:bg-slate-950 rounded-2xl border border-white dark:border-slate-800 shadow-md flex items-center justify-center relative overflow-hidden group">
-                            <span class="text-2xl font-black text-slate-800 dark:text-white tabular-nums tracking-tight group-hover:scale-110 transition-transform">
+                        <div class="w-12 h-12 sm:w-14 sm:h-14 bg-white dark:bg-slate-950 rounded-xl border border-white dark:border-slate-800 shadow-sm flex items-center justify-center relative overflow-hidden group">
+                            <span class="text-lg sm:text-xl font-black text-slate-800 dark:text-white tabular-nums tracking-tight group-hover:scale-110 transition-transform">
                                 ${String(val).padStart(2, '0')}
                             </span>
                             <div class="absolute bottom-0 w-full h-1 bg-orange-500/20"></div>
                         </div>
-                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-2">
+                        <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1.5">
                             ${['Hari', 'Jam', 'Mnt', 'Dtk'][i]}
                         </span>
                     </div>`).join('');
@@ -678,7 +775,7 @@ function renderTahfizhJadwalPerpulangan() {
         TahfizhState.countdownInterval = setInterval(updateCountdown, 1000);
         updateCountdown();
     } else if (cont) {
-        cont.innerHTML = '<div class="glass-card rounded-2xl p-6 text-center font-bold text-slate-400 border-2 border-dashed border-slate-200 dark:border-slate-800">Semua jadwal perpulangan telah selesai.</div>';
+        cont.innerHTML = '<div class="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-2xl p-6 text-center font-bold text-slate-400 border border-dashed border-slate-200 dark:border-slate-800 shadow-sm">Semua jadwal perpulangan telah selesai.</div>';
     }
     
     if (window.lucide) window.lucide.createIcons();
@@ -691,21 +788,21 @@ function renderTahfizhProgressCircles() {
             container.classList.remove('hidden');
             const tuntasCount = list.filter(checkFn).length;
             const pct = Math.round((tuntasCount / list.length) * 100);
-            const radius = 45, circumference = 2 * Math.PI * radius;
+            const radius = 39, circumference = 2 * Math.PI * radius;
             const offset = circumference - (pct / 100) * circumference;
 
             circleEl.innerHTML = `
                 <svg class="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
-                    <circle class="text-slate-100 dark:text-slate-850" stroke-width="8" stroke="currentColor" fill="transparent" r="${radius}" cx="50" cy="50" />
+                    <circle class="text-slate-100 dark:text-slate-700/60" stroke-width="8" stroke="currentColor" fill="transparent" r="${radius}" cx="50" cy="50" />
                     <circle class="progress-ring-circle ${colorClass} transition-all duration-1000 ease-out" stroke-width="8" stroke-linecap="round" stroke="currentColor" fill="transparent" r="${radius}" cx="50" cy="50" style="stroke-dasharray:${circumference};stroke-dashoffset:${circumference};" />
                 </svg>
-                <span class="absolute inset-0 flex items-center justify-center text-3xl font-black ${colorClass}">${pct}%</span>`;
+                <span class="absolute inset-0 flex items-center justify-center text-[11px] font-black ${colorClass}">${pct}%</span>`;
             
             setTimeout(() => {
                 const circle = circleEl.querySelector('.progress-ring-circle');
                 if (circle) circle.style.strokeDashoffset = offset;
             }, 100);
-            detailsEl.textContent = `${tuntasCount} dari ${list.length} santri tuntas.`;
+            detailsEl.textContent = `${tuntasCount} dari ${list.length}`;
         } else {
             container.classList.add('hidden');
         }
@@ -776,7 +873,7 @@ function renderTahfizhPeringkatContent(program) {
     if (!contentContainer || !TDOM.tplPeringkatItem) return;
 
     const list = TahfizhState.santriData.filter(s => s.program === program);
-    const getTop5 = (arr, key) => [...arr].sort((a, b) => b[key] - a[key]).slice(0, 5);
+    const getTop5 = (arr, key) => [...arr].sort((a, b) => b[key] - a[key]).slice(0, 3);
 
     const criteria = program === 'Tahfizh'
         ? [{ key: 'setoranCount', title: 'Paling Rajin (Total Setoran)', unit: 'setoran' }, { key: 'ziyadahPages', title: 'Hafalan Terbanyak (Ziyadah)', unit: 'hlm' }]
@@ -807,7 +904,7 @@ function renderTahfizhPeringkatContent(program) {
                 const badge = itemClone.querySelector('.medal-bg');
                 if (badge) {
                     badge.textContent = i + 1;
-                    badge.className = `medal-bg flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-black text-white shadow-sm ${medalColors[i] || 'bg-slate-300 dark:bg-slate-700'}`;
+                    badge.className = `medal-bg flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-black text-white shadow-sm ${medalColors[i] || 'bg-slate-300 dark:bg-slate-700'}`;
                 }
                 setElementText(itemClone, '.item-nama', s.nama);
                 setElementText(itemClone, '.item-kelas', `Kelas ${s.kelas}`);
@@ -945,7 +1042,19 @@ function renderTahfizhHistoryTable() {
 
     TDOM.setoranTableBody.innerHTML = '';
     if (filtered.length === 0) {
-        TDOM.setoranTableBody.innerHTML = `<tr><td colspan="4" class="text-center p-10 text-slate-400 dark:text-slate-500 italic">Tidak ada data setoran yang sesuai filter kelas ${appState.selectedClass || ''}.</td></tr>`;
+        TDOM.setoranTableBody.innerHTML = `
+            <tr>
+                <td colspan="4" class="p-4">
+                    <div class="tahfizh-empty-state rounded-2xl border border-dashed border-orange-200/80 dark:border-orange-500/20 p-5 text-center">
+                        <div class="mx-auto w-10 h-10 rounded-2xl bg-orange-50 dark:bg-orange-500/10 text-orange-500 flex items-center justify-center border border-orange-100 dark:border-orange-500/20 mb-2">
+                            <i data-lucide="database" class="w-4 h-4"></i>
+                        </div>
+                        <p class="text-xs font-black text-slate-700 dark:text-slate-200">Belum ada setoran tampil</p>
+                        <p class="text-[10px] font-bold text-slate-400 dark:text-slate-500 mt-1">Aktifkan mode dummy atau input setoran untuk kelas ${appState.selectedClass || 'aktif'}.</p>
+                    </div>
+                </td>
+            </tr>`;
+        if (window.lucide) window.lucide.createIcons();
         return;
     }
 
@@ -978,7 +1087,11 @@ function renderTahfizhHistoryTable() {
         const deleteBtn = clone.querySelector('.delete-btn');
         if (deleteBtn) {
             deleteBtn.dataset.id = setoran.rowNumber; // hapus berdasarkan rowNumber spreadsheet
-            deleteBtn.addEventListener('click', () => confirmDeleteTahfizhRow(setoran.rowNumber));
+            if (setoran.source === 'dummy') {
+                deleteBtn.classList.add('hidden');
+            } else {
+                deleteBtn.addEventListener('click', () => confirmDeleteTahfizhRow(setoran.rowNumber));
+            }
         }
 
         if (santri) {
@@ -1014,9 +1127,20 @@ function confirmDeleteTahfizhRow(rowNumber) {
 // Rendering Rekap Capaian
 function renderTahfizhRekap() {
     if (!TDOM.rekapSelect || !TDOM.rekapContentContainer || !TDOM.rekapContentTemplate) return;
-    
-    // Urutkan kelas/musyrif sesuai grup
-    const groupOrder = ['Seluruh Santri', 'Khusus Tahfizh', ...Object.keys(TahfizhState.classGroups).filter(g => g !== 'Seluruh Santri' && g !== 'Khusus Tahfizh').sort()];
+
+    const activeClass = appState.selectedClass || 'Kelas Aktif';
+    const activeSantri = TahfizhState.santriData.filter(s => !appState.selectedClass || s.kelas === appState.selectedClass);
+    const activeMusyrif = (appState.selectedClass && window.classData && window.classData[appState.selectedClass]?.musyrif)
+        || activeSantri.find(s => s.musyrif)?.musyrif
+        || 'Musyrif Kelas';
+
+    TahfizhState.classGroups[activeClass] = {
+        santri: activeSantri,
+        musyrif: activeMusyrif,
+        sortState: TahfizhState.classGroups[activeClass]?.sortState || { column: 'nama', dir: 'asc' }
+    };
+
+    const groupOrder = [activeClass];
     TDOM.rekapSelect.innerHTML = '';
     TDOM.rekapContentContainer.innerHTML = '';
 
@@ -1619,6 +1743,18 @@ function setupTahfizhEventListeners() {
         });
     }
 
+    if (TDOM.dummyToggle && !TDOM.dummyToggle.dataset.hasListener) {
+        TDOM.dummyToggle.dataset.hasListener = "true";
+        TDOM.dummyToggle.addEventListener('click', async () => {
+            const next = !TahfizhState.useDummyData;
+            setTahfizhDummyMode(next);
+            if (window.showToast) {
+                window.showToast(next ? 'Mode data dummy Tahfizh aktif.' : 'Mode data dummy Tahfizh dimatikan.', 'info');
+            }
+            await reloadTahfizhData();
+        });
+    }
+
     if (TDOM.helpButton && !TDOM.helpButton.dataset.hasListener) {
         TDOM.helpButton.dataset.hasListener = "true";
         TDOM.helpButton.addEventListener('click', () => {
@@ -1791,7 +1927,9 @@ async function handleTahfizhFormSubmit(e) {
                 RowNumber: maxRow,
                 Status: 'Verified',
                 status: 'Verified',
-                tanggal: item.tanggal || new Date().toISOString()
+                tanggal: item.tanggal || new Date().toISOString(),
+                source: 'local',
+                localCreatedAt: new Date().toISOString()
             };
             list.unshift(newRecord);
             successCount++;
@@ -1813,6 +1951,7 @@ async function handleTahfizhFormSubmit(e) {
         TDOM.surat.innerHTML = '';
         TDOM.namaSantri.dispatchEvent(new Event('change'));
         await reloadTahfizhData();
+        window.switchTahfizhSubTab('beranda');
     } else {
         if (window.showToast) window.showToast(`Gagal menyimpan setoran.`, 'error');
         await reloadTahfizhData();
@@ -1993,7 +2132,7 @@ function handleTahfizhDelegatedInput(e) {
 function setupAdditionalInputListeners() {
     if (TDOM.filterTanggalMulai && !TDOM.filterTanggalMulai.dataset.hasListener) {
         TDOM.filterTanggalMulai.dataset.hasListener = "true";
-        [TDOM.filterTanggalMulai, TDOM.filterTanggalAkhir, TDOM.filterProgram].forEach(el => {
+        [TDOM.filterTanggalMulai, TDOM.filterTanggalAkhir, TDOM.filterProgram, TDOM.filterKelas].forEach(el => {
             if (el) el.addEventListener('input', renderTahfizhHistoryTable);
         });
     }
