@@ -1635,6 +1635,30 @@ window.getSlotCompletionStatus = function (slotId, dateStr) {
   };
 };
 
+window.getAttendanceEntryInputDate = function (entry) {
+  const raw = entry?.inputDate || entry?.updatedAt || entry?.timestamp || entry?.createdAt;
+  if (!raw) return "";
+  if (typeof raw === "string" && /^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+  const date = new Date(raw);
+  if (Number.isNaN(date.getTime())) return "";
+  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+  return local.toISOString().slice(0, 10);
+};
+
+window.isSlotCompletedOnSameDay = function (slotId, dateStr) {
+  const slotData = appState.attendanceData?.[dateStr]?.[slotId];
+  if (!slotData) return false;
+
+  const completion = window.getSlotCompletionStatus(slotId, dateStr);
+  if (!completion.complete) return false;
+
+  return FILTERED_SANTRI.every((s) => {
+    const id = String(s.nis || s.id);
+    const entry = slotData[id];
+    return entry && window.getAttendanceEntryInputDate(entry) === dateStr;
+  });
+};
+
 window.getAttendanceStatus = function (santriId, slotId, customDate = null) {
   try {
     const dateKey = customDate || appState.date;
@@ -2389,6 +2413,8 @@ window.toggleStatus = function (id, actId, type) {
 
   // Terapkan status baru ke tombol yang diklik
   sData.status[actId] = next;
+  sData.inputDate = window.getLocalDateStr();
+  sData.updatedAt = new Date().toISOString();
 
   // 2. LOGIKA OTOMATIS (CASCADING)
   // Cek konfigurasi kegiatan yang sedang diklik
@@ -2613,6 +2639,11 @@ window.applyBulkAction = function (targetCategory, value, specificId = null) {
         dbSlot[id].status[act.id] = value; // Ya / Tidak
       }
     });
+
+    if (Object.keys(dbSlot[id].status || {}).length > 0) {
+      dbSlot[id].inputDate = window.getLocalDateStr();
+      dbSlot[id].updatedAt = new Date().toISOString();
+    }
   });
 
   window.saveData();
@@ -5759,6 +5790,28 @@ window.renderBar = function (type, good, bad) {
   }
 };
 
+window.timesheetStreakTestMode = false;
+
+window.updateTimesheetStreakTestButton = function () {
+  const btn = document.getElementById("ts-streak-test-toggle");
+  if (!btn) return;
+  const enabled = window.timesheetStreakTestMode === true;
+  btn.classList.toggle("bg-orange-500", enabled);
+  btn.classList.toggle("text-white", enabled);
+  btn.classList.toggle("border-orange-400", enabled);
+  btn.classList.toggle("shadow-orange-500/20", enabled);
+  btn.classList.toggle("bg-slate-50", !enabled);
+  btn.classList.toggle("dark:bg-slate-800/60", !enabled);
+  btn.classList.toggle("text-slate-500", !enabled);
+  btn.classList.toggle("dark:text-slate-400", !enabled);
+  btn.setAttribute("aria-pressed", enabled ? "true" : "false");
+};
+
+window.toggleTimesheetStreakTestMode = function () {
+  window.timesheetStreakTestMode = !window.timesheetStreakTestMode;
+  window.renderTimesheetCalendar();
+};
+
 window.renderTimesheetCalendar = function () {
   const container = document.getElementById("timesheet-calendar");
   const label = document.getElementById("timesheet-month-label");
@@ -5805,6 +5858,7 @@ window.renderTimesheetCalendar = function () {
   let monthlyComplete = 0;
   let monthlyPartial = 0;
   let monthlyLocked = 0;
+  const streakInfo = window.getTimesheetStreakInfo(year, month, totalDays);
 
   // Empty cells before start
   for (let i = 0; i < startDayIndex; i++) {
@@ -5853,6 +5907,8 @@ window.renderTimesheetCalendar = function () {
 
     const dayInfo = window.getDayCompletionStatus(dateStr);
 
+    let status = "";
+
     if (dateStr > today) {
       status = "future";
     } else if (dateStr === today) {
@@ -5877,6 +5933,10 @@ window.renderTimesheetCalendar = function () {
     if (status === "partial") monthlyPartial++;
 
     if (status === "locked") monthlyLocked++;
+
+    const streakCount = streakInfo.days[dateStr] || 0;
+    const isTestingStreak = window.timesheetStreakTestMode === true && status === "completed";
+    const isStreak = streakCount >= 3 || isTestingStreak;
 
     let bgColor = "";
     let textColor = "";
@@ -5910,12 +5970,15 @@ window.renderTimesheetCalendar = function () {
 
     const isToday = dateStr === today;
 
-    const borderClass = isToday ? "ring-2 ring-indigo-500 ring-offset-2" : "";
+    const borderClass = isToday
+      ? "ring-2 ring-indigo-500 ring-offset-2"
+      : "";
 
     const div = document.createElement("div");
 
     div.className = `
 aspect-square
+relative
 flex
 flex-col
 items-center
@@ -5927,17 +5990,22 @@ transition-all
 hover:scale-110
 cursor-pointer
 ${borderClass}
-`;
+    `;
     div.style.backgroundColor = bgColor;
     div.style.color = textColor;
 
     div.innerHTML = `
+        ${
+          isStreak
+            ? `<i data-lucide="flame" class="timesheet-streak-flame absolute bottom-1 right-1 w-3.5 h-3.5 drop-shadow-sm" title="${isTestingStreak ? "Mode testing streak" : `${streakCount} hari berturut-turut`}"></i>`
+            : ""
+        }
         <span>${d}</span>
         ${
           status === "today"
             ? `<span class="text-[9px] opacity-90">
-                    ${completedSlots}/${requiredSlots}
-               </span>`
+                      ${completedSlots}/${requiredSlots}
+                 </span>`
             : ""
         }
     `;
@@ -5956,12 +6024,16 @@ ${borderClass}
   const partialEl = document.getElementById("ts-partial-count");
 
   const lockedEl = document.getElementById("ts-locked-count");
+  const streakEl = document.getElementById("ts-streak-count");
 
   if (completeEl) completeEl.textContent = monthlyComplete;
 
   if (partialEl) partialEl.textContent = monthlyPartial;
 
   if (lockedEl) lockedEl.textContent = monthlyLocked;
+  if (streakEl) streakEl.textContent = streakInfo.activeStreak >= 3 ? streakInfo.activeStreak : 0;
+  window.updateTimesheetStreakTestButton();
+  if (window.lucide) window.lucide.createIcons();
 };
 
 window.changeTimesheetMonth = function (direction) {
@@ -8057,6 +8129,47 @@ window.getDayCompletionStatus = function (dateStr) {
   };
 };
 
+window.getTimesheetStreakInfo = function (year, month, totalDays) {
+  const today = window.getLocalDateStr();
+  const start = new Date(year, month, 1);
+  start.setDate(start.getDate() - 45);
+  const end = new Date(year, month, totalDays);
+  const dayMs = 86400000;
+  const days = {};
+  let running = 0;
+  let currentMonthBest = 0;
+  let currentMonthStreakDays = 0;
+  let activeStreak = 0;
+  let lastCompletedStreak = 0;
+
+  for (let time = start.getTime(); time <= end.getTime(); time += dayMs) {
+    const date = new Date(time);
+    const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+    const info = window.getDayCompletionStatus(dateStr);
+    const isEligible = dateStr <= today && info.complete && Object.values(SLOT_WAKTU).every((slot) => {
+      if (window.isSlotHoliday(slot.id, dateStr)) return true;
+      return window.isSlotCompletedOnSameDay(slot.id, dateStr);
+    });
+
+    running = isEligible ? running + 1 : 0;
+    days[dateStr] = running;
+    if (isEligible) lastCompletedStreak = running;
+    if (dateStr === today) activeStreak = isEligible ? running : lastCompletedStreak;
+
+    if (date.getFullYear() === year && date.getMonth() === month && running >= 3) {
+      currentMonthStreakDays++;
+      currentMonthBest = Math.max(currentMonthBest, running);
+    }
+  }
+
+  return {
+    days,
+    activeStreak,
+    currentMonthBest,
+    currentMonthStreakDays,
+  };
+};
+
 window.verifyLocationCached = async function () {
   if (window.gpsBypassEnabled) return true;
   const cache = JSON.parse(localStorage.getItem(GPS_CACHE_KEY) || "null");
@@ -8103,6 +8216,36 @@ window.switchReportView = function (view) {
     window.populateAnalysisDropdown();
     window.runAnalysis();
   }
+};
+
+window.parseSalatTimeToMinutes = function (timeStr) {
+  const match = String(timeStr || "").match(/(\d{1,2}):(\d{2})/);
+  if (!match) return null;
+  const h = Number(match[1]);
+  const m = Number(match[2]);
+  if (!Number.isFinite(h) || !Number.isFinite(m)) return null;
+  return h * 60 + m;
+};
+
+window.getNextSalatTarget = function (salatMap, now = new Date()) {
+  const order = ["Subuh", "Syuruq", "Dzuhur", "Ashar", "Maghrib", "Isya"];
+  const currentMinutes = now.getHours() * 60 + now.getMinutes() + now.getSeconds() / 60;
+  let next = null;
+
+  order.forEach((name) => {
+    const minutes = window.parseSalatTimeToMinutes(salatMap?.[name]);
+    if (minutes === null) return;
+    let diffMinutes = minutes - currentMinutes;
+    if (diffMinutes <= 0) diffMinutes += 24 * 60;
+    if (!next || diffMinutes < next.diffMinutes) {
+      const target = new Date(now);
+      target.setHours(Math.floor(minutes / 60), minutes % 60, 0, 0);
+      if (target.getTime() <= now.getTime()) target.setDate(target.getDate() + 1);
+      next = { name, target, diffMinutes };
+    }
+  });
+
+  return next;
 };
 
 window.initSalatHijriWidget = async function () {
@@ -8219,29 +8362,14 @@ window.initSalatHijriWidget = async function () {
 
     // Update UI dan highlight yang aktif
     const now = new Date();
-    const currentMinutes = now.getHours() * 60 + now.getMinutes();
-    let nextSalat = "Subuh";
-    let nextSalatDiff = Infinity;
+    const nextSalatTarget = window.getNextSalatTarget(salatMap, now);
+    let nextSalat = nextSalatTarget?.name || "Subuh";
 
     Object.keys(salatMap).forEach((name) => {
       const timeStr = salatMap[name];
       const el = document.getElementById(`prayer-${name}`);
       if (el) {
         el.querySelector(".prayer-time").textContent = timeStr;
-      }
-
-      // Do not use Syuruq (Sunrise) as a next prayer target for daily fardu prayer highlights/countdown
-      if (name === "Syuruq") return;
-
-      const [h, m] = timeStr.split(":").map(Number);
-      const salatMinutes = h * 60 + m;
-      let diff = salatMinutes - currentMinutes;
-      if (diff < 0) {
-        diff += 24 * 60; // Untuk besok
-      }
-      if (diff < nextSalatDiff) {
-        nextSalatDiff = diff;
-        nextSalat = name;
       }
     });
 
@@ -8366,23 +8494,10 @@ window.updatePrayerCountdown = function () {
   const countdownEl = document.getElementById("header-prayer-countdown");
   if (countdownEl && window.todaySalatTimings) {
     const now = new Date();
-    const timeStr = window.todaySalatTimings.Syuruq;
-    let nextTarget = null;
+    const nextSalat = window.getNextSalatTarget(window.todaySalatTimings, now);
 
-    if (timeStr) {
-      const [h, m] = timeStr.split(":").map(Number);
-      if (Number.isFinite(h) && Number.isFinite(m)) {
-        nextTarget = new Date(now);
-        nextTarget.setHours(h, m, 0, 0);
-
-        if (nextTarget.getTime() <= now.getTime()) {
-          nextTarget.setDate(nextTarget.getDate() + 1);
-        }
-      }
-    }
-
-    if (nextTarget) {
-      const diffMs = nextTarget.getTime() - now.getTime();
+    if (nextSalat?.target) {
+      const diffMs = nextSalat.target.getTime() - now.getTime();
       const diffSecs = Math.floor(diffMs / 1000);
       const hours = Math.floor(diffSecs / 3600);
       const mins = Math.floor((diffSecs % 3600) / 60);
@@ -8394,10 +8509,10 @@ window.updatePrayerCountdown = function () {
       const timeEl = countdownEl.querySelector(".countdown-time");
       
       if (labelEl && timeEl) {
-        labelEl.textContent = "Ke Syuruq";
+        labelEl.textContent = `Ke ${nextSalat.name}`;
         timeEl.textContent = `${pad(hours)}:${pad(mins)}:${pad(secs)}`;
       } else {
-        countdownEl.textContent = `${pad(hours)}:${pad(mins)}:${pad(secs)} Ke Syuruq`;
+        countdownEl.textContent = `${pad(hours)}:${pad(mins)}:${pad(secs)} Ke ${nextSalat.name}`;
       }
       
       countdownEl.classList.remove("hidden");

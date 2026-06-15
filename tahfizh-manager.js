@@ -609,9 +609,6 @@ function renderTahfizhBeranda() {
     // Jadwal Perpulangan Countdown
     renderTahfizhJadwalPerpulangan();
 
-    // Progress Ring SVGs
-    renderTahfizhProgressCircles();
-
     // Akordeon Kelas
     renderTahfizhTuntasAccordion();
 
@@ -708,8 +705,7 @@ function renderTahfizhJadwalPerpulangan() {
             </div>`).join('');
 
         cont.innerHTML = `
-            <div class="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-[1.75rem] p-4 sm:p-5 relative overflow-hidden group border border-white/60 dark:border-slate-700/50 shadow-sm">
-                <div class="absolute top-0 right-0 w-48 h-48 bg-orange-400/10 dark:bg-orange-500/10 rounded-full blur-[60px] -mr-16 -mt-16 pointer-events-none"></div>
+            <div class="tahfizh-card rounded-[1.75rem] p-4 sm:p-5 relative overflow-hidden group">
                 <div class="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-4 items-center">
                     <div class="lg:col-span-7 text-center lg:text-left space-y-3">
                         <div>
@@ -731,7 +727,7 @@ function renderTahfizhJadwalPerpulangan() {
                     <div class="lg:col-span-5 relative">
                         <div class="bg-slate-50/80 dark:bg-slate-900/40 rounded-2xl p-3 border border-slate-100 dark:border-slate-700/50">
                             <div class="flex items-center gap-3 mb-4 border-b border-orange-50/50 dark:border-orange-950/20 pb-3">
-                                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-amber-600 flex items-center justify-center text-white shadow-lg shadow-orange-500/20">
+                                <div class="w-10 h-10 rounded-xl tahfizh-soft-icon flex items-center justify-center shadow-sm">
                                     <i data-lucide="book-open" class="w-5 h-5"></i>
                                 </div>
                                 <div class="text-left">
