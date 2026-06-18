@@ -1,13 +1,21 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-  content: ["./index.html", "./script.js", "./*.js"],
+  content: [
+    "./index.html",
+    "./*.js",
+    "./core/**/*.js",
+    "./managers/**/*.js",
+    "./tahfizh/**/*.js",
+  ],
   safelist: [
     "ring-emerald-500",
     "ring-teal-400",
+    "ring-teal-500",
     "ring-blue-500",
     "ring-amber-500",
     "ring-red-500",
     "ring-purple-500",
+    "ring-cyan-500",
     "ring-slate-400",
   ],
   darkMode: "class",

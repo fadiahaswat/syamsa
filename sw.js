@@ -1,20 +1,20 @@
-const CACHE_NAME = "musyrif-app-v214-notification-timesheet-tahfizh";
+const CACHE_NAME = "musyrif-app-v215-restructured";
 const ASSETS_TO_CACHE = [
   "./",
   "./index.html",
   "./output.css",
-  "./config.js",
-  "./app-core.js",
-  "./qibla.js",
-  "./script.js",
-  "./icon.svg",
-  "./icon.webp",
-  "./icon.png",
-  "./splash.webp",
-  "./login.webp",
-  "./santri-manager.js",
-  "./data-santri.js",
-  "./data-kelas.js",
+  "./config/config.js",
+  "./core/app-core.js",
+  "./core/script.js",
+  "./features/qibla.js",
+  "./assets/icon.svg",
+  "./assets/icon.webp",
+  "./assets/icon.png",
+  "./assets/splash.webp",
+  "./assets/login.webp",
+  "./managers/santri-manager.js",
+  "./data/data-santri.js",
+  "./data/data-kelas.js",
   "./manifest.json",
 ];
 
