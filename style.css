@@ -162,7 +162,7 @@ body {
 }
 
 .activity-container .lbl-status {
-  font-size: 8px;
+  font-size: 9px;
   max-width: 44px;
 }
 
@@ -225,6 +225,29 @@ body {
     transform: translateX(0);
   }
   84%,
+  100% {
+    transform: translateX(-100%);
+  }
+}
+
+/* Location name marquee for long names */
+.loc-marquee-container {
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.loc-marquee-container > span {
+  display: inline-block;
+  padding-left: 100%;
+  animation: loc-name-marquee 6s linear infinite;
+}
+
+@keyframes loc-name-marquee {
+  0% {
+    transform: translateX(0);
+  }
   100% {
     transform: translateX(-100%);
   }
@@ -913,7 +936,7 @@ body.qibla-browser-active.qibla-browser-green {
   max-width: 60px;
   white-space: normal;
   text-align: center;
-  font-size: 8px;
+  font-size: 9px;
   line-height: 1.2;
   margin-right: 0;
 }
@@ -1285,4 +1308,37 @@ body.qibla-browser-active.qibla-browser-green {
 #att-bottom-bar.expanded #btn-filter-problem {
   opacity: 1;
   pointer-events: auto;
+}
+
+@media (max-width: 380px) {
+  .qibla-finder > div {
+    padding: 20px 20px 20px !important;
+  }
+  #qibla-alignment-indicator {
+    left: 20px;
+    font-size: 26px !important;
+    max-width: 280px;
+  }
+  .qibla-bottom-actions {
+    left: 20px;
+    right: 20px;
+    bottom: 24px;
+  }
+  .qibla-finder[data-qibla-state="calibrating"] #qibla-alignment-indicator {
+    left: 20px;
+    font-size: 16px !important;
+    bottom: 100px;
+  }
+  .qibla-finder[data-qibla-state="perfect"] #qibla-alignment-indicator,
+  .qibla-finder[data-qibla-state="locked"] #qibla-alignment-indicator {
+    left: 20px;
+    bottom: 100px;
+  }
+  .qibla-finder[data-qibla-state="locked"] #qibla-alignment-indicator {
+    font-size: 20px !important;
+  }
+  #qibla-loading span {
+    width: 140px !important;
+    height: 140px !important;
+  }
 }

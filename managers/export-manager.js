@@ -61,11 +61,13 @@ window.exportToPDF = function() {
   
   // Calculate stats for this date
   let totalHadir = 0;
+  let totalTelat = 0;
   let totalSakit = 0;
   let totalIzin = 0;
+  let totalPulang = 0;
   let totalAlpa = 0;
   let totalRequiredStatus = 0;
-  
+
   const tableRows = FILTERED_SANTRI.map((s, idx) => {
     const id = String(s.nis || s.id);
     const statuses = Object.values(SLOT_WAKTU).map(slot => {
@@ -74,15 +76,17 @@ window.exportToPDF = function() {
       const status = isActiveSlot
         ? data[slot.id]?.[id]?.status?.[mainActId] || "-"
         : "Libur";
-      
+
       if (isActiveSlot) {
         totalRequiredStatus++;
-        if (status === "Hadir" || status === "Ya" || status === "Telat") totalHadir++;
+        if (status === "Hadir" || status === "Ya") totalHadir++;
+        else if (status === "Telat") totalTelat++;
         else if (status === "Sakit") totalSakit++;
-        else if (status === "Izin" || status === "Pulang") totalIzin++;
+        else if (status === "Izin") totalIzin++;
+        else if (status === "Pulang") totalPulang++;
         else if (status === "Alpa") totalAlpa++;
       }
-      
+
       return `
         <td class="px-3 py-2 text-center border border-slate-350">
           <span class="font-bold text-xs">${status}</span>
@@ -148,23 +152,35 @@ window.exportToPDF = function() {
           <p class="text-sm font-bold text-slate-550 mt-1">Kelas Binaan: ${appState.selectedClass} | Musyrif: ${actorName}</p>
         </div>
 
-        <div class="grid grid-cols-4 gap-4 mb-6 text-center">
-          <div class="bg-slate-50 border border-slate-200 p-3 rounded-2xl">
-            <span class="block text-[10px] font-bold text-slate-400 tracking-wider">Hadir</span>
-            <span class="text-lg font-black text-emerald-600">${totalHadir} Sesi</span>
+        <div class="grid grid-cols-3 md:grid-cols-6 gap-3 mb-6 text-center">
+          <div class="bg-emerald-50 border border-emerald-200 p-2 rounded-xl">
+            <span class="block text-[9px] font-bold text-emerald-500 tracking-wider">Hadir</span>
+            <span class="text-lg font-black text-emerald-600">${totalHadir}</span>
           </div>
-          <div class="bg-slate-50 border border-slate-200 p-3 rounded-2xl">
-            <span class="block text-[10px] font-bold text-slate-400 tracking-wider">Izin/Pulang</span>
-            <span class="text-lg font-black text-blue-600">${totalIzin} Sesi</span>
+          <div class="bg-cyan-50 border border-cyan-200 p-2 rounded-xl">
+            <span class="block text-[9px] font-bold text-cyan-500 tracking-wider">Telat</span>
+            <span class="text-lg font-black text-cyan-600">${totalTelat}</span>
           </div>
-          <div class="bg-slate-50 border border-slate-200 p-3 rounded-2xl">
-            <span class="block text-[10px] font-bold text-slate-400 tracking-wider">Alpa/Sakit</span>
-            <span class="text-lg font-black text-red-500">${totalAlpa + totalSakit} Sesi</span>
+          <div class="bg-blue-50 border border-blue-200 p-2 rounded-xl">
+            <span class="block text-[9px] font-bold text-blue-500 tracking-wider">Izin</span>
+            <span class="text-lg font-black text-blue-600">${totalIzin}</span>
           </div>
-          <div class="bg-slate-50 border border-slate-200 p-3 rounded-2xl">
-            <span class="block text-[10px] font-bold text-slate-400 tracking-wider">Persentase Kelas</span>
-            <span class="text-lg font-black text-indigo-600">${pctHadir}%</span>
+          <div class="bg-purple-50 border border-purple-200 p-2 rounded-xl">
+            <span class="block text-[9px] font-bold text-purple-500 tracking-wider">Pulang</span>
+            <span class="text-lg font-black text-purple-600">${totalPulang}</span>
           </div>
+          <div class="bg-amber-50 border border-amber-200 p-2 rounded-xl">
+            <span class="block text-[9px] font-bold text-amber-500 tracking-wider">Sakit</span>
+            <span class="text-lg font-black text-amber-600">${totalSakit}</span>
+          </div>
+          <div class="bg-red-50 border border-red-200 p-2 rounded-xl">
+            <span class="block text-[9px] font-bold text-red-500 tracking-wider">Alpa</span>
+            <span class="text-lg font-black text-red-600">${totalAlpa}</span>
+          </div>
+        </div>
+        <div class="bg-slate-50 border border-slate-200 p-3 rounded-2xl text-center mb-6">
+          <span class="block text-[10px] font-bold text-slate-400 tracking-wider">Persentase Kehadiran (Hadir + Telat)</span>
+          <span class="text-2xl font-black text-indigo-600">${pctHadir}%</span>
         </div>
 
         <div class="overflow-x-auto mb-8">

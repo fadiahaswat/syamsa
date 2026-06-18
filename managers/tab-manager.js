@@ -43,7 +43,7 @@ window.showToast = function (message, type = "info", isPersistent = false) {
   };
 
   // Tambahkan class penanda 'toast-element' agar lebih mudah diidentifikasi
-  toast.className = `toast-element ${UI_COLORS[type] || UI_COLORS.info} text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 animate-[slideUp_0.3s_ease-out] mb-3 z-[9999] cursor-pointer pointer-events-auto`;
+  toast.className = `toast-element ${UI_COLORS[type] || UI_COLORS.info} text-white px-4 sm:px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 animate-[slideUp_0.3s_ease-out] mb-3 z-[9999] cursor-pointer pointer-events-auto`;
 
   // Tambahkan class penanda 'toast-msg-text' pada bagian teks
   toast.innerHTML = `
@@ -186,7 +186,7 @@ window.updateReportTab = function () {
   if (thead) {
     let headerHTML = `
             <th class="p-3 font-bold w-8 text-center">No</th>
-            <th class="p-3 font-bold min-w-[140px]">Nama Santri</th>
+            <th class="p-3 font-bold min-w-[100px] sm:min-w-[140px]">Nama Santri</th>
         `;
 
     if (appState.reportMode === "daily") {
@@ -371,7 +371,7 @@ window.updateReportTab = function () {
     return `
         <div class="flex flex-col items-center">
             <span class="text-[10px] font-bold ${!hasValue ? "text-slate-400" : pct < 60 ? "text-red-500" : "text-slate-600"}">${hasValue ? `${pct}%` : "-"}</span>
-            <div class="w-12 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+            <div class="w-8 sm:w-12 h-1.5 bg-slate-100 rounded-full overflow-hidden">
                 <div class="h-full ${hasValue ? color : "bg-slate-300"} transition-all duration-300" style="width: ${safePct}%"></div>
             </div>
         </div>`;

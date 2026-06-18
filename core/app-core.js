@@ -320,7 +320,7 @@ window.getDailyReportStatusMeta = function (
 
 window.STATUS_SCORE = {
   Hadir: 100,
-  Telat: 90,
+  Telat: 80,
   Izin: 75,
   Sakit: 75,
   Pulang: 0,

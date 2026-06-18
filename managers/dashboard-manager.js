@@ -690,6 +690,17 @@ window.drawDonutChart = function () {
   if (statsText) statsText.textContent = `${percentHadir}% KEHADIRAN`;
 };
 
+// Add resize handling for donut chart
+if (!window._donutResizeObserver) {
+  const _donutCanvas = document.getElementById("weekly-chart");
+  if (_donutCanvas) {
+    window._donutResizeObserver = new ResizeObserver(() => {
+      if (typeof window.drawDonutChart === 'function') window.drawDonutChart();
+    });
+    window._donutResizeObserver.observe(_donutCanvas.parentElement || _donutCanvas);
+  }
+}
+
 function drawCenterText(ctx, x, y, mainText, subText) {
   ctx.fillStyle = document.documentElement.classList.contains("dark")
     ? "#fff"
@@ -861,8 +872,12 @@ window.updateQuickAccessButtons = function () {
   schoolButton.classList.toggle("hidden", isSchoolHoliday);
 
   if (quickGrid) {
-    quickGrid.classList.toggle("grid-cols-5", !isSchoolHoliday);
-    quickGrid.classList.toggle("grid-cols-4", isSchoolHoliday);
+    quickGrid.classList.remove("grid-cols-2", "grid-cols-3", "grid-cols-4", "grid-cols-5", "sm:grid-cols-4", "sm:grid-cols-5");
+    if (!isSchoolHoliday) {
+      quickGrid.classList.add("grid-cols-3", "sm:grid-cols-5");
+    } else {
+      quickGrid.classList.add("grid-cols-2", "sm:grid-cols-4");
+    }
   }
 };
 
@@ -960,6 +975,70 @@ window.showStatDetails = function (statusType) {
   if (window.lucide) window.lucide.createIcons();
 };
 
+window.getPembinaanMainActId = window.getPembinaanMainActId || function (slot) {
+  return slot?.activities?.[0]?.id || "shalat";
+};
+
+window.isPembinaanViolationStatus = window.isPembinaanViolationStatus || function (status) {
+  return status === "Alpa";
+};
+
+window.collectPembinaanViolations = window.collectPembinaanViolations || function (options = {}) {
+  const dateFilter = options.date || null;
+  const coachedOnly = options.coachedOnly === true;
+  const includeUncoached = options.includeUncoached !== false;
+  const source = appState.attendanceData || {};
+  const violations = [];
+
+  FILTERED_SANTRI.forEach((santri) => {
+    const id = String(santri.nis || santri.id);
+    const dates = dateFilter ? [dateFilter] : Object.keys(source);
+
+    dates.forEach((dateKey) => {
+      const dayData = source[dateKey];
+      if (!dayData) return;
+
+      Object.values(SLOT_WAKTU).forEach((slot) => {
+        const sData = dayData[slot.id]?.[id];
+        if (!sData?.status) return;
+
+        const mainActId = window.getPembinaanMainActId(slot);
+        const status = sData.status[mainActId];
+        if (!window.isPembinaanViolationStatus(status)) return;
+
+        const isCoached = Boolean(sData.coaching?.done);
+        if (coachedOnly && !isCoached) return;
+        if (!includeUncoached && !isCoached) return;
+
+        violations.push({
+          ...santri,
+          id,
+          nis: id,
+          date: dateKey,
+          slotId: slot.id,
+          slotLabel: slot.label,
+          activityId: mainActId,
+          status,
+          isCoached,
+          coachingInfo: sData.coaching || null,
+          record: sData,
+        });
+      });
+    });
+  });
+
+  return violations;
+};
+
+window.refreshPembinaanSurfaces = window.refreshPembinaanSurfaces || function () {
+  window.renderDashboardPembinaan?.();
+  window.renderPembinaanManagement?.();
+  window.updateCommandCenterStats?.();
+  if (window.activeStudentIdDetail) {
+    window.updateStudentDetailWarningBadge?.(window.activeStudentIdDetail);
+  }
+};
+
 window.renderDashboardPembinaan = function () {
   const container = document.getElementById("dashboard-pembinaan-list");
   const badge = document.getElementById("pembinaan-count-badge");
@@ -972,38 +1051,8 @@ window.renderDashboardPembinaan = function () {
   if (!container) return;
 
   const dateKey = appState.date;
-  const dayData = appState.attendanceData[dateKey];
-
-  let violationList = [];
-  let pendingCount = 0;
-
-  if (dayData) {
-    FILTERED_SANTRI.forEach((s) => {
-      const id = String(s.nis || s.id);
-
-      Object.values(SLOT_WAKTU).forEach((slot) => {
-        const sData = dayData[slot.id]?.[id];
-        const st = sData?.status?.shalat;
-
-        // Syarat: Status ALPA (Tidak peduli sudah dibina atau belum)
-        if (st === "Alpa") {
-          const isCoached = sData.coaching && sData.coaching.done;
-
-          // Hitung yang belum dibina untuk badge notifikasi
-          if (!isCoached) pendingCount++;
-
-          violationList.push({
-            ...s,
-            slotLabel: slot.label,
-            slotId: slot.id,
-            date: dateKey,
-            isCoached: isCoached,
-            coachingInfo: sData.coaching, // Bawa info jika perlu ditampilkan
-          });
-        }
-      });
-    });
-  }
+  const violationList = window.collectPembinaanViolations({ date: dateKey });
+  const pendingCount = violationList.filter((item) => !item.isCoached).length;
 
   // Update Badge (Merah jika ada pending, Hijau jika semua beres)
   if (badge) {
@@ -1068,6 +1117,7 @@ window.renderDashboardPembinaan = function () {
           slotId: p.slotId,
           date: p.date,
           slotLabel: p.slotLabel,
+          activityId: p.activityId,
         }).replace(/"/g, "&quot;");
 
         actionHtml = `
@@ -1107,6 +1157,10 @@ window.renderPembinaanManagement = function () {
   if (!container) return;
 
   // 1. Akumulasi Data Pelanggaran (HANYA YANG SUDAH DIBINA)
+  const coachedViolations = window.collectPembinaanViolations({
+    coachedOnly: true,
+    includeUncoached: false,
+  });
   let problemList = [];
   let counts = { l1: 0, l2: 0, l3: 0 };
 
@@ -1114,33 +1168,24 @@ window.renderPembinaanManagement = function () {
 
   FILTERED_SANTRI.forEach((s) => {
     const id = String(s.nis || s.id);
-
-    let dates = [];
-    Object.keys(appState.attendanceData).forEach((date) => {
-      const dayData = appState.attendanceData[date];
-      if (!dayData) return;
-
-      let slots = [];
-
-      Object.values(SLOT_WAKTU).forEach((slot) => {
-        const sData = dayData[slot.id]?.[id];
-        const st = sData?.status?.shalat;
-
-        // --- LOGIKA POIN BARU ---
-        // Hanya hitung poin JIKA Alpa DAN sudah ada data coaching (done: true)
-        if (st === "Alpa" && sData.coaching && sData.coaching.done) {
-          slots.push({
-            label: slot.label,
-            id: slot.id,
-            action: sData.coaching.action, // Simpan info tindakan utk ditampilkan
-          });
-        }
+    const groupedByDate = {};
+    coachedViolations
+      .filter((item) => item.id === id)
+      .forEach((item) => {
+        if (!groupedByDate[item.date]) groupedByDate[item.date] = [];
+        groupedByDate[item.date].push({
+          label: item.slotLabel,
+          id: item.slotId,
+          activityId: item.activityId,
+          action: item.coachingInfo?.action || "-",
+          coachingDate: item.coachingInfo?.date || "",
+        });
       });
 
-      if (slots.length > 0) {
-        dates.push({ date: date, slots: slots });
-      }
-    });
+    let dates = Object.entries(groupedByDate).map(([date, slots]) => ({
+      date,
+      slots,
+    }));
 
     dates.sort((a, b) => b.date.localeCompare(a.date));
 
@@ -1325,67 +1370,52 @@ window.renderActivePermitsWidget = function () {
   const combinedList = [];
   const processedNis = new Set(); // Hanya mencatat NIS yang AKTIF sakitnya
   const currentDate = appState.date;
+  const currentSlotId = window.getPermitSlotIdForView
+    ? window.getPermitSlotIdForView()
+    : appState.currentSlotId;
 
   // 1. DATA PERMIT (SURAT)
   const classNisList = FILTERED_SANTRI.map((s) => String(s.nis || s.id));
 
   // Filter permit yang relevan (Aktif ATAU selesai hari ini)
-  const relevantPermits = appState.permits.filter((p) => {
-    if (!classNisList.includes(p.nis)) return false;
-    if (p.start_date > currentDate) return false; // Masa depan skip
-
-    // Tampilkan jika belum ada end_date (aktif selamanya)
-    // ATAU range tanggal mencakup hari ini
+  const relevantPermits = (appState.permits || []).filter((p) => {
+    if (!classNisList.includes(String(p.nis))) return false;
+    if (window.getPermitRuntimeState) {
+      return window.getPermitRuntimeState(p, currentDate, currentSlotId).relevant;
+    }
+    if (p.start_date > currentDate) return false;
     if (!p.end_date) return true;
-    if (currentDate >= p.start_date && currentDate <= p.end_date) return true;
-    return false;
+    return currentDate >= p.start_date && currentDate <= p.end_date;
   });
 
   relevantPermits.forEach((p) => {
-    let visualActive = p.is_active;
+    const runtime = window.getPermitRuntimeState
+      ? window.getPermitRuntimeState(p, currentDate, currentSlotId)
+      : { active: p.is_active !== false, evaluated: null };
+    let visualActive = runtime.active;
     const catSafe = (p.category || "").toLowerCase();
-
-    // Logika Visual Selesai (Abu-abu)
-    if (catSafe === "sakit" && p.end_date) {
-      // Jika hari ini > tanggal sembuh -> nonaktif
-      if (currentDate > p.end_date) visualActive = false;
-      // Jika hari ini == tanggal sembuh, cek sesi
-      else if (currentDate === p.end_date && p.end_session) {
-        // Jika sesi sekarang > sesi akhir sakit -> nonaktif
-        if (
-          SESSION_ORDER[appState.currentSlotId] > SESSION_ORDER[p.end_session]
-        ) {
-          visualActive = false;
-        }
-      }
-    }
-    // Logika Izin/Pulang Selesai
-    else if (
-      (catSafe === "izin" || catSafe === "pulang") &&
-      p.end_date &&
-      currentDate > p.end_date
-    ) {
-      visualActive = false;
-    } else if (!p.is_active) {
-      visualActive = false; // Jika database bilang false, maka false
-    }
+    const runtimeType = runtime.evaluated?.type || p.category;
+    const runtimeCategory =
+      runtimeType === "Alpa" ? "alpa" : (p.category || "").toLowerCase();
 
     // Filter tambahan: Pastikan Permit juga hanya S/I/P (jaga-jaga jika ada kategori lain)
     if (["sakit", "izin", "pulang"].includes(catSafe)) {
       combinedList.push({
         type: "permit",
         id: p.id,
-        nis: p.nis,
-        category: p.category,
+        nis: String(p.nis),
+        category: runtimeCategory,
+        originalCategory: p.category,
         startTime: p.start_date,
         endTime: p.end_date,
         isActive: visualActive,
         reason: p.reason,
+        runtimeType,
       });
 
       // PENTING: Hanya block Manual Check jika permit ini MASIH AKTIF.
       if (visualActive) {
-        processedNis.add(p.nis);
+        processedNis.add(String(p.nis));
       }
     }
   });
@@ -1453,6 +1483,7 @@ window.renderActivePermitsWidget = function () {
 
     let colorClass, iconName;
     const cat = item.category.toLowerCase();
+    const displayCategory = item.runtimeType || item.category;
 
     if (cat === "sakit") {
       colorClass = "bg-amber-100 text-amber-600 border-amber-200";
@@ -1507,7 +1538,7 @@ window.renderActivePermitsWidget = function () {
                 <div class="min-w-0">
                     <h4 class="text-xs font-bold text-slate-800 dark:text-white truncate">${santri.nama}</h4>
                     <div class="flex items-center gap-1.5 mt-1">
-                        <span class="text-[9px] font-black uppercase ${colorClass.split(" ")[1]}">${item.category}</span>
+                        <span class="text-[9px] font-black uppercase ${colorClass.split(" ")[1]}">${displayCategory}</span>
                         <span class="text-[9px] text-slate-400">• ${item.type === "manual" ? "Manual" : window.formatDate(item.startTime)}</span>
                     </div>
                 </div>
@@ -1558,9 +1589,12 @@ window.resolveManualStatus = function (nis, statusType) {
 
   if (changed) {
     window.saveData();
-    window.renderActivePermitsWidget();
-    window.renderAttendanceList();
     window.showToast("Status berhasil diubah menjadi Hadir", "success");
+    if (window.refreshPermitSurfaces) window.refreshPermitSurfaces();
+    else {
+      window.renderActivePermitsWidget();
+      window.renderAttendanceList();
+    }
   } else {
     window.showToast("Tidak ada data yang perlu diubah", "info");
   }
@@ -1570,10 +1604,11 @@ window.resolveManualStatus = function (nis, statusType) {
 window.openPembinaanModal = function (data) {
   const modal = document.getElementById("modal-input-pembinaan");
   if (!modal) return;
+  const safeName = String(data.nama || "Santri");
 
   // Isi Data UI
-  document.getElementById("bina-nama").textContent = data.nama;
-  document.getElementById("bina-avatar").textContent = data.nama
+  document.getElementById("bina-nama").textContent = safeName;
+  document.getElementById("bina-avatar").textContent = safeName
     .substring(0, 2)
     .toUpperCase();
   document.getElementById("bina-detail").textContent =
@@ -1596,11 +1631,18 @@ window.savePembinaan = function () {
   try {
     const target = JSON.parse(rawData);
     const dateBina = document.getElementById("bina-date").value;
-    const actionBina = document.getElementById("bina-action").value;
+    const actionBina = document.getElementById("bina-action").value.trim();
 
     if (!dateBina || !actionBina) {
       return window.showToast(
         "Tanggal dan Bentuk Pembinaan wajib diisi!",
+        "warning",
+      );
+    }
+
+    if (dateBina < target.date) {
+      return window.showToast(
+        "Tanggal pembinaan tidak boleh sebelum tanggal pelanggaran",
         "warning",
       );
     }
@@ -1620,6 +1662,15 @@ window.savePembinaan = function () {
       dayData[target.slotId][target.id]
     ) {
       const studentData = dayData[target.slotId][target.id];
+      const slotConfig = SLOT_WAKTU[target.slotId];
+      const mainActId = target.activityId || window.getPembinaanMainActId(slotConfig);
+
+      if (!window.isPembinaanViolationStatus(studentData.status?.[mainActId])) {
+        return window.showToast(
+          "Status pelanggaran sudah berubah. Pembinaan tidak dicatat.",
+          "warning",
+        );
+      }
 
       studentData.coaching = {
         done: true,
@@ -1631,19 +1682,13 @@ window.savePembinaan = function () {
 
       window.saveData();
 
-      // Refresh UI safely
-      if (typeof window.renderDashboardPembinaan === "function") {
-        window.renderDashboardPembinaan();
-      }
-      if (typeof window.renderPembinaanManagement === "function") {
-        window.renderPembinaanManagement();
-      }
-
       window.showToast(
         "Pembinaan berhasil dicatat. Poin ditambahkan.",
         "success",
       );
       window.closeModal("modal-input-pembinaan");
+      window.refreshPembinaanSurfaces();
+      window.updateDashboard?.();
     } else {
       window.showToast(
         "Data presensi tidak ditemukan (mungkin terhapus)",
@@ -2365,6 +2410,7 @@ window.openStudentDetail = function (id) {
   if (!student) return window.showToast("Santri tidak ditemukan", "error");
 
   activeStudentIdDetail = id;
+  window.activeStudentIdDetail = id;
 
   // Header data
   document.getElementById("sd-name").textContent = student.nama;

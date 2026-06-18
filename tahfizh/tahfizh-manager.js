@@ -717,9 +717,15 @@ function renderTahfizhBeranda() {
     const totalSantri = TahfizhState.rawSantriList.length;
     const tuntasCount = TahfizhState.santriData.filter(s => s.isTuntas).length;
 
-    if (TDOM.statsSantriAktif) TDOM.statsSantriAktif.textContent = `${activeSantriIds.size} / ${totalSantri}`;
-    if (TDOM.statsSantriTuntas) TDOM.statsSantriTuntas.textContent = tuntasCount;
-    if (TDOM.statsSantriBelumTuntas) TDOM.statsSantriBelumTuntas.textContent = totalSantri - tuntasCount;
+    document.querySelectorAll('#tahfizh-stats-santri-aktif').forEach(el => {
+        el.textContent = `${activeSantriIds.size} / ${totalSantri}`;
+    });
+    document.querySelectorAll('#tahfizh-stats-santri-tuntas').forEach(el => {
+        el.textContent = tuntasCount;
+    });
+    document.querySelectorAll('#tahfizh-stats-santri-belum-tuntas').forEach(el => {
+        el.textContent = totalSantri - tuntasCount;
+    });
 
     // Validasi Inbox (Setoran Masuk)
     renderTahfizhValidationInbox();

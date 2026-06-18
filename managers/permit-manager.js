@@ -116,19 +116,64 @@ window.updatePermitCount = function () {
   if (el) el.textContent = checked;
 };
 
+window.persistPermits = window.persistPermits || function () {
+  localStorage.setItem(APP_CONFIG.permitKey, JSON.stringify(appState.permits || []));
+};
+
+window.refreshPermitSurfaces = window.refreshPermitSurfaces || function () {
+  window.renderPermitList?.();
+  window.renderActivePermitsWidget?.();
+  window.renderPermitHistory?.();
+  window.filterPermitsTabList?.();
+  window.renderAttendanceList?.();
+  window.updateDashboard?.();
+};
+
+window.getPermitSlotIdForView = window.getPermitSlotIdForView || function () {
+  return appState.activeAttendanceSlotId || appState.currentSlotId;
+};
+
+window.getPermitRuntimeState = window.getPermitRuntimeState || function (
+  permit,
+  currentDateStr = appState.date,
+  currentSlotId = window.getPermitSlotIdForView(),
+) {
+  if (!permit || !currentDateStr || !currentSlotId) {
+    return { relevant: false, active: false, evaluated: null };
+  }
+
+  const status = String(permit.status || "approved").toLowerCase();
+  if (status !== "approved") return { relevant: false, active: false, evaluated: null };
+  if (permit.start_date && permit.start_date > currentDateStr) {
+    return { relevant: false, active: false, evaluated: null };
+  }
+
+  const evaluated = window.evaluatePermitForSlot?.(
+    permit,
+    currentDateStr,
+    currentSlotId,
+  ) || null;
+  const hasReachedDate =
+    !permit.start_date || currentDateStr >= permit.start_date;
+  const inDateRange =
+    hasReachedDate &&
+    (!permit.end_date ||
+      (currentDateStr >= permit.start_date && currentDateStr <= permit.end_date));
+  const relevant = Boolean(inDateRange || evaluated);
+  const active = permit.is_active !== false && Boolean(evaluated);
+
+  return { relevant, active, evaluated };
+};
+
 window.deletePermit = function (id) {
   if (!confirm("Hapus data izin ini? Status akan dikembalikan ke default."))
     return;
 
   appState.permits = appState.permits.filter((p) => p.id !== id);
-  localStorage.setItem(APP_CONFIG.permitKey, JSON.stringify(appState.permits));
+  window.persistPermits();
 
-  window.renderPermitList();
   window.showToast("Data izin dihapus", "info");
-
-  // Trigger re-render untuk menjalankan logika RESET
-  window.renderAttendanceList();
-  window.updateDashboard();
+  window.refreshPermitSurfaces();
 };
 
 window.renderPermitList = function () {
@@ -137,14 +182,10 @@ window.renderPermitList = function () {
 
   const classNisList = FILTERED_SANTRI.map((s) => String(s.nis || s.id));
   // Filter izin aktif milik kelas ini
-  let activePermits = appState.permits.filter((p) => {
-    const isMyClass = classNisList.includes(p.nis);
-    const isActive = p.is_active;
-
-    // Cek jika ini sakit yang sudah sembuh (punya end_date)
-    const isRecoveredSakit = p.category === "sakit" && p.end_date !== null;
-
-    return isMyClass && isActive && !isRecoveredSakit;
+  let activePermits = (appState.permits || []).filter((p) => {
+    const isMyClass = classNisList.includes(String(p.nis));
+    const runtime = window.getPermitRuntimeState(p);
+    return isMyClass && runtime.active;
   });
 
   if (currentModalMode === "daily") {
@@ -201,7 +242,7 @@ window.renderPermitList = function () {
 
     const div = document.createElement("div");
     div.className =
-      "p-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 shadow-sm flex justify-between items-center";
+      "p-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 shadow-sm flex flex-wrap justify-between items-start gap-3";
     div.innerHTML = `
             <div>
                 <div class="flex items-center gap-2 mb-1">
@@ -327,7 +368,13 @@ window.checkActivePermit = function (nis, currentDateStr, currentSlotId) {
       currentDateStr,
       currentSlotId,
     );
-    if (evaluated) return evaluated;
+    if (evaluated) {
+      return {
+        ...evaluated,
+        permitId: permit.id,
+        category: permit.category,
+      };
+    }
   }
 
   return null;
@@ -497,10 +544,9 @@ window.savePermitLogic = function () {
     appState.permits.push({ ...permitData, id: uniqueId, nis: nis });
   });
 
-  localStorage.setItem(APP_CONFIG.permitKey, JSON.stringify(appState.permits));
+  window.persistPermits();
 
   window.showToast(`${selectedNis.length} Data Berhasil Disimpan`, "success");
-  window.renderPermitList();
 
   // Reset Checkbox
   checkboxes.forEach((cb) => (cb.checked = false));
@@ -508,9 +554,35 @@ window.savePermitLogic = function () {
 
   // Refresh Dashboard jika tanggal relevan
   if (appState.date >= startDate) {
-    window.renderAttendanceList();
-    window.updateDashboard();
+    window.refreshPermitSurfaces();
+  } else {
+    window.renderPermitList();
+    window.renderActivePermitsWidget?.();
   }
+};
+
+window.getPreviousAttendanceSessionId = function (slotId) {
+  const sessionKeys = [
+    "kemarin",
+    "shubuh",
+    "sekolah",
+    "ashar",
+    "maghrib",
+    "isya",
+  ];
+  const currentIndex = sessionKeys.indexOf(slotId);
+  return currentIndex <= 0 ? "kemarin" : sessionKeys[currentIndex - 1];
+};
+
+window.markSickPermitRecoveredBeforeSlot = function (permitId, slotId) {
+  const permit = appState.permits.find((p) => p.id === permitId);
+  if (!permit || permit.category !== "sakit") return false;
+
+  permit.end_date = appState.date;
+  permit.end_session = window.getPreviousAttendanceSessionId(slotId);
+  permit.is_active = true;
+  window.persistPermits();
+  return true;
 };
 
 // 1. SAKIT -> SEMBUH
@@ -530,38 +602,24 @@ window.markAsRecovered = function (id) {
     permit.end_date = appState.date;
 
     // Logika Index Sesi — gunakan SESSION_KEYS agar 'sekolah' ikut tertangani
-    const SESSION_KEYS = [
-      "kemarin",
-      "shubuh",
-      "sekolah",
-      "ashar",
-      "maghrib",
-      "isya",
-    ];
-    const currIdx = SESSION_KEYS.indexOf(appState.currentSlotId);
+    const currentSlotId = appState.activeAttendanceSlotId || appState.currentSlotId;
 
     if (keepSick) {
       // Pilihan OK (Default): Sembuh NANTI/SEKARANG.
       // Sesi saat ini masih dianggap Sakit.
-      permit.end_session = appState.currentSlotId;
+      permit.end_session = currentSlotId;
     } else {
       // Pilihan Cancel: Sembuh DARI TADI.
       // Sesi saat ini dianggap sudah sehat (Hadir).
       // End Session = Sesi Sebelumnya.
-      permit.end_session = currIdx <= 0 ? "kemarin" : SESSION_KEYS[currIdx - 1];
+      permit.end_session = window.getPreviousAttendanceSessionId(currentSlotId);
     }
 
     // Simpan
-    localStorage.setItem(
-      APP_CONFIG.permitKey,
-      JSON.stringify(appState.permits),
-    );
+    window.persistPermits();
     window.showToast("Status kesembuhan diperbarui", "success");
 
-    // Refresh UI
-    window.renderAttendanceList();
-    window.renderActivePermitsWidget();
-    window.renderPermitHistory(); // Refresh profil juga
+    window.refreshPermitSurfaces();
   }
 };
 
@@ -573,16 +631,12 @@ window.markAsReturned = function (id) {
     // Agar sesi hari ini bisa diisi Hadir manual oleh Musyrif
     permit.is_active = false;
 
-    localStorage.setItem(
-      APP_CONFIG.permitKey,
-      JSON.stringify(appState.permits),
-    );
+    window.persistPermits();
     window.showToast(
       "Santri sudah kembali. Silakan presensi manual.",
       "success",
     );
-    window.renderPermitList();
-    window.renderAttendanceList();
+    window.refreshPermitSurfaces();
   }
 };
 
@@ -611,9 +665,8 @@ window.extendPermit = function (id) {
     window.showToast("Masa izin diperpanjang", "success");
   }
 
-  localStorage.setItem(APP_CONFIG.permitKey, JSON.stringify(appState.permits));
-  window.renderPermitList();
-  window.renderAttendanceList();
+  window.persistPermits();
+  window.refreshPermitSurfaces();
 };
 
 window.toggleSelectAllPermit = function () {
@@ -873,14 +926,10 @@ window.deleteHistoryPermit = function (id) {
   appState.permits = appState.permits.filter((p) => p.id !== id);
 
   // Simpan perubahan ke LocalStorage
-  localStorage.setItem(APP_CONFIG.permitKey, JSON.stringify(appState.permits));
-
-  // Refresh UI
-  window.renderPermitHistory(); // Refresh list profil
-  window.renderActivePermitsWidget(); // Refresh widget dashboard (jika yang dihapus hari ini)
-  window.renderAttendanceList(); // Refresh list absen (mungkin statusnya berubah jadi Hadir)
+  window.persistPermits();
 
   window.showToast("Data izin berhasil dihapus", "success");
+  window.refreshPermitSurfaces();
 };
 
 
@@ -929,16 +978,12 @@ window.savePermitEdit = function () {
   appState.permits[index].is_active = isActive;
 
   // Simpan ke Storage
-  localStorage.setItem(APP_CONFIG.permitKey, JSON.stringify(appState.permits));
+  window.persistPermits();
 
   // Tutup Modal & Refresh
   window.closeModal("modal-edit-permit");
   window.showToast("Perubahan berhasil disimpan", "success");
-
-  // Refresh Semua UI Terkait
-  window.renderPermitHistory();
-  window.renderActivePermitsWidget();
-  window.renderAttendanceList();
+  window.refreshPermitSurfaces();
 };
 
 // --- FITUR PEMBINAAN (Baru) ---
@@ -1019,13 +1064,11 @@ window.submitAddPermit = function() {
   
   if (!appState.permits) appState.permits = [];
   appState.permits.push(newPermit);
-  localStorage.setItem(APP_CONFIG.permitKey, JSON.stringify(appState.permits));
-  
+  window.persistPermits();
+
   window.closeModal("modal-add-permit");
-  window.filterPermitsTabList();
-  window.renderAttendanceList();
-  window.updateDashboard();
   window.showToast("Pengajuan izin berhasil dibuat", "success");
+  window.refreshPermitSurfaces();
 };
 
 window.filterPermitsTabList = function() {
@@ -1164,11 +1207,9 @@ window.approvePermit = function(id) {
       by: "Musyrif " + (window.getCurrentActorName ? window.getCurrentActorName() : "Admin"),
       time: new Date().toISOString()
     });
-    localStorage.setItem(APP_CONFIG.permitKey, JSON.stringify(appState.permits));
-    window.filterPermitsTabList();
-    window.renderAttendanceList();
-    window.updateDashboard();
+    window.persistPermits();
     window.showToast("Pengajuan izin disetujui", "success");
+    window.refreshPermitSurfaces();
   }
 };
 
@@ -1182,28 +1223,24 @@ window.rejectPermit = function(id) {
       by: "Musyrif " + (window.getCurrentActorName ? window.getCurrentActorName() : "Admin"),
       time: new Date().toISOString()
     });
-    localStorage.setItem(APP_CONFIG.permitKey, JSON.stringify(appState.permits));
-    window.filterPermitsTabList();
-    window.renderAttendanceList();
-    window.updateDashboard();
+    window.persistPermits();
     window.showToast("Pengajuan izin ditolak", "warning");
+    window.refreshPermitSurfaces();
   }
 };
 
 window.deletePermitsTabItem = function(id) {
   if (!confirm("Hapus data izin ini? Status kehadiran santri akan dikembalikan ke default.")) return;
   appState.permits = appState.permits.filter(p => p.id !== id);
-  localStorage.setItem(APP_CONFIG.permitKey, JSON.stringify(appState.permits));
-  window.filterPermitsTabList();
-  window.renderAttendanceList();
-  window.updateDashboard();
+  window.persistPermits();
   window.showToast("Data izin berhasil dihapus", "info");
+  window.refreshPermitSurfaces();
 };
 
 window.zoomPermitDocument = function(src) {
   const overlay = document.createElement("div");
   overlay.className = "fixed inset-0 z-[999] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 cursor-zoom-out animate-fade-in";
-  overlay.innerHTML = `<img src="${src}" class="max-w-full max-h-[90vh] rounded-3xl shadow-2xl border border-white/10" />`;
+  overlay.innerHTML = `<img src="${src}" class="max-w-full max-h-[90vh] rounded-3xl shadow-2xl border border-white/10" /><button class="absolute top-4 right-4 w-10 h-10 rounded-full bg-black/40 hover:bg-black/60 text-white flex items-center justify-center backdrop-blur-sm transition-colors" onclick="this.parentElement.remove()"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>`;
   overlay.onclick = () => overlay.remove();
   document.body.appendChild(overlay);
 };

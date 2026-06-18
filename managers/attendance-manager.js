@@ -170,7 +170,10 @@ window.renderAttendanceList = function () {
     const activePermit = window.checkActivePermit(id, dateKey, slot.id);
     const isAutoMarked = sData.note && sData.note.includes("[Auto]");
 
-    if (activePermit) {
+    const hasPermitManualOverride =
+      activePermit && sData.permitManualOverride === true;
+
+    if (activePermit && !hasPermitManualOverride) {
       slot.activities.forEach((act) => {
         let target = null;
         if (["fardu", "kbm", "school"].includes(act.category))
@@ -187,7 +190,7 @@ window.renderAttendanceList = function () {
         sData.note = autoNote;
         hasAutoChanges = true;
       }
-    } else if (isAutoMarked) {
+    } else if (!activePermit && isAutoMarked) {
       slot.activities.forEach((act) => {
         if (["fardu", "kbm", "school"].includes(act.category))
           sData.status[act.id] = "Hadir";
@@ -195,6 +198,10 @@ window.renderAttendanceList = function () {
         else sData.status[act.id] = "Tidak";
       });
       sData.note = "";
+      hasAutoChanges = true;
+    }
+    if (!activePermit && sData.permitManualOverride) {
+      delete sData.permitManualOverride;
       hasAutoChanges = true;
     }
 
@@ -219,24 +226,30 @@ window.renderAttendanceList = function () {
       "santri-row bg-white dark:bg-slate-800 p-5 rounded-3xl border border-slate-100 dark:border-slate-700/50 shadow-sm relative overflow-hidden transition-all hover:shadow-md mb-4";
 
     // Visual highlight untuk active permit (optional subtle ring)
-    if (activePermit) {
+    if (activePermit && !hasPermitManualOverride) {
       if (activePermit.type === "Sakit") {
         cardContainer.classList.add(
-          "ring-1",
+          "ring-2",
           "ring-amber-200",
           "dark:ring-amber-800/50",
         );
       } else if (activePermit.type === "Izin") {
         cardContainer.classList.add(
-          "ring-1",
+          "ring-2",
           "ring-blue-200",
           "dark:ring-blue-800/50",
         );
       } else if (activePermit.type === "Pulang") {
         cardContainer.classList.add(
-          "ring-1",
+          "ring-2",
           "ring-purple-200",
           "dark:ring-purple-800/50",
+        );
+      } else if (activePermit.type === "Alpa") {
+        cardContainer.classList.add(
+          "ring-2",
+          "ring-red-200",
+          "dark:ring-red-800/50",
         );
       }
     }
@@ -325,24 +338,32 @@ window.renderAttendanceList = function () {
     // BADGE - Only for active permit (inline conditional)
     const badgeContainer = clone.querySelector(".badge-container");
     badgeContainer.innerHTML = "";
-    if (activePermit) {
+    if (activePermit && !hasPermitManualOverride) {
       const badge = document.createElement("span");
       let badgeClass =
-        "px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider border align-middle";
+        "inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider border align-middle";
+      let badgeIcon = "badge-alert";
 
       if (activePermit.type === "Sakit") {
+        badgeIcon = "thermometer";
         badgeClass +=
           " bg-amber-100 text-amber-600 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-700";
       } else if (activePermit.type === "Izin") {
+        badgeIcon = "calendar";
         badgeClass +=
           " bg-blue-100 text-blue-600 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-700";
       } else if (activePermit.type === "Pulang") {
+        badgeIcon = "bus";
         badgeClass +=
           " bg-purple-100 text-purple-600 border-purple-200 dark:bg-purple-900/30 dark:text-purple-400 dark:border-purple-700";
+      } else if (activePermit.type === "Alpa") {
+        badgeIcon = "alert-triangle";
+        badgeClass +=
+          " bg-red-100 text-red-600 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-700";
       }
 
       badge.className = badgeClass;
-      badge.textContent = activePermit.type;
+      badge.innerHTML = `<i data-lucide="${badgeIcon}" class="w-2.5 h-2.5"></i><span>${activePermit.type}</span>`;
       badgeContainer.appendChild(badge);
     }
 
@@ -406,7 +427,9 @@ window.renderAttendanceList = function () {
       const curr = sData.status?.[act.id] || "Tidak";
       const uiBtn = STATUS_UI[curr] || STATUS_UI["Tidak"];
       const hasPermitConflict =
-        activePermit && ["fardu", "kbm", "school"].includes(act.category);
+        activePermit &&
+        !sData.permitManualOverride &&
+        ["fardu", "kbm", "school"].includes(act.category);
 
       let btnClass = `btn-status w-11 h-11 sm:w-14 sm:h-14 shrink-0 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-sm transition-all active:scale-95 border-[2.5px] font-black text-sm sm:text-base ${uiBtn.class}`;
 
@@ -429,10 +452,6 @@ window.renderAttendanceList = function () {
           "btn-status w-11 h-11 sm:w-14 sm:h-14 shrink-0 rounded-xl sm:rounded-2xl flex items-center justify-center border-2 border-slate-300 bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500 dark:border-slate-700 grayscale opacity-70";
       }
 
-      if (hasPermitConflict) {
-        btn.classList.add("ring-4", "ring-offset-4");
-      }
-
       if (isLibur) {
         btn.innerHTML = '<i data-lucide="calendar-x" class="w-5 h-5"></i>';
       } else {
@@ -452,7 +471,34 @@ window.renderAttendanceList = function () {
             )
           )
             return;
+          sData.permitManualOverride = true;
+          const recoveredSickPermit =
+            activePermit.type === "Sakit" &&
+            window.markSickPermitRecoveredBeforeSlot?.(
+              activePermit.permitId,
+              slot.id,
+            );
           if (sData.note && sData.note.includes("[Auto]")) sData.note = "";
+          sData.status[act.id] = "Hadir";
+          if (act.category === "fardu" && act.id === "shalat") {
+            slot.activities.forEach((otherAct) => {
+              if (otherAct.category === "dependent")
+                sData.status[otherAct.id] = "Ya";
+              else if (["kbm", "school"].includes(otherAct.category))
+                sData.status[otherAct.id] = "Hadir";
+            });
+          }
+          window.saveData();
+          window.renderAttendanceList();
+          window.refreshPembinaanSurfaces?.();
+          if (recoveredSickPermit) {
+            window.renderActivePermitsWidget?.();
+            window.renderPermitHistory?.();
+          }
+          if (appState.date === window.getLocalDateStr()) {
+            window.updateDashboard();
+          }
+          return;
         }
         window.toggleStatus(id, act.id, act.type);
       };
@@ -648,7 +694,23 @@ window.toggleStatus = function (id, actId, type) {
   // Terapkan status baru ke tombol yang diklik
   sData.status[actId] = next;
 
-  // 2. LOGIKA OTOMATIS (CASCADING)
+  // TIMESTAMP - Catat waktu presensi
+  if (!sData.timestamps) sData.timestamps = {};
+  sData.timestamps[actId] = new Date().toISOString();
+
+  // AUDIT TRAIL - Catat perubahan status
+  if (!sData.auditTrail) sData.auditTrail = [];
+  sData.auditTrail.push({
+    action: "status_change",
+    from: curr,
+    to: next,
+    activity: actId,
+    slot: slotId,
+    at: new Date().toISOString(),
+    by: window.getCurrentActorName ? window.getCurrentActorName() : "Musyrif"
+  });
+
+  // LOGIKA OTOMATIS (CASCADING)
   // Cek konfigurasi kegiatan yang sedang diklik
   const currentSlotConfig = SLOT_WAKTU[slotId];
   const clickedActConfig = currentSlotConfig.activities.find(
@@ -699,6 +761,7 @@ window.toggleStatus = function (id, actId, type) {
   // Simpan & Refresh UI
   window.saveData();
   window.renderAttendanceList(); // Render ulang agar perubahan otomatis terlihat
+  window.refreshPembinaanSurfaces?.();
 
   if (appState.date === window.getLocalDateStr()) {
     window.updateDashboard();
@@ -740,12 +803,15 @@ window.generateBulkButtons = function () {
     html += `
         <div class="mb-4">
             <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Shalat & Rawatib</p>
-            <div class="flex gap-2">
-                <button onclick="window.applyBulkAction('fardu', 'Hadir')" class="flex-1 py-3 rounded-xl bg-emerald-500 text-white font-bold text-xs shadow-lg shadow-emerald-500/30 active:scale-95 transition-all">
-                    Hadir Semua
+            <div class="grid grid-cols-3 gap-2">
+                <button onclick="window.applyBulkAction('fardu', 'Hadir')" class="py-3 rounded-xl bg-emerald-500 text-white font-bold text-xs shadow-lg shadow-emerald-500/30 active:scale-95 transition-all">
+                    Hadir
                 </button>
-                <button onclick="window.applyBulkAction('fardu', 'Alpa')" class="flex-1 py-3 rounded-xl bg-red-100 text-red-600 font-bold text-xs border border-red-200 active:scale-95 transition-all">
-                    Alpa Semua
+                <button onclick="window.applyBulkAction('fardu', 'Telat')" class="py-3 rounded-xl bg-cyan-500 text-white font-bold text-xs shadow-lg shadow-cyan-500/30 active:scale-95 transition-all">
+                    Telat
+                </button>
+                <button onclick="window.applyBulkAction('fardu', 'Alpa')" class="py-3 rounded-xl bg-red-100 text-red-600 font-bold text-xs border border-red-200 active:scale-95 transition-all">
+                    Alpa
                 </button>
             </div>
             <p class="text-[9px] text-slate-400 mt-1.5 italic">*Dzikir & Rawatib akan menyesuaikan status shalat.</p>
@@ -800,7 +866,7 @@ window.generateBulkButtons = function () {
 
   // 3. Bagian Sunnah Spesifik (Tahajjud, Dhuha, dll)
   if (sunnahActs.length > 0) {
-    html += `<div class="mb-2"><p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Ibadah Sunnah</p><div class="grid grid-cols-2 gap-2">`;
+    html += `<div class="mb-2"><p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Ibadah Sunnah</p><div class="grid grid-cols-1 sm:grid-cols-2 gap-2">`;
 
     sunnahActs.forEach((act) => {
       html += `
@@ -875,6 +941,7 @@ window.applyBulkAction = function (targetCategory, value, specificId = null) {
 
   window.saveData();
   window.renderAttendanceList();
+  window.refreshPembinaanSurfaces?.();
   window.showToast("Data berhasil diperbarui secara massal", "success");
   window.closeModal("modal-bulk-actions");
 };

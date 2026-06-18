@@ -195,19 +195,20 @@ window.initBottomNavScroll = function () {
 };
 
 window.populateClassDropdown = function () {
-  const select = document.getElementById("login-kelas");
-  if (!select) return;
-
-  select.innerHTML =
-    '<option value="" disabled selected>-- Pilih Kelas --</option>';
-  Object.keys(MASTER_KELAS)
-    .sort()
-    .forEach((k) => {
-      const opt = document.createElement("option");
-      opt.value = k;
-      opt.textContent = `${k} - ${MASTER_KELAS[k].musyrif}`;
-      select.appendChild(opt);
-    });
+  // Populate musyrif login dropdown
+  const musyrifSelect = document.getElementById("musyrif-kelas");
+  if (musyrifSelect) {
+    musyrifSelect.innerHTML =
+      '<option value="" disabled selected>Pilih Kelas</option>';
+    Object.keys(MASTER_KELAS)
+      .sort()
+      .forEach((k) => {
+        const opt = document.createElement("option");
+        opt.value = k;
+        opt.textContent = `${k} - ${MASTER_KELAS[k].musyrif || ""}`;
+        musyrifSelect.appendChild(opt);
+      });
+  }
 };
 
 // ==========================================
@@ -221,7 +222,7 @@ window.googleBypassActive = false;
 window.handleLogoClick = function () {
   loginIconClickCount++;
   clearTimeout(loginIconClickTimeout);
-  
+
   if (loginIconClickCount >= 5) {
     loginIconClickCount = 0;
     window.toggleGoogleBypassMode();
@@ -232,22 +233,76 @@ window.handleLogoClick = function () {
   }
 };
 
+// Superadmin logo click handler
+let muinClickCount = 0;
+let muinClickTimeout = null;
+let superadminBtnVisible = false;
+
+window.handleMuinClick = function () {
+  muinClickCount++;
+  clearTimeout(muinClickTimeout);
+
+  if (muinClickCount >= 5) {
+    muinClickCount = 0;
+    const container = document.getElementById("superadmin-btn-container");
+    if (container) {
+      if (superadminBtnVisible) {
+        container.classList.add("hidden");
+        superadminBtnVisible = false;
+        window.showToast("🔐 Tombol Superadmin Disembunyikan.", "info");
+      } else {
+        container.classList.remove("hidden");
+        superadminBtnVisible = true;
+        window.showToast("🔐 Tombol Superadmin Muncul!", "success");
+      }
+    }
+  } else {
+    muinClickTimeout = setTimeout(() => {
+      muinClickCount = 0;
+    }, 3000);
+  }
+};
+
+window.handleSuperadminLogin = function () {
+  // Simple superadmin login - bisa dimodifikasi sesuai kebutuhan
+  const password = prompt("Masukkan password Superadmin:");
+
+  if (password === "admin123") {
+    window.closeModal("modal-musyrif-login");
+    window.closeModal("modal-wali-login");
+
+    appState.superadminMode = true;
+    appState.userProfile = {
+      name: "Superadmin",
+      given_name: "Superadmin",
+      email: "admin@syamsa.local",
+      authProvider: "superadmin",
+    };
+
+    window.showToast("🔐 Login Superadmin Berhasil!", "success");
+
+    // Tampilkan semua data
+    document.getElementById("view-login").classList.add("hidden");
+    document.getElementById("view-main").classList.remove("hidden");
+    window.updateDashboard();
+    window.updateProfileInfo();
+  } else if (password !== null) {
+    window.showToast("Password Superadmin salah!", "error");
+  }
+};
+
 window.toggleGoogleBypassMode = function () {
   window.googleBypassActive = !window.googleBypassActive;
-  
-  const modeBadge = document.getElementById("login-mode-badge");
-  if (modeBadge) {
+
+  const testingModeInfo = document.getElementById("testing-mode-info");
+  if (testingModeInfo) {
     if (window.googleBypassActive) {
-      modeBadge.textContent = "Google Bypass Active";
-      modeBadge.classList.remove("hidden");
-      modeBadge.classList.add("inline-flex");
-      window.showToast("Google login bypass diaktifkan!", "success");
+      testingModeInfo.classList.remove("hidden");
+      window.showToast("⚡ Mode Bypass Aktif - Login tanpa Google!", "success");
     } else {
-      modeBadge.textContent = "Testing Mode";
       const isTestingMode = window.getAuthMode() === "testing";
-      modeBadge.classList.toggle("hidden", !isTestingMode);
-      modeBadge.classList.toggle("inline-flex", isTestingMode);
-      window.showToast("Google login bypass dinonaktifkan!", "info");
+      testingModeInfo.classList.toggle("hidden", !isTestingMode);
+      window.showToast("Mode Bypass dinonaktifkan.", "info");
     }
   }
 };
@@ -271,21 +326,11 @@ window.getProfileDisplayName = function (profile) {
 
 window.applyLoginModeUI = function () {
   const isTestingMode = window.getAuthMode() === "testing";
-  const testingFields = document.getElementById("testing-credentials");
-  const modeBadge = document.getElementById("login-mode-badge");
-  const submitText = document.getElementById("login-submit-text");
-  const googleModal = document.getElementById("modal-google-auth");
+  const testingModeInfo = document.getElementById("testing-mode-info");
 
-  if (testingFields) testingFields.classList.toggle("hidden", !isTestingMode);
-  if (modeBadge) {
-    modeBadge.classList.toggle("hidden", !isTestingMode);
-    modeBadge.classList.toggle("inline-flex", isTestingMode);
+  if (testingModeInfo) {
+    testingModeInfo.classList.toggle("hidden", !isTestingMode && !window.googleBypassActive);
   }
-  if (submitText)
-    submitText.textContent = isTestingMode
-      ? "Masuk Dashboard (Testing)"
-      : "Masuk Dashboard";
-  if (googleModal && isTestingMode) googleModal.classList.add("hidden");
 };
 
 window.sha256Hex = async function (input) {
@@ -320,69 +365,82 @@ window.startAuthenticatedSession = function (targetClass, profile) {
   window.updateProfileInfo();
 };
 
-window.handleLogin = async function () {
-  const kelas = document.getElementById("login-kelas").value;
+// ==========================================
+// MUSYRIF LOGIN
+// ==========================================
+
+window.handleMusyrifLogin = function () {
+  const modal = document.getElementById("modal-musyrif-login");
+  if (modal) {
+    window.openModal("modal-musyrif-login");
+    // Show/hide testing fields based on mode
+    const isTestingMode = window.getAuthMode() === "testing";
+    const testingCreds = document.getElementById("musyrif-testing-creds");
+    if (testingCreds) testingCreds.classList.toggle("hidden", !isTestingMode);
+  } else {
+    window.showToast("Modal login musyrif tidak ditemukan.", "error");
+  }
+};
+
+window.handleMusyrifSubmit = async function () {
+  const kelas = document.getElementById("musyrif-kelas")?.value?.trim() || "";
   const authMode = window.getAuthMode();
 
-  if (!kelas) return alert("Pilih kelas dulu!");
+  if (!kelas) return window.showToast("Pilih kelas terlebih dahulu.", "warning");
 
-  if (window.googleBypassActive) {
-    const classInfo = MASTER_KELAS[kelas];
-    if (!classInfo) return window.showToast("Kelas tidak valid.", "error");
-
-    const profileName = String(classInfo.musyrif || "Musyrif").trim();
-    const profile = {
-      name: profileName,
-      given_name: profileName.split(/\s+/)[0] || "Musyrif",
-      email: classInfo.email || "musyrif@testing.local",
-      authProvider: "google",
-    };
-
-    window.startAuthenticatedSession(kelas, profile);
-    window.showToast("Login bypass berhasil (Mode Testing)!", "success");
-    return;
-  }
-
-  if (authMode === "testing") {
+  // Testing mode login
+  if (authMode === "testing" || window.googleBypassActive) {
     try {
       const username = String(
-        document.getElementById("login-username")?.value || "",
-      )
-        .trim()
-        .toLowerCase();
+        document.getElementById("musyrif-username")?.value || "",
+      ).trim().toLowerCase();
       const password = String(
-        document.getElementById("login-password")?.value || "",
+        document.getElementById("musyrif-password")?.value || "",
       );
-      if (!username || !password)
-        return alert("Isi username & password testing!");
-      if (!MASTER_KELAS[kelas])
-        return window.showToast("Kelas tidak valid.", "error");
+
+      // Bypass mode - no credentials needed
+      if (window.googleBypassActive) {
+        const classInfo = MASTER_KELAS[kelas];
+        if (!classInfo) return window.showToast("Kelas tidak valid.", "error");
+
+        const profileName = String(classInfo.musyrif || "Musyrif").trim();
+        const profile = {
+          name: profileName,
+          given_name: profileName.split(/\s+/)[0] || "Musyrif",
+          email: classInfo.email || "musyrif@testing.local",
+          authProvider: "bypass",
+        };
+
+        window.closeModal("modal-musyrif-login");
+        window.startAuthenticatedSession(kelas, profile);
+        window.showToast("Login bypass berhasil!", "success");
+        return;
+      }
+
+      // Regular testing mode
+      if (!username || !password) {
+        return window.showToast("Isi username & password testing.", "warning");
+      }
 
       const accounts = window.getTestingAccounts();
       const account = accounts.find((acc) => {
         if (!acc) return false;
-        const accUser = String(acc.username || "")
-          .trim()
-          .toLowerCase();
+        const accUser = String(acc.username || "").trim().toLowerCase();
         const accKelas = String(acc.kelas || "").trim();
         return accUser === username && accKelas === kelas;
       });
 
       if (!account || !account.passwordHash) {
-        return window.showToast(
-          "Akun testing tidak terdaftar untuk kelas ini.",
-          "error",
-        );
+        return window.showToast("Akun testing tidak ditemukan.", "error");
       }
 
-      // Catatan: hash di sisi client ini hanya untuk mode testing lokal/non-produksi, bukan keamanan production.
       const inputHash = await window.sha256Hex(password);
       if (inputHash !== String(account.passwordHash).toLowerCase().trim()) {
         return window.showToast("Password testing salah.", "error");
       }
 
       const profileName = String(
-        MASTER_KELAS[kelas].musyrif || username || "Musyrif",
+        MASTER_KELAS[kelas]?.musyrif || username || "Musyrif",
       ).trim();
       const profile = {
         name: profileName,
@@ -391,26 +449,26 @@ window.handleLogin = async function () {
         authProvider: "testing",
       };
 
+      window.closeModal("modal-musyrif-login");
       window.startAuthenticatedSession(kelas, profile);
       window.showToast("Login Testing Berhasil!", "success");
       return;
     } catch (err) {
       console.error("Testing login error:", err);
-      return window.showToast("Gagal memproses login testing.", "error");
+      return window.showToast("Gagal memproses login.", "error");
     }
   }
 
-  // Simpan kelas sementara
+  // Production mode - Google OAuth
   appState.tempClass = kelas;
 
-  // Tampilkan Modal Google
   const modal = document.getElementById("modal-google-auth");
   document.getElementById("lbl-google-class").textContent = kelas;
 
   if (modal) {
+    window.closeModal("modal-musyrif-login");
     window.openModal("modal-google-auth");
 
-    // Render Tombol Google
     if (window.google) {
       google.accounts.id.initialize({
         client_id: APP_CONFIG.googleClientId,
@@ -423,6 +481,93 @@ window.handleLogin = async function () {
     } else {
       alert("Gagal memuat Google. Cek koneksi internet.");
     }
+  }
+};
+
+// ==========================================
+// WALI/SANTRI LOGIN
+// ==========================================
+
+window.handleWaliLogin = function () {
+  const modal = document.getElementById("modal-wali-login");
+  if (modal) {
+    window.openModal("modal-wali-login");
+  } else {
+    window.showToast("Fitur login wali belum tersedia.", "info");
+  }
+};
+
+window.handleWaliLogin = function () {
+  const modal = document.getElementById("modal-wali-login");
+  if (modal) {
+    window.openModal("modal-wali-login");
+  } else {
+    window.showToast("Fitur login wali belum tersedia.", "info");
+  }
+};
+
+window.handleWaliSubmit = function () {
+  const nis = document.getElementById("wali-nis")?.value?.trim() || "";
+  const password = document.getElementById("wali-password")?.value || "";
+
+  if (!nis || nis.length < 2) {
+    return window.showToast("Masukkan NIS yang valid.", "warning");
+  }
+
+  if (!password || password.length < 1) {
+    return window.showToast("Masukkan password NIS.", "warning");
+  }
+
+  // Cari santri berdasarkan NIS di semua kelas
+  const kelasList = Object.keys(window.classData || {});
+  let foundSantri = null;
+  let foundKelas = null;
+
+  for (const kelas of kelasList) {
+    const classInfo = window.classData[kelas];
+    if (classInfo && classInfo.santri) {
+      const match = classInfo.santri.find(s => {
+        if (!s) return false;
+        const sNis = String(s.nis || "").trim();
+        return sNis === nis;
+      });
+      if (match) {
+        foundSantri = match;
+        foundKelas = kelas;
+        break;
+      }
+    }
+  }
+
+  if (!foundSantri) {
+    return window.showToast("NIS tidak ditemukan.", "error");
+  }
+
+  // Validasi password NIS (field: password_nis)
+  const storedPassword = String(foundSantri.password_nis || foundSantri.nis_password || "").trim();
+  if (storedPassword && storedPassword !== password) {
+    return window.showToast("Password NIS salah.", "error");
+  }
+
+  // Tutup modal login
+  window.closeModal("modal-wali-login");
+
+  // Navigasi ke view wali (bisa dikembangkan lebih lanjut)
+  window.showToast(`Selamat datang, Wali dari ${foundSantri.nama}!`, "success");
+
+  // Simpan state wali untuk sesi ini
+  appState.waliMode = true;
+  appState.waliSantri = foundSantri;
+  appState.waliKelas = foundKelas;
+
+  // Redirect ke view wali atau tampilkan data
+  if (window.showWaliView) {
+    window.showWaliView();
+  } else {
+    // Fallback: tampilkan info di console untuk pengembangan
+    console.log("Wali Login:", { foundSantri, foundKelas });
+
+    alert(`Data Wali Santri:\n\nNama Santri: ${foundSantri.nama}\nNIS: ${nis}\nKelas: ${foundKelas}\n\nFitur wali dalam pengembangan.`);
   }
 };
 
@@ -1031,6 +1176,13 @@ window.updateLocationStatus = function () {
       if (elIconBg) {
         elIconBg.className = "w-6 h-6 shrink-0 rounded-full bg-red-100/80 dark:bg-red-900/50 flex items-center justify-center text-red-500 dark:text-red-400 transition-colors duration-500";
       }
+    }
+
+    // Update tombol Ke Asrama: tampil jika di luar radius
+    const elAsramaBtn = document.getElementById("loc-asrama-btn");
+    if (elAsramaBtn) {
+      elAsramaBtn.classList.toggle("hidden", cached.isInside === true);
+      elAsramaBtn.classList.toggle("flex", cached.isInside !== true);
     }
 
     if (window.lucide) window.lucide.createIcons();
@@ -1980,7 +2132,10 @@ window.renderAttendanceList = function () {
     const activePermit = window.checkActivePermit(id, dateKey, slot.id);
     const isAutoMarked = sData.note && sData.note.includes("[Auto]");
 
-    if (activePermit) {
+    const hasPermitManualOverride =
+      activePermit && sData.permitManualOverride === true;
+
+    if (activePermit && !hasPermitManualOverride) {
       slot.activities.forEach((act) => {
         let target = null;
         if (["fardu", "kbm", "school"].includes(act.category))
@@ -1997,7 +2152,7 @@ window.renderAttendanceList = function () {
         sData.note = autoNote;
         hasAutoChanges = true;
       }
-    } else if (isAutoMarked) {
+    } else if (!activePermit && isAutoMarked) {
       slot.activities.forEach((act) => {
         if (["fardu", "kbm", "school"].includes(act.category))
           sData.status[act.id] = "Hadir";
@@ -2005,6 +2160,10 @@ window.renderAttendanceList = function () {
         else sData.status[act.id] = "Tidak";
       });
       sData.note = "";
+      hasAutoChanges = true;
+    }
+    if (!activePermit && sData.permitManualOverride) {
+      delete sData.permitManualOverride;
       hasAutoChanges = true;
     }
 
@@ -2029,24 +2188,30 @@ window.renderAttendanceList = function () {
       "santri-row bg-white dark:bg-slate-800 p-5 rounded-3xl border border-slate-100 dark:border-slate-700/50 shadow-sm relative overflow-hidden transition-all hover:shadow-md mb-4";
 
     // Visual highlight untuk active permit (optional subtle ring)
-    if (activePermit) {
+    if (activePermit && !hasPermitManualOverride) {
       if (activePermit.type === "Sakit") {
         cardContainer.classList.add(
-          "ring-1",
+          "ring-2",
           "ring-amber-200",
           "dark:ring-amber-800/50",
         );
       } else if (activePermit.type === "Izin") {
         cardContainer.classList.add(
-          "ring-1",
+          "ring-2",
           "ring-blue-200",
           "dark:ring-blue-800/50",
         );
       } else if (activePermit.type === "Pulang") {
         cardContainer.classList.add(
-          "ring-1",
+          "ring-2",
           "ring-purple-200",
           "dark:ring-purple-800/50",
+        );
+      } else if (activePermit.type === "Alpa") {
+        cardContainer.classList.add(
+          "ring-2",
+          "ring-red-200",
+          "dark:ring-red-800/50",
         );
       }
     }
@@ -2135,24 +2300,32 @@ window.renderAttendanceList = function () {
     // BADGE - Only for active permit (inline conditional)
     const badgeContainer = clone.querySelector(".badge-container");
     badgeContainer.innerHTML = "";
-    if (activePermit) {
+    if (activePermit && !hasPermitManualOverride) {
       const badge = document.createElement("span");
       let badgeClass =
-        "px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider border align-middle";
+        "inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider border align-middle";
+      let badgeIcon = "badge-alert";
 
       if (activePermit.type === "Sakit") {
+        badgeIcon = "thermometer";
         badgeClass +=
           " bg-amber-100 text-amber-600 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-700";
       } else if (activePermit.type === "Izin") {
+        badgeIcon = "calendar";
         badgeClass +=
           " bg-blue-100 text-blue-600 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-700";
       } else if (activePermit.type === "Pulang") {
+        badgeIcon = "bus";
         badgeClass +=
           " bg-purple-100 text-purple-600 border-purple-200 dark:bg-purple-900/30 dark:text-purple-400 dark:border-purple-700";
+      } else if (activePermit.type === "Alpa") {
+        badgeIcon = "alert-triangle";
+        badgeClass +=
+          " bg-red-100 text-red-600 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-700";
       }
 
       badge.className = badgeClass;
-      badge.textContent = activePermit.type;
+      badge.innerHTML = `<i data-lucide="${badgeIcon}" class="w-2.5 h-2.5"></i><span>${activePermit.type}</span>`;
       badgeContainer.appendChild(badge);
     }
 
@@ -2216,7 +2389,9 @@ window.renderAttendanceList = function () {
       const curr = sData.status?.[act.id] || "Tidak";
       const uiBtn = STATUS_UI[curr] || STATUS_UI["Tidak"];
       const hasPermitConflict =
-        activePermit && ["fardu", "kbm", "school"].includes(act.category);
+        activePermit &&
+        !sData.permitManualOverride &&
+        ["fardu", "kbm", "school"].includes(act.category);
 
       let btnClass = `btn-status w-11 h-11 sm:w-14 sm:h-14 shrink-0 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-sm transition-all active:scale-95 border-[2.5px] font-black text-sm sm:text-base ${uiBtn.class}`;
 
@@ -2239,10 +2414,6 @@ window.renderAttendanceList = function () {
           "btn-status w-11 h-11 sm:w-14 sm:h-14 shrink-0 rounded-xl sm:rounded-2xl flex items-center justify-center border-2 border-slate-300 bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500 dark:border-slate-700 grayscale opacity-70";
       }
 
-      if (hasPermitConflict) {
-        btn.classList.add("ring-4", "ring-offset-4");
-      }
-
       if (isLibur) {
         btn.innerHTML = '<i data-lucide="calendar-x" class="w-5 h-5"></i>';
       } else {
@@ -2262,7 +2433,36 @@ window.renderAttendanceList = function () {
             )
           )
             return;
+          sData.permitManualOverride = true;
+          const recoveredSickPermit =
+            activePermit.type === "Sakit" &&
+            window.markSickPermitRecoveredBeforeSlot?.(
+              activePermit.permitId,
+              slot.id,
+            );
           if (sData.note && sData.note.includes("[Auto]")) sData.note = "";
+          sData.status[act.id] = "Hadir";
+          if (act.category === "fardu" && act.id === "shalat") {
+            slot.activities.forEach((otherAct) => {
+              if (otherAct.category === "dependent")
+                sData.status[otherAct.id] = "Ya";
+              else if (["kbm", "school"].includes(otherAct.category))
+                sData.status[otherAct.id] = "Hadir";
+            });
+          }
+          sData.inputDate = window.getLocalDateStr();
+          sData.updatedAt = new Date().toISOString();
+          window.saveData();
+          window.renderAttendanceList();
+          window.refreshPembinaanSurfaces?.();
+          if (recoveredSickPermit) {
+            window.renderActivePermitsWidget?.();
+            window.renderPermitHistory?.();
+          }
+          if (appState.date === window.getLocalDateStr()) {
+            window.updateDashboard();
+          }
+          return;
         }
         window.toggleStatus(id, act.id, act.type);
       };
@@ -2509,6 +2709,7 @@ window.toggleStatus = function (id, actId, type) {
   // Simpan & Refresh UI
   window.saveData();
   window.renderAttendanceList(); // Render ulang agar perubahan otomatis terlihat
+  window.refreshPembinaanSurfaces?.();
 
   if (appState.date === window.getLocalDateStr()) {
     window.updateDashboard();
@@ -2690,6 +2891,7 @@ window.applyBulkAction = function (targetCategory, value, specificId = null) {
 
   window.saveData();
   window.renderAttendanceList();
+  window.refreshPembinaanSurfaces?.();
   window.showToast("Data berhasil diperbarui secara massal", "success");
   window.closeModal("modal-bulk-actions");
 };
@@ -4563,19 +4765,64 @@ window.updatePermitCount = function () {
   if (el) el.textContent = checked;
 };
 
+window.persistPermits = function () {
+  localStorage.setItem(APP_CONFIG.permitKey, JSON.stringify(appState.permits || []));
+};
+
+window.refreshPermitSurfaces = function () {
+  window.renderPermitList?.();
+  window.renderActivePermitsWidget?.();
+  window.renderPermitHistory?.();
+  window.filterPermitsTabList?.();
+  window.renderAttendanceList?.();
+  window.updateDashboard?.();
+};
+
+window.getPermitSlotIdForView = function () {
+  return appState.activeAttendanceSlotId || appState.currentSlotId;
+};
+
+window.getPermitRuntimeState = function (
+  permit,
+  currentDateStr = appState.date,
+  currentSlotId = window.getPermitSlotIdForView(),
+) {
+  if (!permit || !currentDateStr || !currentSlotId) {
+    return { relevant: false, active: false, evaluated: null };
+  }
+
+  const status = String(permit.status || "approved").toLowerCase();
+  if (status !== "approved") return { relevant: false, active: false, evaluated: null };
+  if (permit.start_date && permit.start_date > currentDateStr) {
+    return { relevant: false, active: false, evaluated: null };
+  }
+
+  const evaluated = window.evaluatePermitForSlot?.(
+    permit,
+    currentDateStr,
+    currentSlotId,
+  ) || null;
+  const hasReachedDate =
+    !permit.start_date || currentDateStr >= permit.start_date;
+  const inDateRange =
+    hasReachedDate &&
+    (!permit.end_date ||
+      (currentDateStr >= permit.start_date && currentDateStr <= permit.end_date));
+  const relevant = Boolean(inDateRange || evaluated);
+  const active = permit.is_active !== false && Boolean(evaluated);
+
+  return { relevant, active, evaluated };
+};
+
 window.deletePermit = function (id) {
   if (!confirm("Hapus data izin ini? Status akan dikembalikan ke default."))
     return;
 
   appState.permits = appState.permits.filter((p) => p.id !== id);
-  localStorage.setItem(APP_CONFIG.permitKey, JSON.stringify(appState.permits));
+  window.persistPermits();
 
-  window.renderPermitList();
   window.showToast("Data izin dihapus", "info");
-
-  // Trigger re-render untuk menjalankan logika RESET
-  window.renderAttendanceList();
-  window.updateDashboard();
+  window.refreshPermitSurfaces();
 };
 
 window.renderPermitList = function () {
@@ -4584,14 +4831,10 @@ window.renderPermitList = function () {
 
   const classNisList = FILTERED_SANTRI.map((s) => String(s.nis || s.id));
   // Filter izin aktif milik kelas ini
-  let activePermits = appState.permits.filter((p) => {
-    const isMyClass = classNisList.includes(p.nis);
-    const isActive = p.is_active !== false;
-
-    // Cek jika ini sakit yang sudah sembuh (punya end_date)
-    const isRecoveredSakit = p.category === "sakit" && p.end_date !== null;
-
-    return isMyClass && isActive && !isRecoveredSakit;
+  let activePermits = (appState.permits || []).filter((p) => {
+    const isMyClass = classNisList.includes(String(p.nis));
+    const runtime = window.getPermitRuntimeState(p);
+    return isMyClass && runtime.active;
   });
 
   if (currentModalMode === "daily") {
@@ -4773,7 +5016,13 @@ window.checkActivePermit = function (nis, currentDateStr, currentSlotId) {
       currentDateStr,
       currentSlotId,
     );
-    if (evaluated) return evaluated;
+    if (evaluated) {
+      return {
+        ...evaluated,
+        permitId: permit.id,
+        category: permit.category,
+      };
+    }
   }
 
   return null;
@@ -6890,10 +7139,9 @@ window.savePermitLogic = function () {
     appState.permits.push({ ...permitData, id: uniqueId, nis: nis });
   });
 
-  localStorage.setItem(APP_CONFIG.permitKey, JSON.stringify(appState.permits));
+  window.persistPermits();
 
   window.showToast(`${selectedNis.length} Data Berhasil Disimpan`, "success");
-  window.renderPermitList();
 
   // Reset Checkbox
   checkboxes.forEach((cb) => (cb.checked = false));
@@ -6901,9 +7149,35 @@ window.savePermitLogic = function () {
 
   // Refresh Dashboard jika tanggal relevan
   if (appState.date >= startDate) {
-    window.renderAttendanceList();
-    window.updateDashboard();
+    window.refreshPermitSurfaces();
+  } else {
+    window.renderPermitList();
+    window.renderActivePermitsWidget?.();
   }
+};
+
+window.getPreviousAttendanceSessionId = function (slotId) {
+  const sessionKeys = [
+    "kemarin",
+    "shubuh",
+    "sekolah",
+    "ashar",
+    "maghrib",
+    "isya",
+  ];
+  const currentIndex = sessionKeys.indexOf(slotId);
+  return currentIndex <= 0 ? "kemarin" : sessionKeys[currentIndex - 1];
+};
+
+window.markSickPermitRecoveredBeforeSlot = function (permitId, slotId) {
+  const permit = appState.permits.find((p) => p.id === permitId);
+  if (!permit || permit.category !== "sakit") return false;
+
+  permit.end_date = appState.date;
+  permit.end_session = window.getPreviousAttendanceSessionId(slotId);
+  permit.is_active = true;
+  window.persistPermits();
+  return true;
 };
 
 // 1. SAKIT -> SEMBUH
@@ -6923,38 +7197,24 @@ window.markAsRecovered = function (id) {
     permit.end_date = appState.date;
 
     // Logika Index Sesi — gunakan SESSION_KEYS agar 'sekolah' ikut tertangani
-    const SESSION_KEYS = [
-      "kemarin",
-      "shubuh",
-      "sekolah",
-      "ashar",
-      "maghrib",
-      "isya",
-    ];
-    const currIdx = SESSION_KEYS.indexOf(appState.currentSlotId);
+    const currentSlotId = appState.activeAttendanceSlotId || appState.currentSlotId;
 
     if (keepSick) {
       // Pilihan OK (Default): Sembuh NANTI/SEKARANG.
       // Sesi saat ini masih dianggap Sakit.
-      permit.end_session = appState.currentSlotId;
+      permit.end_session = currentSlotId;
     } else {
       // Pilihan Cancel: Sembuh DARI TADI.
       // Sesi saat ini dianggap sudah sehat (Hadir).
       // End Session = Sesi Sebelumnya.
-      permit.end_session = currIdx <= 0 ? "kemarin" : SESSION_KEYS[currIdx - 1];
+      permit.end_session = window.getPreviousAttendanceSessionId(currentSlotId);
     }
 
     // Simpan
-    localStorage.setItem(
-      APP_CONFIG.permitKey,
-      JSON.stringify(appState.permits),
-    );
+    window.persistPermits();
     window.showToast("Status kesembuhan diperbarui", "success");
 
-    // Refresh UI
-    window.renderAttendanceList();
-    window.renderActivePermitsWidget();
-    window.renderPermitHistory(); // Refresh profil juga
+    window.refreshPermitSurfaces();
   }
 };
 
@@ -6966,17 +7226,12 @@ window.markAsReturned = function (id) {
     // Agar sesi hari ini bisa diisi Hadir manual oleh Musyrif
     permit.is_active = false;
 
-    localStorage.setItem(
-      APP_CONFIG.permitKey,
-      JSON.stringify(appState.permits),
-    );
+    window.persistPermits();
     window.showToast(
       "Santri sudah kembali. Silakan presensi manual.",
       "success",
     );
-    window.renderPermitList();
-    window.renderAttendanceList();
-    if (window.renderActivePermitsWidget) window.renderActivePermitsWidget();
+    window.refreshPermitSurfaces();
   }
 };
 
@@ -7005,9 +7260,8 @@ window.extendPermit = function (id) {
     window.showToast("Masa izin diperpanjang", "success");
   }
 
-  localStorage.setItem(APP_CONFIG.permitKey, JSON.stringify(appState.permits));
-  window.renderPermitList();
-  window.renderAttendanceList();
+  window.persistPermits();
+  window.refreshPermitSurfaces();
 };
 
 window.toggleSelectAllPermit = function () {
@@ -7195,6 +7449,70 @@ window.showStatDetails = function (statusType) {
   if (window.lucide) window.lucide.createIcons();
 };
 
+window.getPembinaanMainActId = function (slot) {
+  return slot?.activities?.[0]?.id || "shalat";
+};
+
+window.isPembinaanViolationStatus = function (status) {
+  return status === "Alpa";
+};
+
+window.collectPembinaanViolations = function (options = {}) {
+  const dateFilter = options.date || null;
+  const coachedOnly = options.coachedOnly === true;
+  const includeUncoached = options.includeUncoached !== false;
+  const source = appState.attendanceData || {};
+  const violations = [];
+
+  FILTERED_SANTRI.forEach((santri) => {
+    const id = String(santri.nis || santri.id);
+    const dates = dateFilter ? [dateFilter] : Object.keys(source);
+
+    dates.forEach((dateKey) => {
+      const dayData = source[dateKey];
+      if (!dayData) return;
+
+      Object.values(SLOT_WAKTU).forEach((slot) => {
+        const sData = dayData[slot.id]?.[id];
+        if (!sData?.status) return;
+
+        const mainActId = window.getPembinaanMainActId(slot);
+        const status = sData.status[mainActId];
+        if (!window.isPembinaanViolationStatus(status)) return;
+
+        const isCoached = Boolean(sData.coaching?.done);
+        if (coachedOnly && !isCoached) return;
+        if (!includeUncoached && !isCoached) return;
+
+        violations.push({
+          ...santri,
+          id,
+          nis: id,
+          date: dateKey,
+          slotId: slot.id,
+          slotLabel: slot.label,
+          activityId: mainActId,
+          status,
+          isCoached,
+          coachingInfo: sData.coaching || null,
+          record: sData,
+        });
+      });
+    });
+  });
+
+  return violations;
+};
+
+window.refreshPembinaanSurfaces = function () {
+  window.renderDashboardPembinaan?.();
+  window.renderPembinaanManagement?.();
+  window.updateCommandCenterStats?.();
+  if (window.activeStudentIdDetail) {
+    window.updateStudentDetailWarningBadge?.(window.activeStudentIdDetail);
+  }
+};
+
 window.renderDashboardPembinaan = function () {
   const container = document.getElementById("dashboard-pembinaan-list");
   const badge = document.getElementById("pembinaan-count-badge");
@@ -7207,38 +7525,8 @@ window.renderDashboardPembinaan = function () {
   if (!container) return;
 
   const dateKey = appState.date;
-  const dayData = appState.attendanceData[dateKey];
-
-  let violationList = [];
-  let pendingCount = 0;
-
-  if (dayData) {
-    FILTERED_SANTRI.forEach((s) => {
-      const id = String(s.nis || s.id);
-
-      Object.values(SLOT_WAKTU).forEach((slot) => {
-        const sData = dayData[slot.id]?.[id];
-        const st = sData?.status?.shalat;
-
-        // Syarat: Status ALPA (Tidak peduli sudah dibina atau belum)
-        if (st === "Alpa") {
-          const isCoached = sData.coaching && sData.coaching.done;
-
-          // Hitung yang belum dibina untuk badge notifikasi
-          if (!isCoached) pendingCount++;
-
-          violationList.push({
-            ...s,
-            slotLabel: slot.label,
-            slotId: slot.id,
-            date: dateKey,
-            isCoached: isCoached,
-            coachingInfo: sData.coaching, // Bawa info jika perlu ditampilkan
-          });
-        }
-      });
-    });
-  }
+  const violationList = window.collectPembinaanViolations({ date: dateKey });
+  const pendingCount = violationList.filter((item) => !item.isCoached).length;
 
   // Update Badge (Merah jika ada pending, Hijau jika semua beres)
   if (badge) {
@@ -7321,6 +7609,7 @@ window.renderDashboardPembinaan = function () {
           slotId: p.slotId,
           date: p.date,
           slotLabel: p.slotLabel,
+          activityId: p.activityId,
         }).replace(/"/g, "&quot;");
 
         div.className = "flex items-center justify-between p-2 sm:p-2.5 rounded-xl bg-white dark:bg-slate-800/50 border border-red-100/50 dark:border-red-500/20 shadow-sm group hover:border-red-300 dark:hover:border-red-500/50 transition-colors mb-1.5";
@@ -7363,6 +7652,10 @@ window.renderPembinaanManagement = function () {
   if (!container) return;
 
   // 1. Akumulasi Data Pelanggaran (HANYA YANG SUDAH DIBINA)
+  const coachedViolations = window.collectPembinaanViolations({
+    coachedOnly: true,
+    includeUncoached: false,
+  });
   let problemList = [];
   let counts = { l1: 0, l2: 0, l3: 0 };
 
@@ -7370,33 +7663,24 @@ window.renderPembinaanManagement = function () {
 
   FILTERED_SANTRI.forEach((s) => {
     const id = String(s.nis || s.id);
-
-    let dates = [];
-    Object.keys(appState.attendanceData).forEach((date) => {
-      const dayData = appState.attendanceData[date];
-      if (!dayData) return;
-
-      let slots = [];
-
-      Object.values(SLOT_WAKTU).forEach((slot) => {
-        const sData = dayData[slot.id]?.[id];
-        const st = sData?.status?.shalat;
-
-        // --- LOGIKA POIN BARU ---
-        // Hanya hitung poin JIKA Alpa DAN sudah ada data coaching (done: true)
-        if (st === "Alpa" && sData.coaching && sData.coaching.done) {
-          slots.push({
-            label: slot.label,
-            id: slot.id,
-            action: sData.coaching.action, // Simpan info tindakan utk ditampilkan
-          });
-        }
+    const groupedByDate = {};
+    coachedViolations
+      .filter((item) => item.id === id)
+      .forEach((item) => {
+        if (!groupedByDate[item.date]) groupedByDate[item.date] = [];
+        groupedByDate[item.date].push({
+          label: item.slotLabel,
+          id: item.slotId,
+          activityId: item.activityId,
+          action: item.coachingInfo?.action || "-",
+          coachingDate: item.coachingInfo?.date || "",
+        });
       });
 
-      if (slots.length > 0) {
-        dates.push({ date: date, slots: slots });
-      }
-    });
+    let dates = Object.entries(groupedByDate).map(([date, slots]) => ({
+      date,
+      slots,
+    }));
 
     dates.sort((a, b) => b.date.localeCompare(a.date));
 
@@ -7541,6 +7825,7 @@ window.deleteViolationRecord = function (studentId, dateKey) {
 
     if (studentSlot && studentSlot.status?.[mainActId] === "Alpa") {
       studentSlot.status[mainActId] = "Hadir"; // Ubah jadi Hadir
+      delete studentSlot.coaching;
 
       // Reset juga status dependent jika ada
       slot.activities.forEach((act) => {
@@ -7554,13 +7839,11 @@ window.deleteViolationRecord = function (studentId, dateKey) {
 
   if (changed) {
     window.saveData(); // Simpan ke LocalStorage/Cloud
-    window.renderPembinaanManagement(); // Refresh halaman manajemen ini
     window.showToast(
       "Pelanggaran dihapus (Status diubah jadi Hadir)",
       "success",
     );
-
-    // Jika sedang membuka tanggal yang sama di dashboard, refresh juga
+    window.refreshPembinaanSurfaces();
     if (appState.date === dateKey) {
       window.updateDashboard();
     }
@@ -7648,67 +7931,43 @@ window.renderActivePermitsWidget = function () {
   const combinedList = [];
   const processedNis = new Set(); // Hanya mencatat NIS yang AKTIF sakitnya
   const currentDate = appState.date;
+  const currentSlotId = window.getPermitSlotIdForView();
 
   // 1. DATA PERMIT (SURAT)
   const classNisList = FILTERED_SANTRI.map((s) => String(s.nis || s.id));
 
   // Filter permit yang relevan (Aktif ATAU selesai hari ini)
-  const relevantPermits = appState.permits.filter((p) => {
-    if (!classNisList.includes(p.nis)) return false;
-    if (p.start_date > currentDate) return false; // Masa depan skip
-
-    // Tampilkan jika belum ada end_date (aktif selamanya)
-    // ATAU range tanggal mencakup hari ini
-    if (!p.end_date) return true;
-    if (currentDate >= p.start_date && currentDate <= p.end_date) return true;
-    return false;
+  const relevantPermits = (appState.permits || []).filter((p) => {
+    if (!classNisList.includes(String(p.nis))) return false;
+    return window.getPermitRuntimeState(p, currentDate, currentSlotId).relevant;
   });
 
   relevantPermits.forEach((p) => {
-    let visualActive = p.is_active !== false;
+    const runtime = window.getPermitRuntimeState(p, currentDate, currentSlotId);
+    let visualActive = runtime.active;
     const catSafe = (p.category || "").toLowerCase();
-
-    // Logika Visual Selesai (Abu-abu)
-    if (catSafe === "sakit" && p.end_date) {
-      // Jika hari ini > tanggal sembuh -> nonaktif
-      if (currentDate > p.end_date) visualActive = false;
-      // Jika hari ini == tanggal sembuh, cek sesi
-      else if (currentDate === p.end_date && p.end_session) {
-        // Jika sesi sekarang > sesi akhir sakit -> nonaktif
-        if (
-          SESSION_ORDER[appState.currentSlotId] > SESSION_ORDER[p.end_session]
-        ) {
-          visualActive = false;
-        }
-      }
-    }
-    // Logika Izin/Pulang Selesai
-    else if (
-      (catSafe === "izin" || catSafe === "pulang") &&
-      p.end_date &&
-      currentDate > p.end_date
-    ) {
-      visualActive = false;
-    } else if (p.is_active === false) {
-      visualActive = false; // Jika database bilang false, maka false
-    }
+    const runtimeType = runtime.evaluated?.type || p.category;
+    const runtimeCategory =
+      runtimeType === "Alpa" ? "alpa" : (p.category || "").toLowerCase();
 
     // Filter tambahan: Pastikan Permit juga hanya S/I/P (jaga-jaga jika ada kategori lain)
     if (["sakit", "izin", "pulang"].includes(catSafe)) {
       combinedList.push({
         type: "permit",
         id: p.id,
-        nis: p.nis,
-        category: p.category,
+        nis: String(p.nis),
+        category: runtimeCategory,
+        originalCategory: p.category,
         startTime: p.start_date,
         endTime: p.end_date,
         isActive: visualActive,
         reason: p.reason,
+        runtimeType,
       });
 
       // PENTING: Hanya block Manual Check jika permit ini MASIH AKTIF.
       if (visualActive) {
-        processedNis.add(p.nis);
+        processedNis.add(String(p.nis));
       }
     }
   });
@@ -7776,7 +8035,7 @@ window.renderActivePermitsWidget = function () {
 
     let colorClass, textLabelColorClass, iconSVG, displayCategory;
     const cat = item.category.toLowerCase();
-    displayCategory = item.category;
+    displayCategory = item.runtimeType || item.category;
 
     if (cat === "sakit") {
       colorClass = "bg-amber-50 text-amber-500 dark:bg-amber-500/10 border border-amber-100 dark:border-amber-500/20";
@@ -7906,9 +8165,8 @@ window.resolveManualStatus = function (nis, statusType) {
 
   if (changed) {
     window.saveData();
-    window.renderActivePermitsWidget();
-    window.renderAttendanceList();
     window.showToast("Status berhasil diubah menjadi Hadir", "success");
+    window.refreshPermitSurfaces();
   } else {
     window.showToast("Tidak ada data yang perlu diubah", "info");
   }
@@ -8162,14 +8420,10 @@ window.deleteHistoryPermit = function (id) {
   appState.permits = appState.permits.filter((p) => p.id !== id);
 
   // Simpan perubahan ke LocalStorage
-  localStorage.setItem(APP_CONFIG.permitKey, JSON.stringify(appState.permits));
-
-  // Refresh UI
-  window.renderPermitHistory(); // Refresh list profil
-  window.renderActivePermitsWidget(); // Refresh widget dashboard (jika yang dihapus hari ini)
-  window.renderAttendanceList(); // Refresh list absen (mungkin statusnya berubah jadi Hadir)
+  window.persistPermits();
 
   window.showToast("Data izin berhasil dihapus", "success");
+  window.refreshPermitSurfaces();
 };
 
 // 2. Fungsi Toggle Status (Aktif <-> Selesai)
@@ -8190,15 +8444,13 @@ window.togglePermitStatus = function (id) {
     }
   }
 
-  localStorage.setItem(APP_CONFIG.permitKey, JSON.stringify(appState.permits));
+  window.persistPermits();
 
-  window.renderPermitHistory();
-  window.renderActivePermitsWidget();
-  window.renderAttendanceList();
   window.showToast(
     `Status izin: ${permit.is_active ? "AKTIF" : "SELESAI"}`,
     "info",
   );
+  window.refreshPermitSurfaces();
 };
 
 // 3. Fungsi Edit (Buka Modal)
@@ -8243,16 +8495,12 @@ window.savePermitEdit = function () {
   appState.permits[index].is_active = isActive;
 
   // Simpan ke Storage
-  localStorage.setItem(APP_CONFIG.permitKey, JSON.stringify(appState.permits));
+  window.persistPermits();
 
   // Tutup Modal & Refresh
   window.closeModal("modal-edit-permit");
   window.showToast("Perubahan berhasil disimpan", "success");
-
-  // Refresh Semua UI Terkait
-  window.renderPermitHistory();
-  window.renderActivePermitsWidget();
-  window.renderAttendanceList();
+  window.refreshPermitSurfaces();
 };
 
 // --- FITUR PEMBINAAN (Baru) ---
@@ -8260,10 +8508,11 @@ window.savePermitEdit = function () {
 window.openPembinaanModal = function (data) {
   const modal = document.getElementById("modal-input-pembinaan");
   if (!modal) return;
+  const safeName = String(data.nama || "Santri");
 
   // Isi Data UI
-  document.getElementById("bina-nama").textContent = data.nama;
-  document.getElementById("bina-avatar").textContent = data.nama
+  document.getElementById("bina-nama").textContent = safeName;
+  document.getElementById("bina-avatar").textContent = safeName
     .substring(0, 2)
     .toUpperCase();
   document.getElementById("bina-detail").textContent =
@@ -8286,11 +8535,18 @@ window.savePembinaan = function () {
   try {
     const target = JSON.parse(rawData);
     const dateBina = document.getElementById("bina-date").value;
-    const actionBina = document.getElementById("bina-action").value;
+    const actionBina = document.getElementById("bina-action").value.trim();
 
     if (!dateBina || !actionBina) {
       return window.showToast(
         "Tanggal dan Bentuk Pembinaan wajib diisi!",
+        "warning",
+      );
+    }
+
+    if (dateBina < target.date) {
+      return window.showToast(
+        "Tanggal pembinaan tidak boleh sebelum tanggal pelanggaran",
         "warning",
       );
     }
@@ -8310,6 +8566,15 @@ window.savePembinaan = function () {
       dayData[target.slotId][target.id]
     ) {
       const studentData = dayData[target.slotId][target.id];
+      const slotConfig = SLOT_WAKTU[target.slotId];
+      const mainActId = target.activityId || window.getPembinaanMainActId(slotConfig);
+
+      if (!window.isPembinaanViolationStatus(studentData.status?.[mainActId])) {
+        return window.showToast(
+          "Status pelanggaran sudah berubah. Pembinaan tidak dicatat.",
+          "warning",
+        );
+      }
 
       studentData.coaching = {
         done: true,
@@ -8321,19 +8586,13 @@ window.savePembinaan = function () {
 
       window.saveData();
 
-      // Refresh UI safely
-      if (typeof window.renderDashboardPembinaan === "function") {
-        window.renderDashboardPembinaan();
-      }
-      if (typeof window.renderPembinaanManagement === "function") {
-        window.renderPembinaanManagement();
-      }
-
       window.showToast(
         "Pembinaan berhasil dicatat. Poin ditambahkan.",
         "success",
       );
       window.closeModal("modal-input-pembinaan");
+      window.refreshPembinaanSurfaces();
+      window.updateDashboard?.();
     } else {
       window.showToast(
         "Data presensi tidak ditemukan (mungkin terhapus)",

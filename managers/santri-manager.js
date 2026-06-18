@@ -20,6 +20,42 @@ window.SantriManager = {
     return updated;
   },
 
+  // Simpan nomor HP orang tua
+  saveParentPhone: (nis, phone) => {
+    if (!nis) return false;
+    const prefs = window.SantriManager.getPrefs(nis);
+    prefs.parentPhone = phone;
+    localStorage.setItem(`santri_pref_${nis}`, JSON.stringify(prefs));
+    return true;
+  },
+
+  // Ambil nomor HP orang tua
+  getParentPhone: (nis) => {
+    if (!nis) return null;
+    const prefs = window.SantriManager.getPrefs(nis);
+    return prefs.parentPhone || null;
+  },
+
+  // Ambil semua nomor HP orang tua
+  getAllParentPhones: () => {
+    const result = {};
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key.startsWith("santri_pref_")) {
+        try {
+          const data = JSON.parse(localStorage.getItem(key));
+          const nis = key.replace("santri_pref_", "");
+          if (data.parentPhone) {
+            result[nis] = data.parentPhone;
+          }
+        } catch (e) {
+          continue;
+        }
+      }
+    }
+    return result;
+  },
+
   findNisByEmail: (email) => {
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);

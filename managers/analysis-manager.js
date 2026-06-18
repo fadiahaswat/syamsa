@@ -252,20 +252,20 @@ window.runAnalysis = function () {
   let divider = 0;
 
   if (stats.sekolah.total) {
-    totalScore += pctSekolah * 0.35;
-    divider += 0.35;
+    totalScore += pctSekolah * 0.30;
+    divider += 0.30;
   }
   if (stats.shalat.total) {
-    totalScore += pctShalat * 0.3;
-    divider += 0.3;
+    totalScore += pctShalat * 0.40;
+    divider += 0.40;
   }
   if (stats.mahad.total) {
-    totalScore += pctMahad * 0.2;
-    divider += 0.2;
+    totalScore += pctMahad * 0.20;
+    divider += 0.20;
   }
   if (stats.sunnah.total) {
-    totalScore += pctSunnah * 0.15;
-    divider += 0.15;
+    totalScore += pctSunnah * 0.10;
+    divider += 0.10;
   }
 
   const finalScore = divider ? Math.round(totalScore / divider) : 0;
@@ -751,8 +751,8 @@ window.initPerformanceTab = function() {
     }
     
     listContainer.innerHTML = listItems.reverse().map(item => `
-      <div class="p-3 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-100/50 dark:border-slate-700/50 flex items-center justify-between gap-3 text-xs">
-        <div>
+      <div class="p-3 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-100/50 dark:border-slate-700/50 flex flex-wrap items-center justify-between gap-3 text-xs">
+        <div class="min-w-0">
           <h4 class="font-bold text-slate-700 dark:text-slate-200">${window.formatDate(item.date)}</h4>
           <p class="text-[10px] text-slate-400 mt-0.5">${item.desc}</p>
         </div>
