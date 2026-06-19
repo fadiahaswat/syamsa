@@ -1,3 +1,407 @@
+/* ============================================================
+   MOTION TOKENS — SYAMSA DESIGN SYSTEM v1.0.0
+   Philosophy: "Fast but smooth"
+   ============================================================ */
+
+/* --- COLOR TOKENS --- */
+:root {
+  /* Syamsa Brand */
+  --color-brand-deep: #0C4E8C;
+  --color-brand-blue: #0C81E4;
+  --color-brand-cyan: #17C3D4;
+  --color-brand-mint: #4FE7AF;
+
+  /* Syamsa Light Surfaces */
+  --color-syamsa-background: #F8FAFC;
+  --color-syamsa-card: #FFFFFF;
+  --color-syamsa-muted: #F1F5F9;
+  --color-syamsa-border: rgba(148, 163, 184, 0.22);
+  --color-syamsa-foreground: #0C1F3D;
+  --color-syamsa-muted-foreground: #5B7099;
+
+  /* Radius / elevation tokens from the Syamsa design system */
+  --radius-chip: 0.5rem;
+  --radius-control: 0.875rem;
+  --radius-panel: 1.5rem;
+  --radius-full: 999px;
+  --shadow-elevation-1: 0 2px 8px -2px rgba(15, 23, 42, 0.08);
+  --shadow-elevation-2: 0 14px 40px -24px rgba(15, 23, 42, 0.28);
+  --shadow-elevation-3: 0 18px 46px -26px rgba(12, 78, 140, 0.32);
+  --shadow-elevation-4: 0 24px 70px -32px rgba(15, 23, 42, 0.45);
+  --shadow-floating: 0 10px 35px rgba(0, 0, 0, 0.12);
+
+  /* Attendance Status */
+  --color-status-hadir: #10B981;
+  --color-status-telat: #17C3D4;
+  --color-status-sakit: #F59E0B;
+  --color-status-izin: #3B82F6;
+  --color-status-pulang: #A855F7;
+  --color-status-alpa: #EF4444;
+  --color-status-tidak: #64748B;
+  --color-status-ya: #10B981;
+
+  /* Attendance Status Backgrounds */
+  --color-status-hadir-bg: rgba(16, 185, 129, 0.12);
+  --color-status-telat-bg: rgba(23, 195, 212, 0.12);
+  --color-status-sakit-bg: rgba(245, 158, 11, 0.12);
+  --color-status-izin-bg: rgba(59, 130, 246, 0.12);
+  --color-status-pulang-bg: rgba(168, 85, 247, 0.12);
+  --color-status-alpa-bg: rgba(239, 68, 68, 0.12);
+  --color-status-tidak-bg: rgba(100, 116, 139, 0.12);
+  --color-status-ya-bg: rgba(16, 185, 129, 0.12);
+}
+
+/* --- DURATION TOKENS --- */
+:root {
+  /* Micro: untuk feedback seketika (hover, press) */
+  --motion-micro: 100ms;
+
+  /* Fast: untuk transisi cepat (button states, toggle) */
+  --motion-fast: 150ms;
+
+  /* Standard: untuk kebanyakan interaksi (tabs, dropdown) */
+  --motion-standard: 200ms;
+
+  /* Comfortable: untuk transisi komponen (card expand, modal open) */
+  --motion-comfortable: 250ms;
+
+  /* Large: untuk surface besar atau multi-elemen (page transition) */
+  --motion-large: 300ms;
+
+  /* Page: untuk perpindahan halaman/modal besar */
+  --motion-page: 350ms;
+
+  /* Emphasis: untuk animasi yang perlu perhatian (success, error) */
+  --motion-emphasis: 400ms;
+
+  /* Celebration: untuk success state yang meriah */
+  --motion-celebration: 600ms;
+}
+
+/* --- EASING TOKENS --- */
+:root {
+  /* Standard: untuk gerakan natural yang balanced */
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Enter: untuk elemen yang muncul (opacity + translate) */
+  --ease-enter: cubic-bezier(0, 0, 0.2, 1);
+
+  /* Exit: untuk elemen yang menghilang */
+  --ease-exit: cubic-bezier(0.4, 0, 1, 1);
+
+  /* Emphasized: untuk animasi yang perlu "pop" atau attention */
+  --ease-emphasized: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* Decelerate: untuk elemen yang melambat saat sampai (natural) */
+  --ease-decelerate: cubic-bezier(0, 0, 0.2, 1);
+
+  /* Accelerate: untuk elemen yang accelerate saat keluar */
+  --ease-accelerate: cubic-bezier(0.4, 0, 1, 1);
+
+  /* Bounce: untuk playful feedback (rarely used) */
+  --ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+/* ============================================================
+   REDUCED MOTION SUPPORT
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ============================================================
+   BUTTON MOTION CLASSES
+   ============================================================ */
+.btn-motion {
+  transition: transform var(--motion-fast) var(--ease-standard),
+              background-color var(--motion-fast) var(--ease-standard),
+              box-shadow var(--motion-fast) var(--ease-standard),
+              border-color var(--motion-fast) var(--ease-standard),
+              opacity var(--motion-fast) var(--ease-standard);
+}
+
+.btn-motion:hover {
+  transform: scale(1.02);
+}
+
+.btn-motion:active {
+  transform: scale(0.96);
+  transition-duration: var(--motion-micro);
+}
+
+.btn-motion:disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* ============================================================
+   CARD MOTION CLASSES
+   ============================================================ */
+.card-motion {
+  transition: transform var(--motion-standard) var(--ease-decelerate),
+              box-shadow var(--motion-standard) var(--ease-decelerate),
+              border-color var(--motion-standard) var(--ease-standard);
+}
+
+.card-motion:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 18px 46px -26px rgba(12, 78, 140, 0.32);
+}
+
+/* ============================================================
+   TOAST MOTION CLASSES
+   ============================================================ */
+.toast-enter {
+  animation: toastEnter var(--motion-comfortable) var(--ease-enter) forwards;
+}
+
+.animate-toast-enter {
+  animation: toastEnter var(--motion-comfortable) var(--ease-enter) forwards;
+}
+
+.toast-exit {
+  animation: toastExit var(--motion-standard) var(--ease-exit) forwards;
+}
+
+.animate-toast-exit {
+  animation: toastExit var(--motion-standard) var(--ease-exit) forwards;
+}
+
+@keyframes toastEnter {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes toastExit {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+}
+
+/* ============================================================
+   MODAL MOTION CLASSES
+   ============================================================ */
+.modal-backdrop {
+  transition: opacity var(--motion-standard) var(--ease-standard),
+              background-color var(--motion-standard) var(--ease-standard);
+}
+
+.modal-panel {
+  transition: opacity var(--motion-large) var(--ease-enter),
+              transform var(--motion-large) var(--ease-enter);
+}
+
+.modal-panel.open {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+}
+
+.modal-panel.closing {
+  opacity: 0;
+  transform: scale(0.95) translateY(8px);
+  transition-duration: var(--motion-standard);
+  transition-timing-function: var(--ease-exit);
+}
+
+/* ============================================================
+   BOTTOM SHEET MOTION
+   ============================================================ */
+.bottom-sheet {
+  transition: transform var(--motion-large) var(--ease-enter);
+}
+
+.bottom-sheet.open {
+  transform: translateY(0);
+}
+
+.bottom-sheet.closing {
+  transform: translateY(100%);
+  transition-duration: var(--motion-comfortable);
+  transition-timing-function: var(--ease-accelerate);
+}
+
+/* ============================================================
+   LIST ITEM MOTION
+   ============================================================ */
+.list-item {
+  transition: opacity var(--motion-standard) var(--ease-enter),
+              transform var(--motion-standard) var(--ease-enter),
+              background-color var(--motion-fast) var(--ease-standard);
+}
+
+.list-item.inserting {
+  animation: itemInsert var(--motion-large) var(--ease-enter) forwards;
+}
+
+.list-item.deleting {
+  animation: itemDelete var(--motion-standard) var(--ease-exit) forwards;
+}
+
+@keyframes itemInsert {
+  from {
+    opacity: 0;
+    transform: translateY(-16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes itemDelete {
+  to {
+    opacity: 0;
+    transform: translateY(-8px);
+    max-height: 0;
+    margin-bottom: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+}
+
+/* ============================================================
+   VIEW TRANSITION
+   ============================================================ */
+.view-enter {
+  animation: viewEnter var(--motion-page) var(--ease-enter) forwards;
+}
+
+.view-exit {
+  animation: viewExit var(--motion-standard) var(--ease-exit) forwards;
+}
+
+@keyframes viewEnter {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes viewExit {
+  to {
+    opacity: 0;
+    transform: translateX(-16px);
+  }
+}
+
+/* ============================================================
+   ATTENDANCE SCREEN TRANSITION
+   ============================================================ */
+.attendance-enter {
+  animation: attendanceEnter var(--motion-page) var(--ease-enter) forwards;
+}
+
+.attendance-exit {
+  animation: attendanceExit var(--motion-standard) var(--ease-exit) forwards;
+}
+
+@keyframes attendanceEnter {
+  from {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes attendanceExit {
+  to {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+}
+
+/* ============================================================
+   SUCCESS/ERROR STATE ANIMATIONS
+   ============================================================ */
+.success-indicator {
+  transition: transform var(--motion-emphasis) var(--ease-emphasized),
+              background-color var(--motion-standard) var(--ease-standard);
+}
+
+.success-indicator.success {
+  animation: successPop var(--motion-emphasis) var(--ease-emphasized);
+}
+
+@keyframes successPop {
+  0% { transform: scale(0.8); opacity: 0; }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.error-indicator {
+  animation: errorShake var(--motion-standard) ease-in-out;
+}
+
+@keyframes errorShake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-4px); }
+  40%, 80% { transform: translateX(4px); }
+}
+
+/* ============================================================
+   SKELETON LOADING
+   ============================================================ */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    #e2e8f0 0%,
+    #f1f5f9 50%,
+    #e2e8f0 100%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-wave 1.5s ease-in-out infinite;
+}
+
+.dark .skeleton {
+  background: linear-gradient(
+    90deg,
+    #1e293b 0%,
+    #334155 50%,
+    #1e293b 100%
+  );
+  background-size: 200% 100%;
+}
+
+@keyframes skeleton-wave {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ============================================================
+   SPINNER
+   ============================================================ */
+.spinner {
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
 /* Base Styles */
 body {
   -webkit-tap-highlight-color: transparent;
@@ -33,21 +437,44 @@ body {
   background-color: #334155;
 }
 
-/* Animations */
+/* ============================================================
+   LEGACY ANIMATIONS — Using Motion Tokens
+   Updated to use CSS variables from motion system
+   ============================================================ */
 .fade-in {
-  animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: fadeIn var(--motion-standard) var(--ease-standard);
 }
 .slide-up {
-  animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: slideUp var(--motion-comfortable) var(--ease-enter);
 }
 .scale-in {
-  animation: scaleIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: scaleIn var(--motion-comfortable) var(--ease-emphasized);
 }
 .pulse-slow {
   animation: pulse 3s infinite;
 }
 .float {
   animation: float 6s ease-in-out infinite;
+}
+
+/* Utility classes for transition timing using motion tokens */
+.transition-duration-micro { transition-duration: var(--motion-micro) !important; }
+.transition-duration-fast { transition-duration: var(--motion-fast) !important; }
+.transition-duration-standard { transition-duration: var(--motion-standard) !important; }
+.transition-duration-comfortable { transition-duration: var(--motion-comfortable) !important; }
+.transition-duration-large { transition-duration: var(--motion-large) !important; }
+.transition-duration-page { transition-duration: var(--motion-page) !important; }
+.transition-duration-emphasis { transition-duration: var(--motion-emphasis) !important; }
+
+/* Easing helpers */
+.transition-ease-standard { transition-timing-function: var(--ease-standard) !important; }
+.transition-ease-enter { transition-timing-function: var(--ease-enter) !important; }
+.transition-ease-exit { transition-timing-function: var(--ease-exit) !important; }
+.transition-ease-emphasized { transition-timing-function: var(--ease-emphasized) !important; }
+
+/* Success pop animation */
+.scale-success-pop {
+  animation: successPop var(--motion-emphasis) var(--ease-emphasized) forwards;
 }
 
 @keyframes fadeIn {
@@ -753,7 +1180,7 @@ body.qibla-browser-active.qibla-browser-green {
   width: min(48vw, 190px);
   height: min(48vw, 190px);
   border-radius: 28px;
-  background: url("kaaba.webp") center / contain no-repeat;
+  background: url("assets/illustrations/kaaba.webp") center / contain no-repeat;
   filter: drop-shadow(0 24px 42px rgba(0, 0, 0, 0.28));
   transform: translate(-50%, -50%);
   animation: qiblaKaabaEnter 900ms cubic-bezier(0.19, 1, 0.22, 1), qiblaKaabaFloat 4s ease-in-out 900ms infinite;
@@ -864,9 +1291,12 @@ body.qibla-browser-active.qibla-browser-green {
   }
 }
 
-/* Progress Bar Transition */
+/* ============================================================
+   PROGRESS BAR TRANSITION
+   Motion token: --motion-standard (200ms)
+   ============================================================ */
 .progress-bar {
-  transition: width 0.5s ease-in-out;
+  transition: width var(--motion-standard) var(--ease-out);
 }
 
 /* Salat Accordion Expanded Layout */
@@ -944,11 +1374,101 @@ body.qibla-browser-active.qibla-browser-green {
 
 /* ============================================================
    HERO CARD — STICKY BEHAVIOR
-   Diterapkan saat scroll > 80px di mobile (< 1024px).
-   JS di initBottomNavScroll() yang toggle class-class ini.
+   Motion tokens: --motion-standard (200ms) untuk smooth feel
    ============================================================ */
 
-/* Smooth transition untuk wrapper & card */
+#main-content {
+  position: relative;
+  isolation: isolate;
+  --dashboard-bg-from: #0c4e8c;
+  --dashboard-bg-to: #0b67b5;
+}
+
+.syamsa-header-logo {
+  display: block;
+  width: auto;
+  height: 1.9rem;
+  filter: brightness(0) invert(1) drop-shadow(0 1px 2px rgba(15, 23, 42, 0.18));
+  object-fit: contain;
+  object-position: center;
+  user-select: none;
+}
+
+#dashboard-greeting-panel {
+  margin-bottom: 0.75rem !important;
+}
+
+.dashboard-header-actions {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    0 10px 24px -18px rgba(12, 31, 61, 0.45);
+}
+
+.dashboard-header-actions button,
+.dashboard-header-actions svg {
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.dashboard-header-actions button:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.dashboard-header-actions #dash-clock {
+  color: #ffffff;
+}
+
+.dashboard-header-actions #dash-clock-sec {
+  color: rgba(255, 255, 255, 0.58);
+}
+
+#main-content::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: min(21rem, 52vh);
+  z-index: -2;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, var(--dashboard-bg-from) 0%, var(--dashboard-bg-to) 100%);
+  transform: translateZ(0);
+}
+
+.dark #main-content::before {
+  background:
+    linear-gradient(180deg, var(--dashboard-bg-from) 0%, var(--dashboard-bg-to) 100%);
+}
+
+#dashboard-slot-bg-illustration {
+  position: fixed;
+  top: 4.75rem;
+  right: clamp(0.75rem, 5vw, 3.25rem);
+  z-index: -1;
+  width: clamp(9rem, 34vw, 17rem);
+  height: clamp(9rem, 34vw, 17rem);
+  color: rgba(255, 255, 255, 0.04);
+  pointer-events: none;
+  transform: rotate(-8deg);
+}
+
+#dashboard-slot-bg-illustration svg {
+  width: 100%;
+  height: 100%;
+  stroke-width: 1.35;
+}
+
+#dash-main-card {
+  background:
+    radial-gradient(circle at 82% 18%, rgba(79, 231, 175, 0.14), transparent 28%),
+    linear-gradient(155deg, #0c1f3d 0%, #0d2d4f 58%, #0f3d52 100%) !important;
+  box-shadow:
+    0 18px 44px -28px rgba(12, 31, 61, 0.62),
+    0 1px 0 rgba(255, 255, 255, 0.05) inset !important;
+}
+
+/* Smooth transition untuk wrapper & card - USING MOTION TOKENS */
 #dash-main-card,
 #dash-main-card-wrapper,
 #tahfizh-hero-card,
@@ -956,12 +1476,12 @@ body.qibla-browser-active.qibla-browser-green {
 #profile-hero-card,
 #profile-hero-card-wrapper {
   transition:
-    padding 0.24s ease,
-    border-radius 0.24s ease,
-    box-shadow 0.24s ease,
-    opacity 0.18s ease,
-    transform 0.24s ease,
-    max-height 0.24s ease;
+    padding var(--motion-standard) var(--ease-standard),
+    border-radius var(--motion-standard) var(--ease-standard),
+    box-shadow var(--motion-standard) var(--ease-standard),
+    opacity var(--motion-fast) var(--ease-standard),
+    transform var(--motion-standard) var(--ease-standard),
+    max-height var(--motion-standard) var(--ease-standard);
   will-change: padding, border-radius, transform, opacity;
   transform: translateZ(0);
   backface-visibility: hidden;
@@ -1040,14 +1560,16 @@ body.qibla-browser-active.qibla-browser-green {
 
 #tahfizh-hero-card .tahfizh-hero-stats {
   max-height: 80px;
-  transition: opacity 0.18s ease, max-height 0.22s ease, transform 0.22s ease;
+  transition: opacity var(--motion-fast) var(--ease-standard),
+              max-height var(--motion-standard) var(--ease-standard),
+              transform var(--motion-standard) var(--ease-standard);
 }
 
 #tahfizh-hero-card .tahfizh-stat-pill {
   position: relative;
   overflow: hidden;
-  backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.08),
     0 8px 24px -18px rgba(0, 0, 0, 0.6);
@@ -1266,21 +1788,20 @@ body.qibla-browser-active.qibla-browser-green {
 
 /* ============================================================
    ATTENDANCE — FLOATING BOTTOM BAR & MORPHING SEARCH PILL
-   Bar mengecil jadi icon search saja saat collapsed,
-   melebar jadi full search input saat expanded.
+   Motion tokens: --motion-comfortable (250ms) untuk morphing effect
    ============================================================ */
 
 /* Bar wrapper: fit-content, smooth transition semua props */
 #att-bottom-bar {
-  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all var(--motion-comfortable) var(--ease-enter);
   width: fit-content;
 }
 
 /* Search pill container: hanya width & bg yang berubah */
 #search-pill-container {
   transition:
-    width 0.35s cubic-bezier(0.16, 1, 0.3, 1),
-    background-color 0.3s;
+    width var(--motion-comfortable) var(--ease-enter),
+    background-color var(--motion-fast) var(--ease-standard);
 }
 
 /* Collapsed: cuma icon search (3rem = 48px, sama dengan h-12) */
@@ -1297,7 +1818,7 @@ body.qibla-browser-active.qibla-browser-green {
 
 /* Tombol filter problem: fade in/out */
 #btn-filter-problem {
-  transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: opacity var(--motion-standard) var(--ease-standard);
 }
 
 #att-bottom-bar.collapsed #btn-filter-problem {
@@ -1342,3 +1863,29 @@ body.qibla-browser-active.qibla-browser-green {
     height: 140px !important;
   }
 }
+
+/* ============================================================
+   TAILWIND COMPLIANT UTILITY CLASSES
+   Mengganti inline styles agar sesuai dengan Tailwind CSS
+   ============================================================ */
+
+/* Animation Delay Classes */
+.delay-100ms { animation-delay: 0.1s; }
+.delay-120ms { animation-delay: 0.12s; }
+.delay-200ms { animation-delay: 0.2s; }
+.delay-250ms { animation-delay: 0.25s; }
+.delay-300ms { animation-delay: 0.3s; }
+.delay-500ms { animation-delay: 0.5s; }
+.delay-550ms { animation-delay: 0.55s; }
+
+/* Font Family */
+.font-rubik { font-family: Rubik, sans-serif; }
+.font-mono { font-family: "DM Mono", monospace; }
+
+/* Grid Template Columns */
+.grid-cols-custom-progress {
+  grid-template-columns: minmax(92px, 1fr) minmax(0, 1.35fr);
+}
+
+/* Width for progress bars (controlled by JS) */
+.w-progress { width: 0%; }

@@ -1,4 +1,4 @@
-const CACHE_NAME = "musyrif-app-v215-restructured";
+const CACHE_NAME = "musyrif-app-v221-branding-filenames";
 const ASSETS_TO_CACHE = [
   "./",
   "./index.html",
@@ -7,11 +7,18 @@ const ASSETS_TO_CACHE = [
   "./core/app-core.js",
   "./core/script.js",
   "./features/qibla.js",
-  "./assets/icon.svg",
-  "./assets/icon.webp",
-  "./assets/icon.png",
-  "./assets/splash.webp",
-  "./assets/login.webp",
+  "./assets/icons/icon.svg",
+  "./assets/icons/icon.webp",
+  "./assets/icons/icon.png",
+  "./assets/icons/app-icon.png",
+  "./assets/branding/Logomark.webp",
+  "./assets/branding/Primary%20Logo.webp",
+  "./assets/branding/Logo%20Mu%27allimin.webp",
+  "./assets/branding/Logo%20PP%20Muhammadiyah.webp",
+  "./assets/branding/Logo%20Sekolah%20Pemimpin%20Bangsa.webp",
+  "./assets/branding/Internastional%20Partners.webp",
+  "./assets/illustrations/arrow-up.webp",
+  "./assets/illustrations/kaaba.webp",
   "./managers/santri-manager.js",
   "./data/data-santri.js",
   "./data/data-kelas.js",
@@ -47,20 +54,39 @@ self.addEventListener("activate", (event) => {
 
 // 3. Fetch Strategy: Cache First, then Network
 self.addEventListener("fetch", (event) => {
-  // Cek apakah request menuju ke file eksternal (http/https)
-  if (event.request.url.startsWith("http")) {
-    // Gunakan strategi Network First untuk file eksternal agar tidak error CORS
-    event.respondWith(
-      fetch(event.request).catch(() => {
-        return caches.match(event.request);
-      }),
-    );
-  } else {
+  // Abaikan request selain HTTP/HTTPS (seperti ws:// atau chrome-extension://)
+  if (!event.request.url.startsWith("http")) return;
+  // Hanya tangani GET requests
+  if (event.request.method !== "GET") return;
+
+  const url = new URL(event.request.url);
+  const isLocal = url.origin === location.origin;
+
+  if (isLocal) {
     // Untuk file lokal, gunakan Cache First (sesuai kode lama)
     event.respondWith(
       caches.match(event.request).then((response) => {
-        return response || fetch(event.request);
-      }),
+        if (response) return response;
+        return fetch(event.request).catch(() => {
+          // Jika fetch gagal (file tidak ada), coba cari fallback atau return error
+          return caches.match("./index.html").then(fallback => {
+            return fallback || new Response("File not found", { status: 404, statusText: "Not Found" });
+          });
+        });
+      })
+    );
+  } else {
+    // Gunakan strategi Network First untuk file eksternal agar tidak error CORS
+    event.respondWith(
+      fetch(event.request).catch(() => {
+        return caches.match(event.request).then((response) => {
+          if (response) {
+            return response;
+          }
+          // Kembalikan response kosong agar tidak memunculkan TypeError (Failed to convert value to 'Response')
+          return new Response("", { status: 503, statusText: "Service Unavailable" });
+        });
+      })
     );
   }
 });
