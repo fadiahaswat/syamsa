@@ -1522,8 +1522,8 @@ body.qibla-browser-active.qibla-browser-green {
   opacity: 0.7;
 }
 
-#tahfizh-hero-card.sticky-hero img,
-#profile-hero-card.sticky-hero img,
+#tahfizh-hero-card.sticky-hero > img,
+#profile-hero-card.sticky-hero > img,
 #profile-hero-card.sticky-hero .absolute,
 #tahfizh-hero-card.sticky-hero .absolute {
   opacity: 0 !important;
