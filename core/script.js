@@ -117,7 +117,7 @@ window.initApp = async function () {
     }
   } catch (criticalError) {
     console.error("Critical Init Error:", criticalError);
-    alert("Terjadi kesalahan sistem: " + criticalError.message);
+    window.showToast?.("Terjadi kesalahan sistem: " + criticalError.message, "error", true);
   } finally {
     if (loadingEl) {
       loadingEl.classList.add("opacity-0", "pointer-events-none");
@@ -469,6 +469,19 @@ window.handleMusyrifSubmit = async function () {
     window.closeModal("modal-musyrif-login");
     window.openModal("modal-google-auth");
 
+    // Cek apakah Google Sign-In tersedia
+    if (window.location.protocol === "file:") {
+      // Tampilkan pesan untuk menggunakan server lokal
+      const container = document.getElementById("google-btn-container");
+      if (container) {
+        container.innerHTML = `<div class="text-center p-4">
+          <p class="text-sm text-red-500 mb-2">⚠️ Google Sign-In tidak tersedia</p>
+          <p class="text-xs text-slate-500">Buka aplikasi via <code>http://localhost</code> untuk login Google.</p>
+        </div>`;
+      }
+      return;
+    }
+
     if (window.google) {
       google.accounts.id.initialize({
         client_id: APP_CONFIG.googleClientId,
@@ -479,7 +492,7 @@ window.handleMusyrifSubmit = async function () {
         { theme: "outline", size: "large", type: "standard" },
       );
     } else {
-      alert("Gagal memuat Google. Cek koneksi internet.");
+      window.showToast("Gagal memuat Google. Cek koneksi internet.", "error");
     }
   }
 };
@@ -506,6 +519,34 @@ window.handleWaliLogin = function () {
   }
 };
 
+window.findWaliSantriByNis = function (nis) {
+  const targetNis = String(nis || "").trim();
+  if (!targetNis) return null;
+
+  const candidates = [
+    ...(Array.isArray(MASTER_SANTRI) ? MASTER_SANTRI : []),
+    ...(Array.isArray(window.santriData) ? window.santriData : []),
+  ];
+
+  const found = candidates.find((s) => {
+    const sNis = String(s?.nis || s?.id || "").trim();
+    return sNis === targetNis;
+  });
+  if (found) return found;
+
+  // Backward compatibility for older cached class structures.
+  for (const kelas of Object.keys(window.classData || {})) {
+    const classInfo = window.classData[kelas];
+    const match = (classInfo?.santri || []).find((s) => {
+      const sNis = String(s?.nis || s?.id || "").trim();
+      return sNis === targetNis;
+    });
+    if (match) return { ...match, kelas: match.kelas || kelas };
+  }
+
+  return null;
+};
+
 window.handleWaliSubmit = function () {
   const nis = document.getElementById("wali-nis")?.value?.trim() || "";
   const password = document.getElementById("wali-password")?.value || "";
@@ -518,57 +559,876 @@ window.handleWaliSubmit = function () {
     return window.showToast("Masukkan password NIS.", "warning");
   }
 
-  // Cari santri berdasarkan NIS di semua kelas
-  const kelasList = Object.keys(window.classData || {});
-  let foundSantri = null;
-  let foundKelas = null;
-
-  for (const kelas of kelasList) {
-    const classInfo = window.classData[kelas];
-    if (classInfo && classInfo.santri) {
-      const match = classInfo.santri.find(s => {
-        if (!s) return false;
-        const sNis = String(s.nis || "").trim();
-        return sNis === nis;
-      });
-      if (match) {
-        foundSantri = match;
-        foundKelas = kelas;
-        break;
-      }
-    }
-  }
-
+  const foundSantri = window.findWaliSantriByNis(nis);
   if (!foundSantri) {
     return window.showToast("NIS tidak ditemukan.", "error");
   }
 
-  // Validasi password NIS (field: password_nis)
-  const storedPassword = String(foundSantri.password_nis || foundSantri.nis_password || "").trim();
-  if (storedPassword && storedPassword !== password) {
+  const foundKelas = String(foundSantri.kelas || foundSantri.rombel || "").trim();
+  const storedPassword = String(
+    foundSantri.password_nis ||
+      foundSantri.nis_password ||
+      foundSantri.password ||
+      "",
+  ).trim();
+  const expectedPassword = storedPassword || nis;
+
+  if (String(password).trim() !== expectedPassword) {
     return window.showToast("Password NIS salah.", "error");
   }
 
-  // Tutup modal login
   window.closeModal("modal-wali-login");
 
-  // Navigasi ke view wali (bisa dikembangkan lebih lanjut)
-  window.showToast(`Selamat datang, Wali dari ${foundSantri.nama}!`, "success");
-
-  // Simpan state wali untuk sesi ini
   appState.waliMode = true;
   appState.waliSantri = foundSantri;
   appState.waliKelas = foundKelas;
+  appState.selectedClass = foundKelas || appState.selectedClass;
+  appState.userProfile = {
+    name: `Wali ${foundSantri.nama || "Santri"}`,
+    given_name: "Wali",
+    authProvider: "wali",
+  };
 
-  // Redirect ke view wali atau tampilkan data
-  if (window.showWaliView) {
-    window.showWaliView();
-  } else {
-    // Fallback: tampilkan info di console untuk pengembangan
-    console.log("Wali Login:", { foundSantri, foundKelas });
+  FILTERED_SANTRI = [foundSantri];
+  window.showToast(`Selamat datang, Wali dari ${foundSantri.nama}!`, "success");
+  window.showWaliView();
+};
 
-    alert(`Data Wali Santri:\n\nNama Santri: ${foundSantri.nama}\nNIS: ${nis}\nKelas: ${foundKelas}\n\nFitur wali dalam pengembangan.`);
+window.getWaliStudentId = function (student = appState.waliSantri) {
+  return String(student?.nis || student?.id || "").trim();
+};
+
+window.getWaliStudentClass = function (student = appState.waliSantri) {
+  return String(student?.kelas || student?.rombel || appState.waliKelas || "").trim();
+};
+
+window.getWaliActiveActivities = function (slot, dateKey) {
+  const dayNum = new Date(`${dateKey}T00:00:00`).getDay();
+  return (slot.activities || []).filter((act) => {
+    if (act.showOnDays && !act.showOnDays.includes(dayNum)) return false;
+    if (act.onlyRamadhan && !window.isRamadhan(dateKey)) return false;
+    if (window.isActivityHoliday?.(dateKey, slot.id, act.id)) return false;
+    if (window.isCategoryHoliday?.(dateKey, act.category)) return false;
+    return true;
+  });
+};
+
+window.getWaliTodayRows = function (student = appState.waliSantri, dateKey = appState.date) {
+  const studentId = window.getWaliStudentId(student);
+  if (!studentId) return [];
+
+  return Object.values(SLOT_WAKTU).map((slot) => {
+    const isHoliday = window.isSlotHoliday?.(slot.id, dateKey);
+    const slotData = appState.attendanceData?.[dateKey]?.[slot.id];
+    const studentData = slotData?.[studentId];
+    const activities = isHoliday ? [] : window.getWaliActiveActivities(slot, dateKey);
+    const statuses = activities.map((act) => ({
+      id: act.id,
+      label: act.label,
+      status: studentData?.status?.[act.id] || null,
+      category: act.category,
+    }));
+
+    return {
+      id: slot.id,
+      label: slot.label,
+      time: slot.subLabel,
+      isHoliday,
+      isFilled: Boolean(studentData),
+      statuses,
+    };
+  });
+};
+
+window.getWaliPriorityStatus = function (rows) {
+  const allStatuses = rows.flatMap((row) => row.statuses.map((item) => item.status).filter(Boolean));
+  const priority = ["Pulang", "Sakit", "Alpa", "Izin", "Telat", "Hadir", "Ya", "Tidak"];
+  return priority.find((status) => allStatuses.includes(status)) || "Belum ada data";
+};
+
+window.getWaliAttendanceSummary = function (student = appState.waliSantri, days = 7) {
+  const studentId = window.getWaliStudentId(student);
+  const result = { Hadir: 0, Telat: 0, Izin: 0, Sakit: 0, Pulang: 0, Alpa: 0, Ya: 0, Tidak: 0, total: 0 };
+  if (!studentId) return result;
+
+  const end = new Date(`${appState.date || window.getLocalDateStr()}T00:00:00`);
+  for (let i = 0; i < days; i++) {
+    const d = new Date(end);
+    d.setDate(end.getDate() - i);
+    const dateKey = window.getLocalDateStr(d);
+    Object.values(SLOT_WAKTU).forEach((slot) => {
+      if (window.isSlotHoliday?.(slot.id, dateKey)) return;
+      const studentData = appState.attendanceData?.[dateKey]?.[slot.id]?.[studentId];
+      if (!studentData?.status) return;
+      Object.values(studentData.status).forEach((status) => {
+        if (Object.prototype.hasOwnProperty.call(result, status)) {
+          result[status]++;
+          result.total++;
+        }
+      });
+    });
   }
+  return result;
+};
+
+window.getWaliPermits = function (student = appState.waliSantri) {
+  const studentId = window.getWaliStudentId(student);
+  if (!studentId) return [];
+  return (appState.permits || [])
+    .filter((permit) => String(permit.nis || permit.studentId || "").trim() === studentId)
+    .sort((a, b) => String(b.start_date || b.start || "").localeCompare(String(a.start_date || a.start || "")));
+};
+
+window.getWaliActivePermit = function (student = appState.waliSantri, dateKey = appState.date) {
+  return window.getWaliPermits(student).find((permit) => {
+    const status = String(permit.status || "approved").toLowerCase();
+    if (status === "rejected") return false;
+    if (permit.is_active === false) return false;
+    if (permit.start_date && permit.start_date > dateKey) return false;
+    if (permit.end_date && permit.end_date < dateKey) return false;
+    return true;
+  });
+};
+
+window.getWaliTahfizhSummary = function (student = appState.waliSantri) {
+  const studentId = window.getWaliStudentId(student);
+  const studentName = String(student?.nama || "").trim().toLowerCase();
+  let entries = [];
+  try {
+    entries = JSON.parse(localStorage.getItem("tahfizh_local_setoran") || "[]");
+  } catch {
+    entries = [];
+  }
+
+  const matched = entries
+    .filter((entry) => {
+      const entryId = String(entry.nis || entry.NIS || entry.studentId || entry.santriId || "").trim();
+      const entryName = String(entry.nama || entry.Nama || entry.namaSantri || "").trim().toLowerCase();
+      return (studentId && entryId === studentId) || (studentName && entryName === studentName);
+    })
+    .sort((a, b) => String(b.tanggal || b.Tanggal || b.date || "").localeCompare(String(a.tanggal || a.Tanggal || a.date || "")));
+
+  const latest = matched[0];
+  return {
+    total: matched.length,
+    latestDate: latest?.tanggal || latest?.Tanggal || latest?.date || null,
+    latestType: latest?.jenis || latest?.Jenis || latest?.type || "-",
+    latestJuz: latest?.juz || latest?.Juz || "-",
+  };
+};
+
+window.renderWaliView = function () {
+  const view = document.getElementById("view-wali");
+  const student = appState.waliSantri;
+  if (!view || !student) return;
+
+  const studentId = window.getWaliStudentId(student);
+  const studentClass = window.getWaliStudentClass(student);
+  const dateKey = appState.date || window.getLocalDateStr();
+  const rows = window.getWaliTodayRows(student, dateKey);
+  const priorityStatus = window.getWaliPriorityStatus(rows);
+  const summary7 = window.getWaliAttendanceSummary(student, 7);
+  const summary30 = window.getWaliAttendanceSummary(student, 30);
+  const activePermit = window.getWaliActivePermit(student, dateKey);
+  const permits = window.getWaliPermits(student).slice(0, 5);
+  const tahfizh = window.getWaliTahfizhSummary(student);
+
+  const statusMeta = window.getStatusMeta?.(priorityStatus) || window.getStatusMeta?.("Tidak");
+  const safeName = window.sanitizeHTML(student.nama || "Santri");
+  const musyrif = window.sanitizeHTML(MASTER_KELAS?.[studentClass]?.musyrif || window.classData?.[studentClass]?.musyrif || "-");
+  const attendancePercent7 = summary7.total
+    ? Math.round(((summary7.Hadir + summary7.Ya + summary7.Telat) / summary7.total) * 100)
+    : 0;
+  const attendancePercent30 = summary30.total
+    ? Math.round(((summary30.Hadir + summary30.Ya + summary30.Telat) / summary30.total) * 100)
+    : 0;
+
+  const renderStatusPill = (status) => {
+    const meta = window.getStatusMeta?.(status || "Tidak") || {};
+    return `<span class="inline-flex items-center rounded-lg border px-2 py-1 text-[10px] font-black ${meta.pill || "bg-slate-50 text-slate-500 border-slate-100"}">${window.sanitizeHTML(status || "-")}</span>`;
+  };
+
+  const todayRowsHtml = rows.map((row) => {
+    const statuses = row.isHoliday
+      ? `<span class="text-[10px] font-black text-slate-400">Libur</span>`
+      : row.isFilled
+        ? row.statuses.map((item) => renderStatusPill(item.status)).join("")
+        : `<span class="text-[10px] font-black text-slate-400">Belum diisi</span>`;
+
+    return `
+      <div class="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 p-3">
+        <div class="flex items-center justify-between gap-3">
+          <div>
+            <p class="text-sm font-black text-slate-800 dark:text-white">${row.label}</p>
+            <p class="text-[10px] font-bold text-slate-400">${row.time}</p>
+          </div>
+          <div class="flex max-w-[62%] flex-wrap justify-end gap-1.5">${statuses}</div>
+        </div>
+      </div>
+    `;
+  }).join("");
+
+  const permitsHtml = permits.length
+    ? permits.map((permit) => {
+        const category = window.sanitizeHTML(permit.category || permit.type || "izin");
+        const start = permit.start_date || permit.start || "-";
+        const end = permit.end_date || permit.end || null;
+        return `
+          <div class="rounded-2xl bg-slate-50 dark:bg-slate-950/40 border border-slate-100 dark:border-slate-800 p-3">
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-[10px] font-black uppercase tracking-wider text-slate-500">${category}</span>
+              ${renderStatusPill(permit.status || (permit.is_active === false ? "Selesai" : "Aktif"))}
+            </div>
+            <p class="mt-2 text-xs font-bold text-slate-700 dark:text-slate-200">${window.sanitizeHTML(permit.reason || "-")}</p>
+            <p class="mt-1 text-[10px] font-bold text-slate-400">${window.formatDate(start)}${end ? ` - ${window.formatDate(end)}` : ""}</p>
+          </div>
+        `;
+      }).join("")
+    : `<div class="rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 p-5 text-center text-xs font-bold text-slate-400">Belum ada riwayat izin/sakit/pulang.</div>`;
+
+  view.innerHTML = `
+    <div class="min-h-full overflow-y-auto bg-slate-50 dark:bg-[#0f172a] p-4 sm:p-6">
+      <div class="mx-auto w-full max-w-4xl space-y-4 pb-8">
+        <header class="flex items-center justify-between gap-3">
+          <div class="min-w-0">
+            <p class="text-[10px] font-black uppercase tracking-widest text-slate-400">Dashboard Wali Murid</p>
+            <h1 class="truncate text-xl font-black text-slate-900 dark:text-white">${safeName}</h1>
+            <p class="mt-1 text-xs font-bold text-slate-500">NIS ${window.sanitizeHTML(studentId)} · Kelas ${window.sanitizeHTML(studentClass || "-")} · Musyrif ${musyrif}</p>
+          </div>
+          <button onclick="window.handleWaliLogout()" class="h-10 shrink-0 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-3 text-xs font-black text-slate-600 dark:text-slate-300">Keluar</button>
+        </header>
+
+        <section class="rounded-[1.75rem] bg-slate-900 p-5 text-white shadow-xl shadow-slate-900/20">
+          <div class="flex items-start justify-between gap-4">
+            <div>
+              <p class="text-[10px] font-black uppercase tracking-widest text-slate-400">${window.formatDate(dateKey)}</p>
+              <h2 class="mt-2 text-3xl font-black">${window.sanitizeHTML(priorityStatus)}</h2>
+              <p class="mt-1 text-xs font-bold text-slate-400">Status utama hari ini berdasarkan data presensi yang sudah diisi.</p>
+            </div>
+            <div class="rounded-2xl bg-white/10 p-3">
+              <i data-lucide="${statusMeta?.icon || "info"}" class="h-7 w-7"></i>
+            </div>
+          </div>
+          <div class="mt-5 grid grid-cols-3 gap-2">
+            <div class="rounded-2xl bg-white/10 p-3 text-center">
+              <p class="text-lg font-black">${attendancePercent7}%</p>
+              <p class="text-[9px] font-black uppercase text-slate-400">7 Hari</p>
+            </div>
+            <div class="rounded-2xl bg-white/10 p-3 text-center">
+              <p class="text-lg font-black">${attendancePercent30}%</p>
+              <p class="text-[9px] font-black uppercase text-slate-400">30 Hari</p>
+            </div>
+            <div class="rounded-2xl bg-white/10 p-3 text-center">
+              <p class="text-lg font-black">${summary30.Alpa}</p>
+              <p class="text-[9px] font-black uppercase text-slate-400">Alpa</p>
+            </div>
+          </div>
+        </section>
+
+        <section class="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <div class="space-y-3">
+            <div class="flex items-center justify-between">
+              <h2 class="text-sm font-black text-slate-900 dark:text-white">Kehadiran Hari Ini</h2>
+              <span class="text-[10px] font-black text-slate-400">${rows.filter((row) => row.isFilled).length}/${rows.length} sesi</span>
+            </div>
+            ${todayRowsHtml}
+          </div>
+
+          <div class="space-y-4">
+            <div class="rounded-[1.5rem] bg-white/90 dark:bg-slate-900/90 border border-slate-100 dark:border-slate-800 p-4">
+              <h2 class="text-sm font-black text-slate-900 dark:text-white">Izin, Pulang, & Kesehatan</h2>
+              ${
+                activePermit
+                  ? `<div class="mt-3 rounded-2xl border border-blue-100 dark:border-blue-900/30 bg-blue-50 dark:bg-blue-950/20 p-3">
+                      <p class="text-[10px] font-black uppercase tracking-wider text-blue-600 dark:text-blue-300">Sedang aktif</p>
+                      <p class="mt-1 text-sm font-black text-slate-900 dark:text-white">${window.sanitizeHTML(activePermit.category || activePermit.type || "Izin")}</p>
+                      <p class="mt-1 text-xs font-bold text-slate-500">${window.sanitizeHTML(activePermit.reason || "-")}</p>
+                    </div>`
+                  : `<p class="mt-3 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 p-4 text-center text-xs font-bold text-slate-400">Tidak ada izin/sakit/pulang aktif.</p>`
+              }
+              <div class="mt-3 space-y-2">${permitsHtml}</div>
+            </div>
+
+            <div class="rounded-[1.5rem] bg-white/90 dark:bg-slate-900/90 border border-slate-100 dark:border-slate-800 p-4">
+              <h2 class="text-sm font-black text-slate-900 dark:text-white">Ringkasan Tahfizh</h2>
+              <div class="mt-3 grid grid-cols-3 gap-2">
+                <div class="rounded-2xl bg-orange-50 dark:bg-orange-950/20 p-3 text-center">
+                  <p class="text-lg font-black text-orange-600 dark:text-orange-300">${tahfizh.total}</p>
+                  <p class="text-[9px] font-black uppercase text-orange-500">Setoran</p>
+                </div>
+                <div class="col-span-2 rounded-2xl bg-slate-50 dark:bg-slate-950/40 p-3">
+                  <p class="text-[10px] font-black uppercase text-slate-400">Terakhir</p>
+                  <p class="mt-1 text-xs font-black text-slate-800 dark:text-white">${window.sanitizeHTML(tahfizh.latestType)} · Juz ${window.sanitizeHTML(String(tahfizh.latestJuz))}</p>
+                  <p class="mt-1 text-[10px] font-bold text-slate-400">${tahfizh.latestDate ? window.formatDate(String(tahfizh.latestDate).slice(0, 10)) : "Belum ada data setoran lokal"}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+  `;
+
+  if (window.lucide) window.lucide.createIcons();
+};
+
+window.showWaliView = function () {
+  let view = document.getElementById("view-wali");
+  if (!view) {
+    view = document.createElement("section");
+    view.id = "view-wali";
+    view.className = "fixed inset-0 z-[70] hidden";
+    document.body.appendChild(view);
+  }
+
+  document.getElementById("view-login")?.classList.add("hidden");
+  document.getElementById("view-main")?.classList.add("hidden");
+  document.getElementById("view-attendance")?.classList.add("hidden");
+  view.classList.remove("hidden");
+  window.renderWaliView();
+};
+
+window.handleWaliLogout = function () {
+  appState.waliMode = false;
+  appState.waliSantri = null;
+  appState.waliKelas = null;
+  appState.selectedClass = null;
+  appState.userProfile = null;
+  FILTERED_SANTRI = [];
+
+  document.getElementById("view-wali")?.classList.add("hidden");
+  document.getElementById("view-main")?.classList.add("hidden");
+  document.getElementById("view-login")?.classList.remove("hidden");
+  window.showToast("Anda keluar dari dashboard wali.", "info");
+};
+
+// ==========================================
+// WALI MURID APP EXPERIENCE (MVP+)
+// ==========================================
+
+window.getWaliStorageKey = function (type, student = appState.waliSantri) {
+  return `wali_${type}_${window.getWaliStudentId(student) || "unknown"}`;
+};
+
+window.getWaliStoredList = function (type) {
+  try {
+    return JSON.parse(localStorage.getItem(window.getWaliStorageKey(type)) || "[]");
+  } catch {
+    return [];
+  }
+};
+
+window.saveWaliStoredList = function (type, list) {
+  localStorage.setItem(window.getWaliStorageKey(type), JSON.stringify(list || []));
+};
+
+window.getWaliCategorySummary = function (student = appState.waliSantri, days = 7) {
+  const studentId = window.getWaliStudentId(student);
+  const summary = {
+    fardu: { good: 0, issue: 0, total: 0 },
+    school: { good: 0, issue: 0, total: 0 },
+    kbm: { good: 0, issue: 0, total: 0 },
+    sunnah: { good: 0, issue: 0, total: 0 },
+  };
+  if (!studentId) return summary;
+
+  const end = new Date(`${appState.date || window.getLocalDateStr()}T00:00:00`);
+  for (let i = 0; i < days; i++) {
+    const d = new Date(end);
+    d.setDate(end.getDate() - i);
+    const dateKey = window.getLocalDateStr(d);
+    const dayNum = d.getDay();
+
+    Object.values(SLOT_WAKTU).forEach((slot) => {
+      if (window.isSlotHoliday?.(slot.id, dateKey)) return;
+      const studentData = appState.attendanceData?.[dateKey]?.[slot.id]?.[studentId];
+      if (!studentData?.status) return;
+
+      (slot.activities || []).forEach((act) => {
+        if (act.showOnDays && !act.showOnDays.includes(dayNum)) return;
+        if (act.onlyRamadhan && !window.isRamadhan(dateKey)) return;
+        if (window.isActivityHoliday?.(dateKey, slot.id, act.id)) return;
+        if (window.isCategoryHoliday?.(dateKey, act.category)) return;
+
+        const bucket =
+          act.category === "fardu" || act.category === "dependent" ? summary.fardu :
+          act.category === "school" ? summary.school :
+          act.category === "kbm" ? summary.kbm :
+          act.category === "sunnah" ? summary.sunnah :
+          null;
+        if (!bucket) return;
+
+        const status = studentData.status?.[act.id];
+        if (!status) return;
+        bucket.total++;
+        if (status === "Hadir" || status === "Ya" || status === "Telat") bucket.good++;
+        if (["Alpa", "Tidak", "Sakit", "Izin", "Pulang"].includes(status)) bucket.issue++;
+      });
+    });
+  }
+
+  return summary;
+};
+
+window.getWaliAttendanceCalendar = function (student = appState.waliSantri, days = 30) {
+  const studentId = window.getWaliStudentId(student);
+  const end = new Date(`${appState.date || window.getLocalDateStr()}T00:00:00`);
+  const items = [];
+
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date(end);
+    d.setDate(end.getDate() - i);
+    const dateKey = window.getLocalDateStr(d);
+    const counts = { good: 0, issue: 0, empty: 0 };
+
+    Object.values(SLOT_WAKTU).forEach((slot) => {
+      if (window.isSlotHoliday?.(slot.id, dateKey)) return;
+      const studentData = appState.attendanceData?.[dateKey]?.[slot.id]?.[studentId];
+      if (!studentData?.status) {
+        counts.empty++;
+        return;
+      }
+      const statuses = Object.values(studentData.status);
+      if (statuses.some((st) => ["Alpa", "Sakit", "Izin", "Pulang"].includes(st))) counts.issue++;
+      else if (statuses.some((st) => ["Hadir", "Ya", "Telat"].includes(st))) counts.good++;
+      else counts.empty++;
+    });
+
+    items.push({ dateKey, day: d.getDate(), ...counts });
+  }
+
+  return items;
+};
+
+window.getWaliLastActivity = function (student = appState.waliSantri, dateKey = appState.date) {
+  const rows = window.getWaliTodayRows(student, dateKey).filter((row) => row.isFilled);
+  return rows.length ? rows[rows.length - 1] : null;
+};
+
+window.getWaliAsramaStatus = function (student = appState.waliSantri) {
+  const permit = window.getWaliActivePermit(student, appState.date);
+  const category = String(permit?.category || permit?.type || "").toLowerCase();
+  if (category === "pulang") return { label: "Pulang/Izin keluar", tone: "purple", detail: permit?.reason || "Sedang izin pulang" };
+  if (category === "sakit") return { label: "Sakit", tone: "amber", detail: permit?.reason || "Dalam pemantauan kesehatan" };
+  if (category === "izin") return { label: "Izin kegiatan", tone: "blue", detail: permit?.reason || "Mengikuti izin kegiatan" };
+  return { label: "Di asrama/sekolah", tone: "emerald", detail: "Tidak ada izin keluar aktif" };
+};
+
+window.getWaliPembinaanItems = function () {
+  if (typeof window.collectPembinaanViolations !== "function") return [];
+  return window.collectPembinaanViolations({}).sort((a, b) => String(b.date).localeCompare(String(a.date)));
+};
+
+window.getWaliNotificationPrefs = function () {
+  try {
+    return JSON.parse(localStorage.getItem(window.getWaliStorageKey("notif_prefs")) || "{}");
+  } catch {
+    return {};
+  }
+};
+
+window.toggleWaliNotificationPref = function (key) {
+  const prefs = window.getWaliNotificationPrefs();
+  prefs[key] = prefs[key] === false;
+  localStorage.setItem(window.getWaliStorageKey("notif_prefs"), JSON.stringify(prefs));
+  window.renderWaliView();
+  window.showToast("Preferensi notifikasi wali disimpan.", "success");
+};
+
+window.setWaliTab = function (tabName) {
+  appState.waliTab = tabName || "home";
+  window.renderWaliView();
+};
+
+window.submitWaliPermitRequest = function () {
+  const category = document.getElementById("wali-permit-category")?.value || "izin";
+  const start = document.getElementById("wali-permit-start")?.value || window.getLocalDateStr();
+  const end = document.getElementById("wali-permit-end")?.value || "";
+  const reason = document.getElementById("wali-permit-reason")?.value?.trim() || "";
+  const pickup = document.getElementById("wali-permit-pickup")?.value?.trim() || "";
+  const vehicle = document.getElementById("wali-permit-vehicle")?.value?.trim() || "";
+  const studentId = window.getWaliStudentId();
+
+  if (!reason) return window.showToast("Alasan pengajuan wajib diisi.", "warning");
+
+  const permit = {
+    id: `wali_permit_${Date.now()}`,
+    nis: studentId,
+    category,
+    start_date: start,
+    end_date: end || null,
+    reason,
+    pickup,
+    vehicle,
+    status: "pending",
+    status_label: category === "sakit" ? "S" : category === "pulang" ? "P" : "I",
+    requested_by: "wali",
+    is_active: true,
+    audit_trail: [
+      {
+        action: "Diajukan wali",
+        by: appState.userProfile?.name || "Wali Murid",
+        time: new Date().toISOString(),
+      },
+    ],
+  };
+
+  if (!appState.permits) appState.permits = [];
+  appState.permits.push(permit);
+  window.persistPermits?.();
+  window.refreshPermitSurfaces?.();
+  window.setWaliTab("permits");
+  window.showToast("Pengajuan dikirim. Menunggu persetujuan musyrif.", "success");
+};
+
+window.submitWaliMessage = function () {
+  const type = document.getElementById("wali-message-type")?.value || "pesan";
+  const text = document.getElementById("wali-message-text")?.value?.trim() || "";
+  if (!text) return window.showToast("Isi pesan terlebih dahulu.", "warning");
+
+  const messages = window.getWaliStoredList("messages");
+  messages.unshift({
+    id: `msg_${Date.now()}`,
+    type,
+    text: window.sanitizeHTML(text),
+    createdAt: new Date().toISOString(),
+    status: "Terkirim",
+  });
+  window.saveWaliStoredList("messages", messages);
+  window.setWaliTab("messages");
+  window.showToast("Pesan disimpan sebagai riwayat komunikasi wali.", "success");
+};
+
+window.submitWaliClarification = function (dateKey, slotId) {
+  const text = prompt("Tulis klarifikasi singkat untuk musyrif:");
+  if (!text || !text.trim()) return;
+  const clarifications = window.getWaliStoredList("clarifications");
+  clarifications.unshift({
+    id: `clar_${Date.now()}`,
+    dateKey,
+    slotId,
+    text: window.sanitizeHTML(text.trim()),
+    createdAt: new Date().toISOString(),
+    status: "Menunggu dibaca musyrif",
+  });
+  window.saveWaliStoredList("clarifications", clarifications);
+  window.showToast("Klarifikasi tersimpan.", "success");
+  window.renderWaliView();
+};
+
+window.renderWaliStatusPill = function (status) {
+  const meta = window.getStatusMeta?.(status || "Tidak") || {};
+  return `<span class="inline-flex items-center rounded-lg border px-2 py-1 text-[10px] font-black ${meta.pill || "bg-slate-50 text-slate-500 border-slate-100"}">${window.sanitizeHTML(status || "-")}</span>`;
+};
+
+window.renderWaliHomePage = function () {
+  const student = appState.waliSantri;
+  const rows = window.getWaliTodayRows(student, appState.date);
+  const priorityStatus = window.getWaliPriorityStatus(rows);
+  const summary7 = window.getWaliAttendanceSummary(student, 7);
+  const activePermit = window.getWaliActivePermit(student);
+  const lastActivity = window.getWaliLastActivity(student);
+  const asrama = window.getWaliAsramaStatus(student);
+  const violations = window.getWaliPembinaanItems();
+  const tahfizh = window.getWaliTahfizhSummary(student);
+  const category = window.getWaliCategorySummary(student, 7);
+  const total7 = summary7.total || 1;
+  const healthy = !activePermit || String(activePermit.category || "").toLowerCase() !== "sakit";
+
+  return `
+    <section class="rounded-[1.75rem] bg-slate-900 p-5 text-white shadow-xl shadow-slate-900/20">
+      <p class="text-[10px] font-black uppercase tracking-widest text-slate-400">${window.formatDate(appState.date)}</p>
+      <div class="mt-3 flex items-start justify-between gap-4">
+        <div>
+          <h2 class="text-3xl font-black">${window.sanitizeHTML(priorityStatus)}</h2>
+          <p class="mt-1 text-xs font-bold text-slate-400">Status utama hari ini dari presensi dan perizinan.</p>
+        </div>
+        <button onclick="window.setWaliTab('permits')" class="rounded-2xl bg-white px-3 py-2 text-[10px] font-black text-slate-900">Ajukan Izin</button>
+      </div>
+      <div class="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <div class="rounded-2xl bg-white/10 p-3"><p class="text-lg font-black">${Math.round(((summary7.Hadir + summary7.Ya + summary7.Telat) / total7) * 100)}%</p><p class="text-[9px] font-black uppercase text-slate-400">Kehadiran</p></div>
+        <div class="rounded-2xl bg-white/10 p-3"><p class="text-lg font-black">${healthy ? "Sehat" : "Sakit"}</p><p class="text-[9px] font-black uppercase text-slate-400">Kesehatan</p></div>
+        <div class="rounded-2xl bg-white/10 p-3"><p class="text-lg font-black">${violations.filter((item) => !item.isCoached).length}</p><p class="text-[9px] font-black uppercase text-slate-400">Catatan</p></div>
+        <div class="rounded-2xl bg-white/10 p-3"><p class="text-lg font-black">${tahfizh.total}</p><p class="text-[9px] font-black uppercase text-slate-400">Setoran</p></div>
+      </div>
+    </section>
+
+    <section class="grid grid-cols-1 gap-4 lg:grid-cols-2">
+      <div class="rounded-[1.5rem] bg-white/90 dark:bg-slate-900/90 border border-slate-100 dark:border-slate-800 p-4">
+        <h2 class="text-sm font-black text-slate-900 dark:text-white">Kondisi Sekarang</h2>
+        <div class="mt-3 space-y-2">
+          <div class="rounded-2xl bg-slate-50 dark:bg-slate-950/40 p-3"><p class="text-[10px] font-black uppercase text-slate-400">Aktivitas terakhir</p><p class="mt-1 text-sm font-black text-slate-800 dark:text-white">${lastActivity ? `${lastActivity.label} (${lastActivity.time})` : "Belum ada presensi hari ini"}</p></div>
+          <div class="rounded-2xl bg-slate-50 dark:bg-slate-950/40 p-3"><p class="text-[10px] font-black uppercase text-slate-400">Status asrama</p><p class="mt-1 text-sm font-black text-slate-800 dark:text-white">${asrama.label}</p><p class="mt-1 text-xs font-bold text-slate-500">${window.sanitizeHTML(asrama.detail)}</p></div>
+          <div class="rounded-2xl bg-slate-50 dark:bg-slate-950/40 p-3"><p class="text-[10px] font-black uppercase text-slate-400">Izin perlu tindak lanjut</p><p class="mt-1 text-sm font-black text-slate-800 dark:text-white">${activePermit ? window.sanitizeHTML(activePermit.reason || "Izin aktif") : "Tidak ada"}</p></div>
+        </div>
+      </div>
+
+      <div class="rounded-[1.5rem] bg-white/90 dark:bg-slate-900/90 border border-slate-100 dark:border-slate-800 p-4">
+        <h2 class="text-sm font-black text-slate-900 dark:text-white">Ringkasan Perkembangan 7 Hari</h2>
+        <div class="mt-3 grid grid-cols-2 gap-2">
+          ${[
+            ["Ibadah", category.fardu],
+            ["Sekolah", category.school],
+            ["KBM Asrama", category.kbm],
+            ["Sunnah", category.sunnah],
+          ].map(([label, item]) => {
+            const pct = item.total ? Math.round((item.good / item.total) * 100) : 0;
+            return `<div class="rounded-2xl bg-slate-50 dark:bg-slate-950/40 p-3"><p class="text-[10px] font-black uppercase text-slate-400">${label}</p><p class="mt-1 text-xl font-black text-slate-900 dark:text-white">${pct}%</p><p class="text-[10px] font-bold text-slate-400">${item.total} catatan</p></div>`;
+          }).join("")}
+        </div>
+      </div>
+    </section>
+  `;
+};
+
+window.renderWaliAttendancePage = function () {
+  const rows = window.getWaliTodayRows(appState.waliSantri, appState.date);
+  const calendar = window.getWaliAttendanceCalendar(appState.waliSantri, 30);
+  const summary30 = window.getWaliAttendanceSummary(appState.waliSantri, 30);
+
+  const rowsHtml = rows.map((row) => {
+    const statuses = row.isHoliday
+      ? `<span class="text-[10px] font-black text-slate-400">Libur</span>`
+      : row.isFilled
+        ? row.statuses.map((item) => window.renderWaliStatusPill(item.status)).join("")
+        : `<span class="text-[10px] font-black text-slate-400">Belum diisi</span>`;
+    const hasIssue = row.statuses.some((item) => ["Alpa", "Telat", "Sakit", "Izin", "Pulang"].includes(item.status));
+    return `
+      <div class="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 p-3">
+        <div class="flex items-center justify-between gap-3">
+          <div><p class="text-sm font-black text-slate-800 dark:text-white">${row.label}</p><p class="text-[10px] font-bold text-slate-400">${row.time}</p></div>
+          <div class="flex max-w-[62%] flex-wrap justify-end gap-1.5">${statuses}</div>
+        </div>
+        ${hasIssue ? `<button onclick="window.submitWaliClarification('${appState.date}', '${row.id}')" class="mt-3 rounded-xl bg-blue-50 dark:bg-blue-500/10 px-3 py-2 text-[10px] font-black text-blue-600 dark:text-blue-300">Kirim Klarifikasi</button>` : ""}
+      </div>
+    `;
+  }).join("");
+
+  const calendarHtml = calendar.map((day) => {
+    const color = day.issue > 0 ? "bg-red-500 text-white" : day.good > 0 ? "bg-emerald-500 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-400";
+    return `<div title="${day.dateKey}" class="aspect-square rounded-xl ${color} flex items-center justify-center text-[10px] font-black">${day.day}</div>`;
+  }).join("");
+
+  return `
+    <section class="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_0.9fr]">
+      <div class="space-y-3">
+        <div class="flex items-center justify-between"><h2 class="text-sm font-black text-slate-900 dark:text-white">Kehadiran Hari Ini</h2><span class="text-[10px] font-black text-slate-400">${window.formatDate(appState.date)}</span></div>
+        ${rowsHtml}
+      </div>
+      <div class="space-y-4">
+        <div class="rounded-[1.5rem] bg-white/90 dark:bg-slate-900/90 border border-slate-100 dark:border-slate-800 p-4">
+          <h2 class="text-sm font-black text-slate-900 dark:text-white">Statistik 30 Hari</h2>
+          <div class="mt-3 grid grid-cols-3 gap-2">
+            ${["Hadir", "Telat", "Sakit", "Izin", "Pulang", "Alpa"].map((key) => `<div class="rounded-2xl bg-slate-50 dark:bg-slate-950/40 p-3 text-center"><p class="text-lg font-black text-slate-900 dark:text-white">${summary30[key] || 0}</p><p class="text-[9px] font-black uppercase text-slate-400">${key}</p></div>`).join("")}
+          </div>
+        </div>
+        <div class="rounded-[1.5rem] bg-white/90 dark:bg-slate-900/90 border border-slate-100 dark:border-slate-800 p-4">
+          <h2 class="text-sm font-black text-slate-900 dark:text-white">Kalender Kehadiran</h2>
+          <div class="mt-3 grid grid-cols-10 gap-1.5">${calendarHtml}</div>
+        </div>
+      </div>
+    </section>
+  `;
+};
+
+window.renderWaliPermitsPage = function () {
+  const permits = window.getWaliPermits(appState.waliSantri);
+  const historyHtml = permits.length
+    ? permits.map((permit) => `
+      <div class="rounded-2xl bg-white/90 dark:bg-slate-900/90 border border-slate-100 dark:border-slate-800 p-4">
+        <div class="flex items-center justify-between gap-2">
+          <p class="text-sm font-black text-slate-900 dark:text-white">${window.sanitizeHTML(permit.category || permit.type || "izin")}</p>
+          ${window.renderWaliStatusPill(permit.status || (permit.is_active === false ? "Selesai" : "Aktif"))}
+        </div>
+        <p class="mt-2 text-xs font-bold text-slate-600 dark:text-slate-300">${window.sanitizeHTML(permit.reason || "-")}</p>
+        <p class="mt-1 text-[10px] font-bold text-slate-400">${window.formatDate(permit.start_date || permit.start)}${permit.end_date ? ` - ${window.formatDate(permit.end_date)}` : ""}</p>
+      </div>
+    `).join("")
+    : `<div class="rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 p-6 text-center text-xs font-bold text-slate-400">Belum ada riwayat izin.</div>`;
+
+  return `
+    <section class="grid grid-cols-1 gap-4 lg:grid-cols-[0.9fr_1fr]">
+      <div class="rounded-[1.5rem] bg-white/90 dark:bg-slate-900/90 border border-slate-100 dark:border-slate-800 p-4">
+        <h2 class="text-sm font-black text-slate-900 dark:text-white">Ajukan Kebutuhan</h2>
+        <div class="mt-3 space-y-3">
+          <select id="wali-permit-category" class="w-full rounded-xl border border-slate-200 p-3 text-sm font-bold"><option value="sakit">Sakit</option><option value="izin">Izin Kegiatan</option><option value="pulang">Izin Pulang</option></select>
+          <div class="grid grid-cols-2 gap-2"><input id="wali-permit-start" type="date" value="${window.getLocalDateStr()}" class="rounded-xl border border-slate-200 p-3 text-sm font-bold"><input id="wali-permit-end" type="date" class="rounded-xl border border-slate-200 p-3 text-sm font-bold"></div>
+          <textarea id="wali-permit-reason" rows="4" placeholder="Alasan dan detail kebutuhan..." class="w-full rounded-xl border border-slate-200 p-3 text-sm font-bold"></textarea>
+          <input id="wali-permit-pickup" placeholder="Penjemput (opsional)" class="w-full rounded-xl border border-slate-200 p-3 text-sm font-bold">
+          <input id="wali-permit-vehicle" placeholder="Kendaraan (opsional)" class="w-full rounded-xl border border-slate-200 p-3 text-sm font-bold">
+          <button onclick="window.submitWaliPermitRequest()" class="w-full rounded-xl bg-blue-600 px-4 py-3 text-sm font-black text-white">Kirim Pengajuan</button>
+        </div>
+      </div>
+      <div class="space-y-3"><h2 class="text-sm font-black text-slate-900 dark:text-white">Riwayat & Status Persetujuan</h2>${historyHtml}</div>
+    </section>
+  `;
+};
+
+window.renderWaliGrowthPage = function () {
+  const studentId = window.getWaliStudentId();
+  const category = window.getWaliCategorySummary(appState.waliSantri, 30);
+  const tahfizh = window.getWaliTahfizhSummary(appState.waliSantri);
+  const violations = window.getWaliPembinaanItems().slice(0, 6);
+  const badges = typeof window.calculateStudentBadges === "function" ? window.calculateStudentBadges(studentId) || [] : [];
+
+  return `
+    <section class="grid grid-cols-1 gap-4 lg:grid-cols-2">
+      <div class="rounded-[1.5rem] bg-white/90 dark:bg-slate-900/90 border border-slate-100 dark:border-slate-800 p-4">
+        <h2 class="text-sm font-black text-slate-900 dark:text-white">Akademik, Ibadah, & Asrama</h2>
+        <div class="mt-3 space-y-2">
+          ${[
+            ["Ibadah Wajib", category.fardu],
+            ["Kehadiran Sekolah", category.school],
+            ["KBM Asrama", category.kbm],
+            ["Ibadah Sunnah", category.sunnah],
+          ].map(([label, item]) => {
+            const pct = item.total ? Math.round((item.good / item.total) * 100) : 0;
+            return `<div class="rounded-2xl bg-slate-50 dark:bg-slate-950/40 p-3"><div class="flex items-center justify-between"><p class="text-xs font-black text-slate-800 dark:text-white">${label}</p><p class="text-sm font-black text-blue-600">${pct}%</p></div><div class="mt-2 h-2 rounded-full bg-slate-200 dark:bg-slate-800"><div class="h-2 rounded-full bg-blue-500" style="width:${pct}%"></div></div></div>`;
+          }).join("")}
+        </div>
+      </div>
+      <div class="rounded-[1.5rem] bg-white/90 dark:bg-slate-900/90 border border-slate-100 dark:border-slate-800 p-4">
+        <h2 class="text-sm font-black text-slate-900 dark:text-white">Tahfizh</h2>
+        <div class="mt-3 rounded-2xl bg-orange-50 dark:bg-orange-950/20 p-4">
+          <p class="text-2xl font-black text-orange-600">${tahfizh.total}</p>
+          <p class="text-xs font-bold text-orange-700 dark:text-orange-300">Total setoran lokal tercatat</p>
+          <p class="mt-2 text-xs font-black text-slate-700 dark:text-slate-200">Terakhir: ${window.sanitizeHTML(tahfizh.latestType)} - Juz ${window.sanitizeHTML(String(tahfizh.latestJuz))}</p>
+        </div>
+      </div>
+      <div class="rounded-[1.5rem] bg-white/90 dark:bg-slate-900/90 border border-slate-100 dark:border-slate-800 p-4">
+        <h2 class="text-sm font-black text-slate-900 dark:text-white">Pembinaan & Karakter</h2>
+        <div class="mt-3 space-y-2">
+          ${violations.length ? violations.map((item) => `<div class="rounded-2xl bg-slate-50 dark:bg-slate-950/40 p-3"><p class="text-xs font-black text-slate-800 dark:text-white">${item.slotLabel} - ${window.formatDate(item.date)}</p><p class="mt-1 text-[10px] font-bold text-slate-500">${item.isCoached ? `Sudah dibina: ${window.sanitizeHTML(item.coachingInfo?.action || "-")}` : "Menunggu tindak lanjut pembinaan"}</p></div>`).join("") : `<p class="rounded-2xl border border-dashed border-slate-200 p-5 text-center text-xs font-bold text-slate-400">Belum ada catatan pelanggaran.</p>`}
+        </div>
+      </div>
+      <div class="rounded-[1.5rem] bg-white/90 dark:bg-slate-900/90 border border-slate-100 dark:border-slate-800 p-4">
+        <h2 class="text-sm font-black text-slate-900 dark:text-white">Prestasi & Apresiasi</h2>
+        <div class="mt-3 space-y-2">
+          ${badges.length ? badges.map((badge) => `<div class="rounded-2xl bg-emerald-50 dark:bg-emerald-950/20 p-3 text-xs font-black text-emerald-700 dark:text-emerald-300">${window.sanitizeHTML(badge.label || badge.title || String(badge))}</div>`).join("") : `<p class="rounded-2xl border border-dashed border-slate-200 p-5 text-center text-xs font-bold text-slate-400">Prestasi akan muncul saat data tersedia.</p>`}
+        </div>
+      </div>
+    </section>
+  `;
+};
+
+window.renderWaliMessagesPage = function () {
+  const messages = window.getWaliStoredList("messages");
+  const clarifications = window.getWaliStoredList("clarifications");
+  const items = [...messages, ...clarifications].sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+  return `
+    <section class="grid grid-cols-1 gap-4 lg:grid-cols-[0.9fr_1fr]">
+      <div class="rounded-[1.5rem] bg-white/90 dark:bg-slate-900/90 border border-slate-100 dark:border-slate-800 p-4">
+        <h2 class="text-sm font-black text-slate-900 dark:text-white">Kirim Pesan ke Musyrif</h2>
+        <div class="mt-3 space-y-3">
+          <select id="wali-message-type" class="w-full rounded-xl border border-slate-200 p-3 text-sm font-bold"><option value="pesan">Pesan Umum</option><option value="kesehatan">Kesehatan</option><option value="pembinaan">Pembinaan</option><option value="izin">Perizinan</option></select>
+          <textarea id="wali-message-text" rows="5" placeholder="Tulis pesan atau respons untuk musyrif..." class="w-full rounded-xl border border-slate-200 p-3 text-sm font-bold"></textarea>
+          <button onclick="window.submitWaliMessage()" class="w-full rounded-xl bg-emerald-600 px-4 py-3 text-sm font-black text-white">Simpan Pesan</button>
+        </div>
+      </div>
+      <div class="space-y-3"><h2 class="text-sm font-black text-slate-900 dark:text-white">Riwayat Komunikasi</h2>${items.length ? items.map((item) => `<div class="rounded-2xl bg-white/90 dark:bg-slate-900/90 border border-slate-100 dark:border-slate-800 p-4"><div class="flex items-center justify-between"><p class="text-xs font-black uppercase text-slate-400">${window.sanitizeHTML(item.type || "klarifikasi")}</p><span class="text-[10px] font-black text-blue-500">${window.sanitizeHTML(item.status || "Terkirim")}</span></div><p class="mt-2 text-sm font-bold text-slate-700 dark:text-slate-200">${window.sanitizeHTML(item.text || "-")}</p><p class="mt-2 text-[10px] font-bold text-slate-400">${new Date(item.createdAt).toLocaleString("id-ID")}</p></div>`).join("") : `<div class="rounded-2xl border border-dashed border-slate-200 p-6 text-center text-xs font-bold text-slate-400">Belum ada pesan.</div>`}</div>
+    </section>
+  `;
+};
+
+window.renderWaliProfilePage = function () {
+  const student = appState.waliSantri;
+  const studentClass = window.getWaliStudentClass(student);
+  const prefs = window.getWaliNotificationPrefs();
+  const notifTypes = [
+    ["alpa", "Tidak hadir"],
+    ["telat", "Terlambat"],
+    ["sakit", "Sakit"],
+    ["pulang", "Pulang/izin keluar"],
+    ["catatan", "Catatan musyrif"],
+    ["pengumuman", "Pengumuman"],
+  ];
+  return `
+    <section class="grid grid-cols-1 gap-4 lg:grid-cols-2">
+      <div class="rounded-[1.5rem] bg-white/90 dark:bg-slate-900/90 border border-slate-100 dark:border-slate-800 p-4">
+        <h2 class="text-sm font-black text-slate-900 dark:text-white">Data Anak & Kontak</h2>
+        <div class="mt-3 space-y-2 text-sm font-bold text-slate-600 dark:text-slate-300">
+          <p>Nama: ${window.sanitizeHTML(student?.nama || "-")}</p>
+          <p>NIS: ${window.sanitizeHTML(window.getWaliStudentId(student))}</p>
+          <p>Kelas: ${window.sanitizeHTML(studentClass || "-")}</p>
+          <p>Asrama: ${window.sanitizeHTML(student?.asrama || student?.rombel || "-")}</p>
+          <p>Musyrif: ${window.sanitizeHTML(MASTER_KELAS?.[studentClass]?.musyrif || window.classData?.[studentClass]?.musyrif || "-")}</p>
+        </div>
+      </div>
+      <div class="rounded-[1.5rem] bg-white/90 dark:bg-slate-900/90 border border-slate-100 dark:border-slate-800 p-4">
+        <h2 class="text-sm font-black text-slate-900 dark:text-white">Preferensi Notifikasi</h2>
+        <div class="mt-3 space-y-2">
+          ${notifTypes.map(([key, label]) => {
+            const active = prefs[key] !== false;
+            return `<button onclick="window.toggleWaliNotificationPref('${key}')" class="w-full rounded-2xl border border-slate-100 dark:border-slate-800 p-3 flex items-center justify-between text-left"><span class="text-xs font-black text-slate-700 dark:text-slate-200">${label}</span><span class="rounded-full px-2 py-1 text-[10px] font-black ${active ? "bg-emerald-50 text-emerald-600" : "bg-slate-100 text-slate-400"}">${active ? "Aktif" : "Mati"}</span></button>`;
+          }).join("")}
+        </div>
+      </div>
+    </section>
+  `;
+};
+
+window.renderWaliView = function () {
+  const view = document.getElementById("view-wali");
+  const student = appState.waliSantri;
+  if (!view || !student) return;
+
+  const tab = appState.waliTab || "home";
+  const studentId = window.getWaliStudentId(student);
+  const studentClass = window.getWaliStudentClass(student);
+  const navItems = [
+    ["home", "Beranda", "home"],
+    ["attendance", "Kehadiran", "calendar-check"],
+    ["permits", "Izin", "file-text"],
+    ["growth", "Perkembangan", "trending-up"],
+    ["messages", "Pesan", "message-circle"],
+    ["profile", "Profil", "user"],
+  ];
+  const pages = {
+    home: window.renderWaliHomePage,
+    attendance: window.renderWaliAttendancePage,
+    permits: window.renderWaliPermitsPage,
+    growth: window.renderWaliGrowthPage,
+    messages: window.renderWaliMessagesPage,
+    profile: window.renderWaliProfilePage,
+  };
+
+  view.innerHTML = `
+    <div class="h-full overflow-y-auto bg-slate-50 dark:bg-[#0f172a] p-4 sm:p-6">
+      <div class="mx-auto w-full max-w-5xl space-y-4 pb-8">
+        <header class="flex items-center justify-between gap-3">
+          <div class="min-w-0">
+            <p class="text-[10px] font-black uppercase tracking-widest text-slate-400">Aplikasi Wali Murid</p>
+            <h1 class="truncate text-xl font-black text-slate-900 dark:text-white">${window.sanitizeHTML(student.nama || "Santri")}</h1>
+            <p class="mt-1 text-xs font-bold text-slate-500">NIS ${window.sanitizeHTML(studentId)} &middot; Kelas ${window.sanitizeHTML(studentClass || "-")}</p>
+          </div>
+          <button onclick="window.handleWaliLogout()" class="h-10 shrink-0 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-3 text-xs font-black text-slate-600 dark:text-slate-300">Keluar</button>
+        </header>
+        <nav class="grid grid-cols-3 gap-2 rounded-[1.25rem] bg-white/90 dark:bg-slate-900/90 border border-slate-100 dark:border-slate-800 p-2 sm:grid-cols-6">
+          ${navItems.map(([key, label, icon]) => `<button onclick="window.setWaliTab('${key}')" class="rounded-xl px-2 py-2 text-[10px] font-black ${tab === key ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900" : "text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800"}"><i data-lucide="${icon}" class="mx-auto mb-1 h-4 w-4"></i>${label}</button>`).join("")}
+        </nav>
+        <main class="space-y-4">${(pages[tab] || pages.home)()}</main>
+      </div>
+    </div>
+  `;
+
+  if (window.lucide) window.lucide.createIcons();
+};
+
+window.showWaliView = function (tabName = "home") {
+  let view = document.getElementById("view-wali");
+  if (!view) {
+    view = document.createElement("section");
+    view.id = "view-wali";
+    view.className = "fixed inset-0 z-[70] hidden";
+    document.body.appendChild(view);
+  }
+
+  appState.waliTab = tabName || appState.waliTab || "home";
+  document.getElementById("view-login")?.classList.add("hidden");
+  document.getElementById("view-main")?.classList.add("hidden");
+  document.getElementById("view-attendance")?.classList.add("hidden");
+  view.classList.remove("hidden");
+  window.renderWaliView();
 };
 
 window.handleGoogleCallback = function (response) {
@@ -628,8 +1488,12 @@ window.handleGoogleCallback = function (response) {
 };
 
 window.handleLogout = function () {
-  if (!confirm("Keluar dari akun ini?")) return;
-
+  window.showConfirmModal(
+    "Keluar dari Akun?",
+    "Sesi saat ini akan ditutup dan Anda kembali ke layar login.",
+    "Keluar",
+    "Batal",
+    () => {
   if (clockInterval) {
     clearInterval(clockInterval);
     clockInterval = null;
@@ -640,13 +1504,18 @@ window.handleLogout = function () {
 
   document.getElementById("view-main").classList.add("hidden");
   document.getElementById("view-login").classList.remove("hidden");
-  document.getElementById("login-kelas").value = "";
+
+  const loginKelasEl = document.getElementById("login-kelas");
+  if (loginKelasEl) loginKelasEl.value = "";
+
   const userEl = document.getElementById("login-username");
   const passEl = document.getElementById("login-password");
   if (userEl) userEl.value = "";
   if (passEl) passEl.value = "";
 
   location.reload();
+    },
+  );
 };
 
 const getGreetingTranslation = function (arabic, hour) {
@@ -837,7 +1706,7 @@ window.updateDashboard = function () {
       }
     }
     const nameMarqueeClass = displayName.length > 24 ? "dashboard-name-marquee" : "";
-    elTitleGreet.innerHTML = `<span class="dashboard-name-wrap"><span class="dashboard-name-text ${nameMarqueeClass} text-transparent bg-clip-text bg-gradient-to-r from-emerald-700 to-teal-500 dark:from-emerald-400 dark:to-teal-300 font-black">${displayName}!</span></span>`;
+    elTitleGreet.innerHTML = `<span class="dashboard-name-wrap"><span class="dashboard-name-text ${nameMarqueeClass} text-white font-semibold drop-shadow-sm">${displayName}!</span></span>`;
   }
 
   // 2. Main Card Logic
@@ -859,6 +1728,30 @@ window.updateDashboard = function () {
 
     const slot = SLOT_WAKTU[heroSlotId];
     document.getElementById("dash-card-title").textContent = slot.label;
+    const dashboardBgIcon = document.querySelector("#dashboard-slot-bg-illustration i");
+    const dashboardContent = document.getElementById("main-content");
+    if (dashboardBgIcon) {
+      const slotBgIconMap = {
+        shubuh: "sunrise",
+        sekolah: "school",
+        ashar: "sun",
+        maghrib: "sunset",
+        isya: "moon"
+      };
+      dashboardBgIcon.setAttribute("data-lucide", slotBgIconMap[heroSlotId] || "calendar-check");
+    }
+    if (dashboardContent) {
+      const slotBgColorMap = {
+        shubuh: ["#0f766e", "#10b981"],
+        sekolah: ["#0c4e8c", "#0c81e4"],
+        ashar: ["#b45309", "#f59e0b"],
+        maghrib: ["#4338ca", "#7e22ce"],
+        isya: ["#0f172a", "#1e3a8a"]
+      };
+      const slotBgColors = slotBgColorMap[heroSlotId] || ["#0c4e8c", "#0c81e4"];
+      dashboardContent.style.setProperty("--dashboard-bg-from", slotBgColors[0]);
+      dashboardContent.style.setProperty("--dashboard-bg-to", slotBgColors[1]);
+    }
 
     // Update badge dynamically based on whether it is today's date
     const badgeDot = document.getElementById("dash-card-badge-dot");
@@ -885,13 +1778,13 @@ window.updateDashboard = function () {
     // Remove any previous gradient/solid background classes
     mainCard.classList.remove(
       "bg-slate-900", "dark:bg-black", "bg-gradient-to-br",
-      "from-teal-800", "to-emerald-700", "dark:from-teal-950", "dark:to-emerald-900",
+      "from-emerald-500", "to-emerald-600", "dark:from-emerald-950", "dark:to-emerald-900",
       "from-cyan-800", "to-blue-700", "dark:from-cyan-950", "dark:to-blue-900",
       "from-orange-700", "to-amber-600", "dark:from-orange-950", "dark:to-amber-900",
       "from-indigo-800", "to-purple-700", "dark:from-indigo-950", "dark:to-purple-900",
       "from-slate-800", "to-zinc-900", "dark:from-slate-950", "dark:to-black",
       "from-slate-900", "to-black",
-      "from-slate-900", "via-teal-950/95", "to-emerald-950/90", "dark:from-black", "dark:via-teal-950/80", "dark:to-black",
+      "from-slate-900", "via-emerald-950/95", "to-emerald-950/90", "dark:from-black", "dark:via-emerald-950/80", "dark:to-black",
       "from-slate-900", "via-blue-950/95", "to-indigo-950/90", "dark:from-black", "dark:via-blue-950/80", "dark:to-black",
       "from-slate-900", "via-orange-950/90", "to-amber-950/90", "dark:from-black", "dark:via-orange-950/80", "dark:to-black",
       "from-slate-900", "via-indigo-950/95", "to-purple-950/90", "dark:from-black", "dark:via-indigo-950/80", "dark:to-black",
@@ -1337,7 +2230,7 @@ window.updateLocationStatus = function () {
         let msg = "Gagal deteksi lokasi.";
         if (error.code === 1) msg = "Izin lokasi ditolak.";
         else if (error.code === 2) msg = "Sinyal GPS lemah.";
-        else if (error.code === 3) msg = "Waktu GPS habis.";
+        else if (error.code === 3) msg = "Waktu GPS habis. Coba lagi di area terbuka.";
         elError.innerHTML = `<p class="text-[10px] font-bold text-red-500 leading-tight">${msg}</p>`;
       }
       const elBadge = document.getElementById("loc-badge");
@@ -1353,7 +2246,11 @@ window.updateLocationStatus = function () {
         elAsramaBtn.classList.remove("flex");
       }
     },
-    { enableHighAccuracy: true, timeout: 5000, maximumAge: GPS_CACHE_DURATION },
+    {
+      enableHighAccuracy: true,
+      timeout: GPS_STATUS_TIMEOUT,
+      maximumAge: GPS_CACHE_DURATION,
+    },
   );
 };
 
@@ -1474,7 +2371,7 @@ window.renderSlotList = function () {
     } else {
       // 3. STATUS: AKTIF (Rich Solid Session Background Theme)
       const themeSolidClasses = {
-        emerald: "bg-gradient-to-br from-emerald-600 to-teal-700 dark:from-emerald-950 dark:to-teal-900/80 text-white border-emerald-500/30 shadow-[0_8px_25px_rgba(16,185,129,0.12)] hover:-translate-y-1 hover:shadow-[0_12px_30px_rgba(16,185,129,0.2)]",
+        emerald: "bg-gradient-to-br from-emerald-500 to-emerald-600 dark:from-emerald-950 dark:to-emerald-900/80 text-white border-emerald-500/30 shadow-[0_8px_25px_rgba(16,185,129,0.12)] hover:-translate-y-1 hover:shadow-[0_12px_30px_rgba(16,185,129,0.2)]",
         cyan: "bg-gradient-to-br from-sky-500 to-indigo-600 dark:from-sky-950 dark:to-indigo-900/80 text-white border-sky-500/30 shadow-[0_8px_25px_rgba(14,165,233,0.12)] hover:-translate-y-1 hover:shadow-[0_12px_30px_rgba(14,165,233,0.2)]",
         orange: "bg-gradient-to-br from-amber-500 to-orange-600 dark:from-amber-950 dark:to-orange-900/80 text-white border-amber-500/30 shadow-[0_8px_25px_rgba(245,158,11,0.12)] hover:-translate-y-1 hover:shadow-[0_12px_30px_rgba(245,158,11,0.2)]",
         indigo: "bg-gradient-to-br from-indigo-500 to-purple-600 dark:from-indigo-950 dark:to-purple-900/80 text-white border-indigo-500/30 shadow-[0_8px_25px_rgba(99,102,241,0.12)] hover:-translate-y-1 hover:shadow-[0_12px_30px_rgba(99,102,241,0.2)]",
@@ -2226,7 +3123,7 @@ window.renderAttendanceList = function () {
     // AVATAR - Stable personality marker per santri.
     const avatarEl = clone.querySelector(".santri-avatar");
     const avatarOptions = [
-      { icon: "🌿", class: "from-emerald-50 to-teal-100 text-emerald-700 dark:from-emerald-900/30 dark:to-teal-900/30 dark:text-emerald-300" },
+      { icon: "🌿", class: "from-emerald-50 to-emerald-100 text-emerald-700 dark:from-emerald-900/30 dark:to-emerald-900/30 dark:text-emerald-300" },
       { icon: "✨", class: "from-sky-50 to-blue-100 text-sky-700 dark:from-sky-900/30 dark:to-blue-900/30 dark:text-sky-300" },
       { icon: "📘", class: "from-indigo-50 to-violet-100 text-indigo-700 dark:from-indigo-900/30 dark:to-violet-900/30 dark:text-indigo-300" },
       { icon: "🕌", class: "from-cyan-50 to-slate-100 text-cyan-700 dark:from-cyan-900/30 dark:to-slate-800 dark:text-cyan-300" },
@@ -2245,9 +3142,9 @@ window.renderAttendanceList = function () {
       { icon: "user-round", class: "from-sky-50 to-blue-100 text-sky-700 dark:from-sky-900/30 dark:to-blue-900/30 dark:text-sky-300" },
       { icon: "book-open", class: "from-indigo-50 to-violet-100 text-indigo-700 dark:from-indigo-900/30 dark:to-violet-900/30 dark:text-indigo-300" },
       { icon: "sparkles", class: "from-amber-50 to-yellow-100 text-amber-700 dark:from-amber-900/30 dark:to-yellow-900/20 dark:text-amber-300" },
-      { icon: "leaf", class: "from-emerald-50 to-teal-100 text-emerald-700 dark:from-emerald-900/30 dark:to-teal-900/30 dark:text-emerald-300" },
+      { icon: "leaf", class: "from-emerald-50 to-emerald-100 text-emerald-700 dark:from-emerald-900/30 dark:to-emerald-900/30 dark:text-emerald-300" },
       { icon: "graduation-cap", class: "from-cyan-50 to-slate-100 text-cyan-700 dark:from-cyan-900/30 dark:to-slate-800 dark:text-cyan-300" },
-      { icon: "badge-check", class: "from-teal-50 to-emerald-100 text-teal-700 dark:from-teal-900/30 dark:to-emerald-900/20 dark:text-teal-300" },
+      { icon: "badge-check", class: "from-cyan-50 to-emerald-100 text-cyan-700 dark:from-cyan-900/30 dark:to-emerald-900/20 dark:text-cyan-300" },
       { icon: "notebook-tabs", class: "from-violet-50 to-fuchsia-100 text-violet-700 dark:from-violet-900/30 dark:to-fuchsia-900/20 dark:text-violet-300" },
       { icon: "shield-check", class: "from-slate-50 to-slate-200 text-slate-600 dark:from-slate-800 dark:to-slate-700 dark:text-slate-300" },
       { icon: "map-pin", class: "from-rose-50 to-pink-100 text-rose-700 dark:from-rose-900/30 dark:to-pink-900/20 dark:text-rose-300" },
@@ -2427,12 +3324,12 @@ window.renderAttendanceList = function () {
 
         e.stopPropagation();
         if (hasPermitConflict) {
-          if (
-            !confirm(
-              `Santri tercatat ${activePermit.type}. Ubah manual jadi HADIR?`,
-            )
-          )
-            return;
+          window.showConfirmModal(
+            "Ubah Manual Jadi Hadir?",
+            `Santri tercatat ${activePermit.type}. Status otomatis akan ditimpa untuk sesi ini.`,
+            "Ubah Hadir",
+            "Batal",
+            () => {
           sData.permitManualOverride = true;
           const recoveredSickPermit =
             activePermit.type === "Sakit" &&
@@ -2462,6 +3359,8 @@ window.renderAttendanceList = function () {
           if (appState.date === window.getLocalDateStr()) {
             window.updateDashboard();
           }
+            },
+          );
           return;
         }
         window.toggleStatus(id, act.id, act.type);
@@ -3035,7 +3934,7 @@ window.exportToPDF = function () {
         <title>${window.sanitizeHTML(title)}</title>
         <style>
           * { box-sizing: border-box; }
-          body { font-family: Inter, Arial, sans-serif; color: #0f172a; margin: 32px; }
+          body { font-family: "Plus Jakarta Sans", Arial, sans-serif; color: #0f172a; margin: 32px; }
           header { display: flex; justify-content: space-between; gap: 24px; align-items: flex-end; margin-bottom: 24px; border-bottom: 2px solid #e2e8f0; padding-bottom: 16px; }
           h1 { margin: 0; font-size: 22px; letter-spacing: -0.02em; }
           p { margin: 4px 0 0; color: #64748b; font-size: 12px; font-weight: 700; }
@@ -3095,6 +3994,10 @@ window.closeModal = function (modalId) {
 
   modal.removeAttribute("aria-modal");
   modal.removeAttribute("role");
+
+  if (modalStack.length === 0) {
+    document.body.classList.remove("modal-open");
+  }
 };
 
 window.generateRekapBulanan = function () {
@@ -3239,7 +4142,10 @@ window.viewActivityLog = function () {
 };
 
 window.kirimLaporanWA = function () {
-  if (!FILTERED_SANTRI.length) return alert("Pilih kelas dulu");
+  if (!FILTERED_SANTRI.length) {
+    window.showToast("Pilih kelas dulu", "warning");
+    return;
+  }
 
   const slot = SLOT_WAKTU[appState.currentSlotId];
   const stats = window.calculateSlotStats(slot.id);
@@ -3295,7 +4201,7 @@ window.showToast = function (message, type = "info", isPersistent = false) {
   };
 
   // Tambahkan class penanda 'toast-element' agar lebih mudah diidentifikasi
-  toast.className = `toast-element ${UI_COLORS[type] || UI_COLORS.info} text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 animate-[slideUp_0.3s_ease-out] mb-3 z-[9999] cursor-pointer pointer-events-auto`;
+  toast.className = `toast-element ${UI_COLORS[type] || UI_COLORS.info} text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 animate-toast-enter mb-3 z-[9999] cursor-pointer pointer-events-auto`;
 
   // Tambahkan class penanda 'toast-msg-text' pada bagian teks
   toast.innerHTML = `
@@ -3307,7 +4213,8 @@ window.showToast = function (message, type = "info", isPersistent = false) {
   toast.onclick = () => {
     toast.style.opacity = "0";
     toast.style.transform = "translateY(-20px)";
-    setTimeout(() => toast.remove(), 300);
+    toast.style.transition = "opacity var(--motion-standard) var(--ease-exit), transform var(--motion-standard) var(--ease-exit)";
+    setTimeout(() => toast.remove(), 200);
   };
 
   container.appendChild(toast);
@@ -3317,7 +4224,8 @@ window.showToast = function (message, type = "info", isPersistent = false) {
     setTimeout(() => {
       toast.style.opacity = "0";
       toast.style.transform = "translateY(-20px)";
-      setTimeout(() => toast.remove(), 300);
+      toast.style.transition = "opacity var(--motion-standard) var(--ease-exit), transform var(--motion-standard) var(--ease-exit)";
+      setTimeout(() => toast.remove(), 200);
     }, 3000);
   } else {
     setTimeout(() => toast.remove(), 10000);
@@ -4533,6 +5441,8 @@ window.showConfirmModal = function (
   confirmText,
   cancelText,
   onConfirm,
+  onCancel,
+  variant = "danger",
 ) {
   const modal = document.getElementById("modal-confirm");
   if (modal) {
@@ -4544,14 +5454,24 @@ window.showConfirmModal = function (
 
     btnYes.textContent = confirmText;
     btnYes.onclick = () => {
-      onConfirm();
-      modal.classList.add("hidden");
+      if (typeof onConfirm === "function") onConfirm();
+      window.closeModal ? window.closeModal("modal-confirm") : modal.classList.add("hidden");
     };
 
     btnNo.textContent = cancelText;
-    btnNo.onclick = () => modal.classList.add("hidden");
+    btnNo.onclick = () => {
+      if (typeof onCancel === "function") onCancel();
+      window.closeModal ? window.closeModal("modal-confirm") : modal.classList.add("hidden");
+    };
 
-    modal.classList.remove("hidden");
+    btnYes.className =
+      variant === "brand"
+        ? "flex-1 py-3.5 rounded-xl bg-palette-blue text-white font-bold text-xs transition-all active:scale-95 shadow-lg shadow-blue-500/30"
+        : variant === "success"
+          ? "flex-1 py-3.5 rounded-xl bg-emerald-500 text-white font-bold text-xs transition-all active:scale-95 shadow-lg shadow-emerald-500/30"
+          : "flex-1 py-3.5 rounded-xl bg-red-500 text-white font-bold text-xs transition-all active:scale-95 shadow-lg shadow-red-500/30";
+
+    window.openModal ? window.openModal("modal-confirm") : modal.classList.remove("hidden");
   }
 };
 
@@ -4815,14 +5735,19 @@ window.getPermitRuntimeState = function (
 };
 
 window.deletePermit = function (id) {
-  if (!confirm("Hapus data izin ini? Status akan dikembalikan ke default."))
-    return;
-
+  window.showConfirmModal(
+    "Hapus Data Izin?",
+    "Status kehadiran santri akan dikembalikan ke default.",
+    "Hapus",
+    "Batal",
+    () => {
   appState.permits = appState.permits.filter((p) => p.id !== id);
   window.persistPermits();
 
   window.showToast("Data izin dihapus", "info");
   window.refreshPermitSurfaces();
+    },
+  );
 };
 
 window.renderPermitList = function () {
@@ -6001,7 +6926,7 @@ window.renderAnalysisTrendChart = function (timeline) {
 
   ctx.strokeStyle = isDark ? "rgba(148,163,184,.16)" : "rgba(148,163,184,.22)";
   ctx.lineWidth = 1;
-  ctx.font = "700 10px Inter, sans-serif";
+  ctx.font = "500 10px 'DM Mono', monospace";
   ctx.fillStyle = isDark ? "#94a3b8" : "#64748b";
   [0, 50, 100].forEach((tick) => {
     const y = pad.top + chartH - (tick / 100) * chartH;
@@ -6582,9 +7507,9 @@ window.verifyLocation = function () {
     );
 
     const timeout = setTimeout(() => {
-      reject("Timeout: GPS tidak merespons dalam 10 detik");
+      reject("Timeout: GPS tidak merespons. Coba lagi di area terbuka.");
       if (toastId) toastId.remove();
-    }, 10000);
+    }, GPS_VERIFICATION_GUARD_TIMEOUT);
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
@@ -6645,17 +7570,21 @@ window.verifyLocation = function () {
         if (toastId) toastId.remove();
 
         let msg = "Gagal mendeteksi lokasi.";
-        if (error.code === 1)
+        if (error.code === 1) {
+          // Simpan flag bahwa GPS ditolak agar tidak diminta lagi di session ini
+          const gpsPermissionKey = "gps_permission_denied_" + APP_CONFIG?.appName?.replace(/\s+/g, "_").toLowerCase() || "syamsa_app";
+          sessionStorage.setItem(gpsPermissionKey, "true");
           msg = "Izin lokasi ditolak. Aktifkan GPS di browser.";
-        else if (error.code === 2)
+        } else if (error.code === 2)
           msg = "Sinyal GPS tidak ditemukan. Pastikan Anda di luar ruangan.";
-        else if (error.code === 3) msg = "Waktu deteksi GPS habis. Coba lagi.";
+        else if (error.code === 3)
+          msg = "Waktu deteksi GPS habis. Coba lagi di area terbuka.";
 
         reject(msg);
       },
       {
         enableHighAccuracy: true,
-        timeout: 9000,
+        timeout: GPS_VERIFICATION_TIMEOUT,
         maximumAge: GPS_CACHE_DURATION,
       },
     );
@@ -6829,8 +7758,8 @@ window.sendLocalNotification = function (title, body, type = "info", tag = title
 
   const options = {
     body,
-    icon: "assets/icon.webp",
-    badge: "assets/icon.png",
+    icon: "assets/icons/icon.webp",
+    badge: "assets/icons/icon.png",
     vibrate: [160, 70, 160],
     tag,
     renotify: false,
@@ -7184,15 +8113,7 @@ window.markSickPermitRecoveredBeforeSlot = function (permitId, slotId) {
 window.markAsRecovered = function (id) {
   const permit = appState.permits.find((p) => p.id === id);
   if (permit) {
-    // PERBAIKAN: Dialog yang lebih jelas & Logika Default yang Aman
-    // Default (OK) sekarang adalah: Sembuh SEKARANG (Sesi ini tetap dihitung sakit, baru sehat sesi depan)
-    // Ini mencegah status Shubuh berubah jadi Hadir.
-
-    const keepSick = confirm(
-      "Konfirmasi Kesembuhan:\n\n" +
-        "[OK] = Baru Sembuh SEKARANG (Sesi ini tetap tercatat Sakit)\n" +
-        "[Cancel] = Sudah sehat SEJAK AWAL sesi ini (Ubah status sesi ini jadi Hadir)",
-    );
+    const applyRecovery = (keepSick) => {
 
     permit.end_date = appState.date;
 
@@ -7215,6 +8136,16 @@ window.markAsRecovered = function (id) {
     window.showToast("Status kesembuhan diperbarui", "success");
 
     window.refreshPermitSurfaces();
+    };
+
+    window.showConfirmModal(
+      "Konfirmasi Kesembuhan",
+      "Pilih cara mencatat kesembuhan santri untuk sesi presensi saat ini.",
+      "Baru Sembuh Sekarang",
+      "Sehat Sejak Awal",
+      () => applyRecovery(true),
+      () => applyRecovery(false),
+    );
   }
 };
 
@@ -7806,13 +8737,12 @@ window.renderPembinaanManagement = function () {
 
 // --- FUNGSI BARU UNTUK HAPUS PELANGGARAN LANGSUNG ---
 window.deleteViolationRecord = function (studentId, dateKey) {
-  if (
-    !confirm(
-      `Hapus status ALPA untuk santri ini pada tanggal ${window.formatDate(dateKey)}?\n\nStatus akan diubah menjadi 'Hadir'.`,
-    )
-  )
-    return;
-
+  window.showConfirmModal(
+    "Hapus Status Alpa?",
+    `Status ALPA pada ${window.formatDate(dateKey)} akan diubah menjadi Hadir.`,
+    "Ubah Hadir",
+    "Batal",
+    () => {
   const dayData = appState.attendanceData[dateKey];
   if (!dayData) return;
 
@@ -7850,15 +8780,18 @@ window.deleteViolationRecord = function (studentId, dateKey) {
   } else {
     window.showToast("Data tidak ditemukan / sudah berubah", "error");
   }
+    },
+  );
 };
 
 // Fungsi Helper Baru: Loncat ke tanggal tertentu dan buka tab presensi
 window.jumpToDate = function (dateStr) {
-  if (
-    confirm(
-      `Buka data presensi tanggal ${window.formatDate(dateStr)} untuk mengedit/menghapus pelanggaran?`,
-    )
-  ) {
+  window.showConfirmModal(
+    "Buka Data Presensi?",
+    `Buka data presensi tanggal ${window.formatDate(dateStr)} untuk mengedit atau menghapus pelanggaran.`,
+    "Buka",
+    "Batal",
+    () => {
     appState.date = dateStr;
     window.updateDateDisplay();
     window.updateDashboard(); // Refresh dashboard data sesuai tanggal baru
@@ -7868,7 +8801,8 @@ window.jumpToDate = function (dateStr) {
     window.scrollTo(0, 0);
 
     window.showToast(`Mode Edit: ${window.formatDate(dateStr)}`, "info");
-  }
+    },
+  );
 };
 
 // Helper untuk Scroll ke section ini dari Dashboard
@@ -8409,13 +9343,12 @@ window.renderPermitHistory = function () {
 
 // 1. Fungsi Hapus (Khusus History)
 window.deleteHistoryPermit = function (id) {
-  if (
-    !confirm(
-      "⚠️ PERINGATAN HAPUS\n\nApakah Anda yakin ingin menghapus data izin ini secara permanen? Data yang dihapus tidak bisa dikembalikan.",
-    )
-  )
-    return;
-
+  window.showConfirmModal(
+    "Hapus Data Izin?",
+    "Data izin akan dihapus permanen dan tidak bisa dikembalikan.",
+    "Hapus",
+    "Batal",
+    () => {
   // Filter array untuk membuang ID yang cocok
   appState.permits = appState.permits.filter((p) => p.id !== id);
 
@@ -8424,6 +9357,8 @@ window.deleteHistoryPermit = function (id) {
 
   window.showToast("Data izin berhasil dihapus", "success");
   window.refreshPermitSurfaces();
+    },
+  );
 };
 
 // 2. Fungsi Toggle Status (Aktif <-> Selesai)
@@ -8437,11 +9372,24 @@ window.togglePermitStatus = function (id) {
   // Atau biarkan apa adanya jika itu izin berjangka.
   // Kita reset end_date hanya jika user mengaktifkan kembali permit Sakit yg sudah sembuh.
   if (permit.is_active && permit.category === "sakit" && permit.end_date) {
-    if (
-      confirm("Hapus tanggal kesembuhan agar santri kembali berstatus Sakit?")
-    ) {
+    window.showConfirmModal(
+      "Aktifkan Kembali Sakit?",
+      "Hapus tanggal kesembuhan agar santri kembali berstatus Sakit.",
+      "Hapus Tanggal",
+      "Biarkan",
+      () => {
       permit.end_date = null;
-    }
+      window.persistPermits();
+      window.showToast("Status sakit diaktifkan kembali", "info");
+      window.refreshPermitSurfaces();
+      },
+      () => {
+      window.persistPermits();
+      window.showToast("Status izin: AKTIF", "info");
+      window.refreshPermitSurfaces();
+      },
+    );
+    return;
   }
 
   window.persistPermits();
@@ -8690,12 +9638,13 @@ window.openModal = function (modalId) {
   const modal = document.getElementById(modalId);
   if (!modal) return;
 
-  const baseZIndex = 1000;
+  const baseZIndex = 100;
   const zIndex = baseZIndex + modalStack.length * 10;
 
   modal.style.zIndex = zIndex;
   modal.classList.remove("hidden");
-  modalStack.push(modalId);
+  if (!modalStack.includes(modalId)) modalStack.push(modalId);
+  document.body.classList.add("modal-open");
 
   const escHandler = (e) => {
     if (e.key === "Escape") {
@@ -8795,6 +9744,14 @@ window.getTimesheetStreakInfo = function (year, month, totalDays) {
 
 window.verifyLocationCached = async function () {
   if (window.gpsBypassEnabled) return true;
+
+  // Cek apakah GPS sudah pernah ditolak di session ini
+  const gpsPermissionKey = "gps_permission_denied_" + APP_CONFIG?.appName?.replace(/\s+/g, "_").toLowerCase() || "syamsa_app";
+  if (sessionStorage.getItem(gpsPermissionKey)) {
+    // Skip GPS verification jika sudah pernah ditolak
+    return true;
+  }
+
   const cache = JSON.parse(localStorage.getItem(GPS_CACHE_KEY) || "null");
 
   if (
@@ -8871,6 +9828,9 @@ window.getNextSalatTarget = function (salatMap, now = new Date()) {
   return next;
 };
 
+// Cache untuk GPS location agar tidak diminta terus-menerus
+window._gpsLocationCache = window._gpsLocationCache || { lat: null, lng: null, attempted: false };
+
 window.initSalatHijriWidget = async function () {
   const hijriEl = document.getElementById("widget-hijri-date");
   if (!hijriEl) return;
@@ -8901,40 +9861,27 @@ window.initSalatHijriWidget = async function () {
   let lng = defaultPrayerLocation.lng;
   let locationLabel = defaultPrayerLocation.label;
 
-  // Coba dapatkan lokasi asli pengguna
-  try {
-    const position = await new Promise((resolve, reject) => {
-      navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 4000 });
-    });
-    lat = position.coords.latitude;
-    lng = position.coords.longitude;
-    
-    // Reverse geocode to get human-readable location
+  // Coba gunakan lokasi dari cache atau minta GPS sekali saja per sesi
+  if (!window._gpsLocationCache.attempted) {
+    window._gpsLocationCache.attempted = true;
     try {
-      const geoResponse = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=14`, {
-        headers: { "Accept-Language": "id" }
+      const position = await new Promise((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 4000 });
       });
-      if (geoResponse.ok) {
-        const geoData = await geoResponse.json();
-        if (geoData && geoData.address) {
-          const addr = geoData.address;
-          const suburb = addr.suburb || addr.village || addr.neighbourhood || addr.subdistrict || "";
-          const city = addr.city || addr.regency || addr.municipality || addr.town || "";
-          if (suburb && city) {
-            locationLabel = `${suburb}, ${city}`;
-          } else if (city) {
-            locationLabel = city;
-          } else if (geoData.display_name) {
-            locationLabel = geoData.display_name.split(",")[0] || "Lokasi Anda";
-          }
-        }
-      }
-    } catch (geoErr) {
-      console.warn("Gagal reverse geocode:", geoErr);
-      locationLabel = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+      lat = position.coords.latitude;
+      lng = position.coords.longitude;
+      window._gpsLocationCache.lat = lat;
+      window._gpsLocationCache.lng = lng;
+      // Reverse geocode DISABLE - CORS blocking dari browser.
+      locationLabel = defaultPrayerLocation.label;
+    } catch (locErr) {
+      // GPS gagal, gunakan default - tidak akan diminta lagi di sesi ini
+      console.warn("GPS tidak tersedia, menggunakan lokasi default:", locErr.message);
     }
-  } catch (locErr) {
-    console.warn("Menggunakan lokasi default:", locErr.message);
+  } else if (window._gpsLocationCache.lat !== null) {
+    // Gunakan hasil cache jika tersedia
+    lat = window._gpsLocationCache.lat;
+    lng = window._gpsLocationCache.lng;
   }
 
   // Update subtitle
@@ -9191,7 +10138,7 @@ window.openBentoModal = function (s, access, stats) {
   if (header) {
     header.className = "relative p-6 text-white flex flex-col justify-end min-h-[130px] bg-gradient-to-br";
     const gradientMap = {
-      emerald: ["from-emerald-600", "to-teal-500"],
+      emerald: ["from-emerald-500", "to-emerald-600"],
       cyan: ["from-cyan-600", "to-blue-500"],
       orange: ["from-orange-500", "to-amber-500"],
       indigo: ["from-indigo-600", "to-purple-600"],
@@ -9257,7 +10204,7 @@ window.openBentoModal = function (s, access, stats) {
       pBar.style.backgroundColor = "";
     } else {
       const themeColors = {
-        emerald: "from-emerald-500 to-teal-500",
+        emerald: "from-emerald-500 to-emerald-600",
         cyan: "from-sky-500 to-indigo-500",
         orange: "from-amber-500 to-orange-500",
         indigo: "from-indigo-500 to-purple-500",
@@ -9305,7 +10252,7 @@ window.openBentoModal = function (s, access, stats) {
   } else {
     ctaText.textContent = stats.isFilled ? "Ubah Presensi" : "Mulai Presensi";
     const btnThemeMap = {
-      emerald: "from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 shadow-emerald-500/20",
+      emerald: "from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 shadow-emerald-500/20",
       cyan: "from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 shadow-cyan-500/20",
       orange: "from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 shadow-orange-500/20",
       indigo: "from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 shadow-indigo-500/20",

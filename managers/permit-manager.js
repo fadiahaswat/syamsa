@@ -166,14 +166,19 @@ window.getPermitRuntimeState = window.getPermitRuntimeState || function (
 };
 
 window.deletePermit = function (id) {
-  if (!confirm("Hapus data izin ini? Status akan dikembalikan ke default."))
-    return;
-
+  window.showConfirmModal(
+    "Hapus Data Izin?",
+    "Status kehadiran santri akan dikembalikan ke default.",
+    "Hapus",
+    "Batal",
+    () => {
   appState.permits = appState.permits.filter((p) => p.id !== id);
   window.persistPermits();
 
   window.showToast("Data izin dihapus", "info");
   window.refreshPermitSurfaces();
+    },
+  );
 };
 
 window.renderPermitList = function () {
@@ -539,12 +544,22 @@ window.savePermitLogic = function () {
   }
 
   // Simpan Loop
+  const savedPermits = [];
   selectedNis.forEach((nis) => {
     const uniqueId = Date.now().toString() + Math.random().toString(36).substr(2, 5);
-    appState.permits.push({ ...permitData, id: uniqueId, nis: nis });
+    const newPermit = { ...permitData, id: uniqueId, nis: nis };
+    appState.permits.push(newPermit);
+    savedPermits.push(newPermit);
   });
 
   window.persistPermits();
+
+  // SINKRONISASI: Jika sakit, sync ke semua sesi dalam satu hari
+  if (currentPermitTab === "sakit" && savedPermits.length > 0) {
+    // Ambil permit pertama (ID sama untuk semua dalam batch ini)
+    window.syncSickPermitAcrossSessions(savedPermits[0].id, startDate);
+    window.renderAttendanceList?.();
+  }
 
   window.showToast(`${selectedNis.length} Data Berhasil Disimpan`, "success");
 
@@ -585,19 +600,193 @@ window.markSickPermitRecoveredBeforeSlot = function (permitId, slotId) {
   return true;
 };
 
+// ==========================================
+// SINKRONISASI SAKIT ANTAR SESI
+// Memastikan sakit dari subuh tersinkron ke sekolah, ashar, maghrib, isya
+// ==========================================
+
+const SESSION_CHAIN_ORDER = ["shubuh", "sekolah", "ashar", "maghrib", "isya"];
+
+/**
+ * Sinkronkan status sakit ke semua sesi yang relevan dalam satu hari.
+ * @param {string} permitId - ID permit sakit (opsional, jika null semua sakit aktif di-sync)
+ * @param {string} targetDate - Tanggal target (default: appState.date)
+ */
+window.syncSickPermitAcrossSessions = function (permitId = null, targetDate = null) {
+  const dateKey = targetDate || appState.date;
+  if (!dateKey) return;
+
+  // Tentukan sesi saat ini berdasarkan urutan
+  const currentSlotId = appState.currentSlotId || window.determineCurrentSlot?.();
+  const currentSessionIdx = currentSlotId ? SESSION_CHAIN_ORDER.indexOf(currentSlotId) : -1;
+
+  // 1. Cari permit sakit yang perlu di-sync
+  let permitsToSync = [];
+
+  if (permitId) {
+    // Sync permit spesifik
+    const permit = appState.permits.find(p => p.id === permitId);
+    if (permit && permit.category === "sakit") {
+      permitsToSync.push(permit);
+    }
+  } else {
+    // Sync semua permit sakit aktif untuk tanggal ini
+    permitsToSync = (appState.permits || []).filter(p => {
+      if (p.category !== "sakit") return false;
+      if (p.status && p.status.toLowerCase() !== "approved") return false;
+
+      // Cek tanggal relevan
+      if (p.start_date && p.start_date > dateKey) return false;
+      if (p.end_date && p.end_date < dateKey) return false;
+
+      return true;
+    });
+  }
+
+  if (permitsToSync.length === 0) return;
+
+  // 2. Untuk setiap permit, sync ke sesi-sesi berikutnya
+  permitsToSync.forEach(permit => {
+    const nis = String(permit.nis);
+    const startSession = permit.start_session || "shubuh";
+    const startIdx = SESSION_CHAIN_ORDER.indexOf(startSession);
+
+    // Tentukan sesi mana saja yang perlu di-sync (dari start_session sampai akhir hari)
+    const sessionsToSync = SESSION_CHAIN_ORDER.filter((sessionId, idx) => {
+      // Selalu sync sesi yang >= start_session
+      if (idx < startIdx) return false;
+
+      // Jika permitId spesifik diberikan, hanya sync sesi yang >= sesi saat ini
+      // (kecuali jika belum ada data attendance)
+      if (permitId && currentSessionIdx >= 0 && idx < currentSessionIdx) {
+        // Cek apakah sesi ini sudah punya data attendance
+        const slotData = appState.attendanceData?.[dateKey]?.[sessionId]?.[nis];
+        if (slotData && Object.keys(slotData.status || {}).length > 0) {
+          return false; // Sudah ada data, skip
+        }
+      }
+
+      return true;
+    });
+
+    // 3. Apply status sakit ke setiap sesi
+    sessionsToSync.forEach(sessionId => {
+      const slot = SLOT_WAKTU[sessionId];
+      if (!slot) return;
+
+      // Skip jika sesi ini libur di tanggal tersebut
+      if (window.isSlotHoliday?.(sessionId, dateKey)) return;
+
+      // Inisialisasi struktur data jika belum ada
+      if (!appState.attendanceData) appState.attendanceData = {};
+      if (!appState.attendanceData[dateKey]) appState.attendanceData[dateKey] = {};
+      if (!appState.attendanceData[dateKey][sessionId]) {
+        appState.attendanceData[dateKey][sessionId] = {};
+      }
+
+      const dbSlot = appState.attendanceData[dateKey][sessionId];
+      if (!dbSlot[nis]) {
+        dbSlot[nis] = { status: {}, note: "" };
+      }
+
+      const sData = dbSlot[nis];
+      const hasPermitOverride = sData.permitManualOverride === true;
+
+      // Jangan overwrite jika ada override manual
+      if (hasPermitOverride) return;
+
+      // Apply status sakit ke semua aktivitas wajib
+      let changed = false;
+      slot.activities.forEach(act => {
+        // Skip jika aktivitas libur
+        if (window.isActivityHoliday?.(dateKey, sessionId, act.id)) return;
+        if (window.isCategoryHoliday?.(dateKey, act.category)) return;
+
+        // Tentukan target status
+        let targetStatus = "Tidak";
+        if (["fardu", "kbm", "school"].includes(act.category)) {
+          targetStatus = "Sakit";
+        }
+
+        if (sData.status[act.id] !== targetStatus) {
+          sData.status[act.id] = targetStatus;
+          changed = true;
+        }
+      });
+
+      // Update note dengan info sakit
+      const autoNote = `[Auto] Sakit s/d ${window.formatDate(permit.end_date || 'belum sembuh')}`;
+      if (!sData.note || !sData.note.includes("[Auto]")) {
+        sData.note = autoNote;
+        changed = true;
+      } else if (!sData.note.includes("Sakit")) {
+        sData.note = autoNote;
+        changed = true;
+      }
+    });
+  });
+
+  // 4. Simpan perubahan
+  if (changed) {
+    window.saveData?.();
+  }
+};
+
+// ==========================================
+// SINKRONISASI SAAT INPUT SAKIT BARU
+// Dipanggil setelah savePermitLogic() selesai
+// ==========================================
+window.syncAfterNewSickPermit = function (savedPermit) {
+  if (!savedPermit || savedPermit.category !== "sakit") return;
+
+  // Sinkronkan ke semua sesi dari start_session
+  window.syncSickPermitAcrossSessions(savedPermit.id);
+};
+
+// ==========================================
+// SINKRONISASI SAAT SEMBUH
+// Dipanggil setelah markAsRecovered()
+// ==========================================
+window.syncAfterRecovered = function (permitId) {
+  const permit = appState.permits.find(p => p.id === permitId);
+  if (!permit || permit.category !== "sakit") return;
+
+  const nis = String(permit.nis);
+  const dateKey = appState.date;
+  const endSession = permit.end_session || appState.currentSlotId;
+  const endSessionIdx = SESSION_CHAIN_ORDER.indexOf(endSession);
+
+  // Iterate semua sesi dan ubah status sakit jadi Hadir
+  SESSION_CHAIN_ORDER.forEach((sessionId, idx) => {
+    if (idx <= endSessionIdx) {
+      // Sesi ini dan sebelumnya dianggap sudah sembuh
+      const dbSlot = appState.attendanceData?.[dateKey]?.[sessionId];
+      if (!dbSlot || !dbSlot[nis]) return;
+
+      const sData = dbSlot[nis];
+      if (sData.note?.includes("[Auto] Sakit")) {
+        const slot = SLOT_WAKTU[sessionId];
+        if (slot) {
+          slot.activities.forEach(act => {
+            if (["fardu", "kbm", "school"].includes(act.category)) {
+              if (sData.status[act.id] === "Sakit") {
+                sData.status[act.id] = "Hadir";
+              }
+            }
+          });
+        }
+        sData.note = "";
+        window.saveData?.();
+      }
+    }
+  });
+};
+
 // 1. SAKIT -> SEMBUH
 window.markAsRecovered = function (id) {
   const permit = appState.permits.find((p) => p.id === id);
   if (permit) {
-    // PERBAIKAN: Dialog yang lebih jelas & Logika Default yang Aman
-    // Default (OK) sekarang adalah: Sembuh SEKARANG (Sesi ini tetap dihitung sakit, baru sehat sesi depan)
-    // Ini mencegah status Shubuh berubah jadi Hadir.
-
-    const keepSick = confirm(
-      "Konfirmasi Kesembuhan:\n\n" +
-        "[OK] = Baru Sembuh SEKARANG (Sesi ini tetap tercatat Sakit)\n" +
-        "[Cancel] = Sudah sehat SEJAK AWAL sesi ini (Ubah status sesi ini jadi Hadir)",
-    );
+    const applyRecovery = (keepSick) => {
 
     permit.end_date = appState.date;
 
@@ -617,9 +806,24 @@ window.markAsRecovered = function (id) {
 
     // Simpan
     window.persistPermits();
+
+    // SINKRONISASI: Update semua sesi setelah sembuh
+    window.syncAfterRecovered(id);
+
     window.showToast("Status kesembuhan diperbarui", "success");
 
     window.refreshPermitSurfaces();
+    window.renderAttendanceList?.();
+    };
+
+    window.showConfirmModal(
+      "Konfirmasi Kesembuhan",
+      "Pilih cara mencatat kesembuhan santri untuk sesi presensi saat ini.",
+      "Baru Sembuh Sekarang",
+      "Sehat Sejak Awal",
+      () => applyRecovery(true),
+      () => applyRecovery(false),
+    );
   }
 };
 
@@ -915,13 +1119,12 @@ window.renderPermitHistory = function () {
 
 // 1. Fungsi Hapus (Khusus History)
 window.deleteHistoryPermit = function (id) {
-  if (
-    !confirm(
-      "⚠️ PERINGATAN HAPUS\n\nApakah Anda yakin ingin menghapus data izin ini secara permanen? Data yang dihapus tidak bisa dikembalikan.",
-    )
-  )
-    return;
-
+  window.showConfirmModal(
+    "Hapus Data Izin?",
+    "Data izin akan dihapus permanen dan tidak bisa dikembalikan.",
+    "Hapus",
+    "Batal",
+    () => {
   // Filter array untuk membuang ID yang cocok
   appState.permits = appState.permits.filter((p) => p.id !== id);
 
@@ -930,6 +1133,8 @@ window.deleteHistoryPermit = function (id) {
 
   window.showToast("Data izin berhasil dihapus", "success");
   window.refreshPermitSurfaces();
+    },
+  );
 };
 
 
@@ -1230,16 +1435,23 @@ window.rejectPermit = function(id) {
 };
 
 window.deletePermitsTabItem = function(id) {
-  if (!confirm("Hapus data izin ini? Status kehadiran santri akan dikembalikan ke default.")) return;
+  window.showConfirmModal(
+    "Hapus Data Izin?",
+    "Status kehadiran santri akan dikembalikan ke default.",
+    "Hapus",
+    "Batal",
+    () => {
   appState.permits = appState.permits.filter(p => p.id !== id);
   window.persistPermits();
   window.showToast("Data izin berhasil dihapus", "info");
   window.refreshPermitSurfaces();
+    },
+  );
 };
 
 window.zoomPermitDocument = function(src) {
   const overlay = document.createElement("div");
-  overlay.className = "fixed inset-0 z-[999] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 cursor-zoom-out animate-fade-in";
+  overlay.className = "fixed inset-0 z-[110] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 cursor-zoom-out animate-fade-in";
   overlay.innerHTML = `<img src="${src}" class="max-w-full max-h-[90vh] rounded-3xl shadow-2xl border border-white/10" /><button class="absolute top-4 right-4 w-10 h-10 rounded-full bg-black/40 hover:bg-black/60 text-white flex items-center justify-center backdrop-blur-sm transition-colors" onclick="this.parentElement.remove()"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>`;
   overlay.onclick = () => overlay.remove();
   document.body.appendChild(overlay);

@@ -70,6 +70,13 @@ window.renderAttendanceList = function () {
   const isNewAttendanceView =
     container.dataset.attendanceRenderKey !== attendanceRenderKey;
 
+  // SINKRONISASI SAKIT: Saat membuka sesi baru (view baru), sync sakit dari sesi sebelumnya
+  // Ini memastikan jika input sakit di sesi subuh, maka saat buka sesi sekolah/ashar/etc
+  // status sakit otomatis tersinkron
+  if (isNewAttendanceView && window.syncSickPermitAcrossSessions) {
+    window.syncSickPermitAcrossSessions(null, dateKey);
+  }
+
   if (!appState.attendanceData[dateKey]) appState.attendanceData[dateKey] = {};
   if (!appState.attendanceData[dateKey][slot.id])
     appState.attendanceData[dateKey][slot.id] = {};
@@ -264,7 +271,7 @@ window.renderAttendanceList = function () {
     // AVATAR - Stable personality marker per santri.
     const avatarEl = clone.querySelector(".santri-avatar");
     const avatarOptions = [
-      { icon: "🌿", class: "from-emerald-50 to-teal-100 text-emerald-700 dark:from-emerald-900/30 dark:to-teal-900/30 dark:text-emerald-300" },
+      { icon: "🌿", class: "from-emerald-50 to-emerald-100 text-emerald-700 dark:from-emerald-900/30 dark:to-emerald-900/30 dark:text-emerald-300" },
       { icon: "✨", class: "from-sky-50 to-blue-100 text-sky-700 dark:from-sky-900/30 dark:to-blue-900/30 dark:text-sky-300" },
       { icon: "📘", class: "from-indigo-50 to-violet-100 text-indigo-700 dark:from-indigo-900/30 dark:to-violet-900/30 dark:text-indigo-300" },
       { icon: "🕌", class: "from-cyan-50 to-slate-100 text-cyan-700 dark:from-cyan-900/30 dark:to-slate-800 dark:text-cyan-300" },
@@ -283,9 +290,9 @@ window.renderAttendanceList = function () {
       { icon: "user-round", class: "from-sky-50 to-blue-100 text-sky-700 dark:from-sky-900/30 dark:to-blue-900/30 dark:text-sky-300" },
       { icon: "book-open", class: "from-indigo-50 to-violet-100 text-indigo-700 dark:from-indigo-900/30 dark:to-violet-900/30 dark:text-indigo-300" },
       { icon: "sparkles", class: "from-amber-50 to-yellow-100 text-amber-700 dark:from-amber-900/30 dark:to-yellow-900/20 dark:text-amber-300" },
-      { icon: "leaf", class: "from-emerald-50 to-teal-100 text-emerald-700 dark:from-emerald-900/30 dark:to-teal-900/30 dark:text-emerald-300" },
+      { icon: "leaf", class: "from-emerald-50 to-emerald-100 text-emerald-700 dark:from-emerald-900/30 dark:to-emerald-900/30 dark:text-emerald-300" },
       { icon: "graduation-cap", class: "from-cyan-50 to-slate-100 text-cyan-700 dark:from-cyan-900/30 dark:to-slate-800 dark:text-cyan-300" },
-      { icon: "badge-check", class: "from-teal-50 to-emerald-100 text-teal-700 dark:from-teal-900/30 dark:to-emerald-900/20 dark:text-teal-300" },
+      { icon: "badge-check", class: "from-cyan-50 to-emerald-100 text-cyan-700 dark:from-cyan-900/30 dark:to-emerald-900/20 dark:text-cyan-300" },
       { icon: "notebook-tabs", class: "from-violet-50 to-fuchsia-100 text-violet-700 dark:from-violet-900/30 dark:to-fuchsia-900/20 dark:text-violet-300" },
       { icon: "shield-check", class: "from-slate-50 to-slate-200 text-slate-600 dark:from-slate-800 dark:to-slate-700 dark:text-slate-300" },
       { icon: "map-pin", class: "from-rose-50 to-pink-100 text-rose-700 dark:from-rose-900/30 dark:to-pink-900/20 dark:text-rose-300" },
@@ -465,12 +472,12 @@ window.renderAttendanceList = function () {
 
         e.stopPropagation();
         if (hasPermitConflict) {
-          if (
-            !confirm(
-              `Santri tercatat ${activePermit.type}. Ubah manual jadi HADIR?`,
-            )
-          )
-            return;
+          window.showConfirmModal(
+            "Ubah Manual Jadi Hadir?",
+            `Santri tercatat ${activePermit.type}. Status otomatis akan ditimpa untuk sesi ini.`,
+            "Ubah Hadir",
+            "Batal",
+            () => {
           sData.permitManualOverride = true;
           const recoveredSickPermit =
             activePermit.type === "Sakit" &&
@@ -498,6 +505,8 @@ window.renderAttendanceList = function () {
           if (appState.date === window.getLocalDateStr()) {
             window.updateDashboard();
           }
+            },
+          );
           return;
         }
         window.toggleStatus(id, act.id, act.type);

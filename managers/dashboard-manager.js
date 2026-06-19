@@ -263,7 +263,8 @@ window.updateLocationStatus = function () {
         let msg = "Gagal mendeteksi lokasi.";
         if (error.code === 1) msg = "Akses Lokasi Ditolak. Harap aktifkan izin lokasi/GPS pada browser Anda.";
         else if (error.code === 2) msg = "Sinyal GPS tidak akurat atau lemah.";
-        else if (error.code === 3) msg = "Waktu deteksi GPS habis.";
+        else if (error.code === 3)
+          msg = "Waktu deteksi GPS habis. Coba lagi di area terbuka.";
         
         elError.innerHTML = `
           <div class="flex items-start gap-3 p-3 bg-red-50/50 dark:bg-red-950/20 rounded-2xl border border-red-100 dark:border-red-900/30 text-left">
@@ -286,7 +287,11 @@ window.updateLocationStatus = function () {
         elAsramaBtn.classList.remove("flex");
       }
     },
-    { enableHighAccuracy: true, timeout: 5000, maximumAge: GPS_CACHE_DURATION },
+    {
+      enableHighAccuracy: true,
+      timeout: GPS_STATUS_TIMEOUT,
+      maximumAge: GPS_CACHE_DURATION,
+    },
   );
 };
 
@@ -773,9 +778,9 @@ window.verifyLocation = function () {
     );
 
     const timeout = setTimeout(() => {
-      reject("Timeout: GPS tidak merespons dalam 10 detik");
+      reject("Timeout: GPS tidak merespons. Coba lagi di area terbuka.");
       if (toastId) toastId.remove();
-    }, 10000);
+    }, GPS_VERIFICATION_GUARD_TIMEOUT);
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
@@ -822,13 +827,14 @@ window.verifyLocation = function () {
           msg = "Izin lokasi ditolak. Aktifkan GPS di browser.";
         else if (error.code === 2)
           msg = "Sinyal GPS tidak ditemukan. Pastikan Anda di luar ruangan.";
-        else if (error.code === 3) msg = "Waktu deteksi GPS habis. Coba lagi.";
+        else if (error.code === 3)
+          msg = "Waktu deteksi GPS habis. Coba lagi di area terbuka.";
 
         reject(msg);
       },
       {
         enableHighAccuracy: true,
-        timeout: 9000,
+        timeout: GPS_VERIFICATION_TIMEOUT,
         maximumAge: GPS_CACHE_DURATION,
       },
     );
@@ -898,7 +904,7 @@ window.showStatDetails = function (statusType) {
   else if (statusType === "Alpa") colorClass = "text-rose-500";
   else if (statusType === "Hadir") colorClass = "text-emerald-500";
   // Tambahkan Handling Telat & Pulang (Jaga-jaga)
-  else if (statusType === "Telat") colorClass = "text-teal-500";
+  else if (statusType === "Telat") colorClass = window.getStatusMeta("Telat").text;
   else if (statusType === "Pulang") colorClass = "text-purple-500";
 
   title.textContent = `Daftar ${statusType}`;
@@ -1928,7 +1934,7 @@ window.updateHeroWidget = function() {
   
   let greet = "Selamat Pagi, Musyrif.";
   let context = "Semoga hari ini penuh berkah.";
-  let gradientClass = "from-emerald-600 to-teal-650";
+  let gradientClass = "from-emerald-500 to-emerald-600";
   let svgPath = "";
   
   if (h >= 4 && h < 5.5) {
@@ -1939,7 +1945,7 @@ window.updateHeroWidget = function() {
   } else if (h >= 5.5 && h < 10) {
     greet = "Selamat Pagi, Musyrif.";
     context = "Semoga aktivitas hari ini membawa berkah.";
-    gradientClass = "from-emerald-600 to-teal-650";
+    gradientClass = "from-emerald-500 to-emerald-600";
     svgPath = `<svg viewBox="0 0 24 24" width="80" height="80" class="text-white/20 fill-none stroke-current stroke-2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>`;
   } else if (h >= 10 && h < 15) {
     greet = "Selamat Siang, Musyrif.";
@@ -2072,11 +2078,18 @@ window.toggleReminderDone = function(id) {
 };
 
 window.deleteReminder = function(id) {
-  if (!confirm("Hapus pengingat ini?")) return;
+  window.showConfirmModal(
+    "Hapus Pengingat?",
+    "Pengingat ini akan dihapus dari daftar tugas.",
+    "Hapus",
+    "Batal",
+    () => {
   appState.reminders = (appState.reminders || []).filter(r => r.id !== id);
   localStorage.setItem(APP_CONFIG.remindersKey, JSON.stringify(appState.reminders));
   window.renderReminderWidget();
   window.showToast("Pengingat dihapus", "info");
+    },
+  );
 };
 
 window.openAddReminderModal = function() {

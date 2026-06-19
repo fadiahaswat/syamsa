@@ -105,7 +105,10 @@ window.startAuthenticatedSession = function (targetClass, profile) {
 window.handleLogin = async function () {
   const kelas = document.getElementById("login-kelas").value;
 
-  if (!kelas) return alert("Pilih kelas dulu!");
+  if (!kelas) {
+    window.showToast("Pilih kelas dulu!", "warning");
+    return;
+  }
 
   if (!MASTER_KELAS[kelas]) {
     return window.showToast("Kelas tidak valid.", "error");
@@ -148,7 +151,7 @@ window.handleLogin = async function () {
         { theme: "outline", size: "large", type: "standard" }
       );
     } else {
-      alert("Gagal memuat API Google. Pastikan Anda terhubung ke internet.");
+      window.showToast("Gagal memuat API Google. Pastikan Anda terhubung ke internet.", "error");
     }
   }
 };
@@ -211,8 +214,12 @@ window.handleGoogleCallback = function (response) {
 };
 
 window.handleLogout = function () {
-  if (!confirm("Keluar dari akun ini?")) return;
-
+  window.showConfirmModal(
+    "Keluar dari Akun?",
+    "Sesi saat ini akan ditutup dan Anda kembali ke layar login.",
+    "Keluar",
+    "Batal",
+    () => {
   if (clockInterval) {
     clearInterval(clockInterval);
     clockInterval = null;
@@ -230,4 +237,6 @@ window.handleLogout = function () {
   if (passEl) passEl.value = "";
 
   location.reload();
+    },
+  );
 };

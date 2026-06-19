@@ -43,6 +43,15 @@ const GPS_CACHE_KEY = window.APP_LOCATION?.gpsCacheKey || "presensi_gps_cache";
 
 const GPS_CACHE_DURATION = window.APP_LOCATION?.gpsCacheDurationMs || 15 * 60 * 1000;
 
+const GPS_STATUS_TIMEOUT = window.APP_LOCATION?.gpsStatusTimeoutMs || 15 * 1000;
+
+const GPS_VERIFICATION_TIMEOUT =
+  window.APP_LOCATION?.gpsVerificationTimeoutMs || 20 * 1000;
+
+const GPS_VERIFICATION_GUARD_TIMEOUT =
+  window.APP_LOCATION?.gpsVerificationGuardTimeoutMs ||
+  GPS_VERIFICATION_TIMEOUT + 2 * 1000;
+
 const GEO_CONFIG = {
   useGeofencing: window.APP_LOCATION?.useGeofencing !== false,
   maxRadiusMeters: window.APP_LOCATION?.maxRadiusMeters || 50,
@@ -160,26 +169,26 @@ window.setAttendanceSaveIndicator = function (status) {
     notStarted: {
       title: "Belum dipresensi",
       className:
-        "flex items-center justify-center p-2 rounded-lg bg-red-500 border-0 shrink-0 text-white shadow-lg shadow-red-950/20 transition-all duration-300 ease-out",
+        "flex items-center justify-center p-2 rounded-lg bg-red-500 border-0 shrink-0 text-white shadow-lg shadow-red-950/20 transition-all transition-duration-standard",
       icon: "save",
     },
     pending: {
       title: "Proses presensi, scroll sampai bawah",
       className:
-        "flex items-center justify-center p-2 rounded-lg bg-amber-400 border-0 shrink-0 text-white shadow-lg shadow-amber-950/20 transition-all duration-300 ease-out",
+        "flex items-center justify-center p-2 rounded-lg bg-amber-400 border-0 shrink-0 text-white shadow-lg shadow-amber-950/20 transition-all transition-duration-standard",
       icon: "loader-circle",
       spin: true,
     },
     success: {
       title: "Presensi selesai dicek",
       className:
-        "flex items-center justify-center p-2 rounded-lg bg-emerald-500 border-0 shrink-0 text-white shadow-lg shadow-emerald-950/20 transition-all duration-300 ease-out scale-105",
+        "flex items-center justify-center p-2 rounded-lg bg-emerald-500 border-0 shrink-0 text-white shadow-lg shadow-emerald-950/20 transition-all transition-duration-standard scale-success-pop",
       icon: "check",
     },
     saved: {
       title: "Presensi tersimpan",
       className:
-        "flex items-center justify-center p-2 rounded-lg bg-emerald-500 border-0 shrink-0 text-white shadow-lg shadow-emerald-950/20 transition-all duration-300 ease-out",
+        "flex items-center justify-center p-2 rounded-lg bg-emerald-500 border-0 shrink-0 text-white shadow-lg shadow-emerald-950/20 transition-all transition-duration-standard",
       icon: "save",
     },
     idle: {
@@ -299,21 +308,11 @@ window.getDailyReportStatusMeta = function (
   }
 
   const st = slotData?.[String(studentId)]?.status?.[activityId];
-  const map = {
-    Hadir: { label: "H", className: "bg-emerald-100 text-emerald-600" },
-    Telat: { label: "T", className: "bg-teal-100 text-teal-600" },
-    Sakit: { label: "S", className: "bg-amber-100 text-amber-600" },
-    Izin: { label: "I", className: "bg-blue-100 text-blue-600" },
-    Pulang: { label: "P", className: "bg-purple-100 text-purple-600" },
-    Alpa: { label: "A", className: "bg-red-100 text-red-600" },
-    Ya: { label: "Y", className: "bg-emerald-100 text-emerald-600" },
-    Tidak: { label: "-", className: "bg-slate-100 text-slate-400" },
-  };
-  const meta = map[st] || { label: "-", className: "bg-slate-100 text-slate-300" };
+  const meta = window.getStatusMeta?.(st) || STATUS_META.Tidak;
   return {
     status: st || null,
-    label: meta.label,
-    className: meta.className,
+    label: meta.label || "-",
+    className: meta.className || meta.pill,
     aria: `${slotId}: ${st || "Belum diisi"}`,
   };
 };
@@ -622,7 +621,7 @@ const SLOT_WAKTU = {
       icon: "sunrise",
       progressBg: "bg-emerald-500", // <-- TAMBAHKAN INI
       gradient:
-        "from-emerald-50 to-teal-100 dark:from-emerald-900/40 dark:to-teal-900/20",
+        "from-emerald-50 to-emerald-100 dark:from-emerald-900/40 dark:to-emerald-900/20",
       border: "hover:border-emerald-300 dark:hover:border-emerald-700",
       text: "text-emerald-700 dark:text-emerald-300",
       iconBg:
@@ -866,60 +865,84 @@ const STATUS_UI = {
 
 const STATUS_META = {
   Hadir: {
+    label: "H",
     icon: "check",
     text: "text-emerald-600 dark:text-emerald-400",
     pill: "bg-emerald-50 dark:bg-emerald-500/10 border-emerald-100 dark:border-emerald-500/20 text-emerald-700 dark:text-emerald-300",
+    className: "bg-emerald-100 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400",
     solid: "bg-emerald-500 text-white",
     ring: "ring-emerald-500",
+    hex: "#10B981",
   },
   Ya: {
+    label: "Y",
     icon: "check",
     text: "text-emerald-600 dark:text-emerald-400",
     pill: "bg-emerald-50 dark:bg-emerald-500/10 border-emerald-100 dark:border-emerald-500/20 text-emerald-700 dark:text-emerald-300",
+    className: "bg-emerald-100 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400",
     solid: "bg-emerald-500 text-white",
     ring: "ring-emerald-500",
+    hex: "#10B981",
   },
   Sakit: {
+    label: "S",
     icon: "thermometer",
     text: "text-amber-600 dark:text-amber-400",
     pill: "bg-amber-50 dark:bg-amber-500/10 border-amber-100 dark:border-amber-500/20 text-amber-700 dark:text-amber-300",
+    className: "bg-amber-100 text-amber-600 dark:bg-amber-950/30 dark:text-amber-400",
     solid: "bg-amber-500 text-white",
     ring: "ring-amber-500",
+    hex: "#F59E0B",
   },
   Alpa: {
+    label: "A",
     icon: "alert-triangle",
     text: "text-red-600 dark:text-red-400",
     pill: "bg-red-50 dark:bg-red-500/10 border-red-100 dark:border-red-500/20 text-red-700 dark:text-red-300",
+    className: "bg-red-100 text-red-600 dark:bg-red-950/30 dark:text-red-400",
     solid: "bg-red-500 text-white",
     ring: "ring-red-500",
+    hex: "#EF4444",
   },
   Izin: {
+    label: "I",
     icon: "file-text",
     text: "text-blue-600 dark:text-blue-400",
     pill: "bg-blue-50 dark:bg-blue-500/10 border-blue-100 dark:border-blue-500/20 text-blue-700 dark:text-blue-300",
+    className: "bg-blue-100 text-blue-600 dark:bg-blue-950/30 dark:text-blue-400",
     solid: "bg-blue-500 text-white",
     ring: "ring-blue-500",
+    hex: "#3B82F6",
   },
   Pulang: {
+    label: "P",
     icon: "home",
     text: "text-purple-600 dark:text-purple-400",
     pill: "bg-purple-50 dark:bg-purple-500/10 border-purple-100 dark:border-purple-500/20 text-purple-700 dark:text-purple-300",
+    className: "bg-purple-100 text-purple-600 dark:bg-purple-950/30 dark:text-purple-400",
     solid: "bg-purple-500 text-white",
     ring: "ring-purple-500",
+    hex: "#A855F7",
   },
   Telat: {
+    label: "T",
     icon: "clock-alert",
     text: "text-cyan-600 dark:text-cyan-400",
     pill: "bg-cyan-50 dark:bg-cyan-500/10 border-cyan-100 dark:border-cyan-500/20 text-cyan-700 dark:text-cyan-300",
+    className: "bg-cyan-100 text-cyan-600 dark:bg-cyan-950/30 dark:text-cyan-400",
     solid: "bg-cyan-500 text-white",
     ring: "ring-cyan-500",
+    hex: "#17C3D4",
   },
   Tidak: {
+    label: "-",
     icon: "minus",
     text: "text-slate-500 dark:text-slate-400",
     pill: "bg-slate-50 dark:bg-slate-700/40 border-slate-100 dark:border-slate-700 text-slate-500 dark:text-slate-300",
+    className: "bg-slate-100 text-slate-400 dark:bg-slate-700 dark:text-slate-400",
     solid: "bg-slate-400 text-white",
     ring: "ring-slate-400",
+    hex: "#64748B",
   },
 };
 

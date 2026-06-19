@@ -33,7 +33,10 @@ window.logActivity = function (action, detail) {
 
 
 window.kirimLaporanWA = function () {
-  if (!FILTERED_SANTRI.length) return alert("Pilih kelas terlebih dahulu");
+  if (!FILTERED_SANTRI.length) {
+    window.showToast("Pilih kelas terlebih dahulu", "warning");
+    return;
+  }
 
   const dateKey = appState.date;
   const attendance = appState.attendanceData[dateKey];

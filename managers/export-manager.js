@@ -119,10 +119,11 @@ window.exportToPDF = function() {
     <head>
       <meta charset="UTF-8">
       <title>Laporan Kehadiran Kelas ${appState.selectedClass} - ${dateKey}</title>
-      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+      <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;700;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
       <script src="https://cdn.tailwindcss.com"></script>
       <style>
-        body { font-family: 'Inter', sans-serif; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .tabular-nums { font-family: 'DM Mono', monospace; }
         @media print {
           body { -webkit-print-color-adjust: exact; }
           .no-print { display: none; }

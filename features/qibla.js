@@ -131,13 +131,22 @@ window.openQiblaPage = function () {
   setTimeout(() => {
     if (viewMain) viewMain.classList.add("hidden");
   }, 250);
-  
+
   // Show GPS loading
   document.getElementById("qibla-loading").classList.remove("hidden");
   document.getElementById("qibla-content-wrapper").classList.add("hidden");
   document.getElementById("qibla-sensor-permission-btn").classList.add("hidden");
 
-  // Get current position
+  // Get current position - hanya minta izin di awal saja
+  const gpsPermissionKey = "gps_permission_denied_" + window.APP_CONFIG?.appName?.replace(/\s+/g, "_").toLowerCase() || "syamsa_app";
+  const denied = sessionStorage.getItem(gpsPermissionKey);
+
+  if (denied) {
+    // Skip GPS, gunakan fallback langsung
+    useFallbackLocation();
+    return;
+  }
+
   if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(
       (position) => {
@@ -160,32 +169,40 @@ window.openQiblaPage = function () {
       },
       (error) => {
         console.error("GPS error for Qibla:", error);
-        const fallbackLocation = window.APP_LOCATION?.qiblaFallbackLocation || {
-          lat: -7.801389,
-          lng: 110.364444,
-        };
-        const fallbackLat = fallbackLocation.lat;
-        const fallbackLng = fallbackLocation.lng;
-
-        window.qiblaAngle = window.calculateQiblaBearing(fallbackLat, fallbackLng);
-        window.qiblaDistance = window.calculateQiblaDistance(fallbackLat, fallbackLng);
-
-        document.getElementById("qibla-angle-txt").textContent = Math.round(window.qiblaAngle) + "\u00b0 (Perkiraan)";
-        document.getElementById("qibla-distance-txt").textContent = Math.round(window.qiblaDistance).toLocaleString("id-ID") + " km";
-
-        document.getElementById("qibla-loading").classList.add("hidden");
-        document.getElementById("qibla-content-wrapper").classList.remove("hidden");
-        window.setQiblaPrecisionState("calibrating");
-        
-        window.initCompass();
-        window.showToast("Gagal GPS. Menggunakan estimasi koordinat regional.", "info");
+        // Tandai bahwa user pernah tolak izin GPS
+        sessionStorage.setItem(gpsPermissionKey, "true");
+        useFallbackLocation();
       },
       { enableHighAccuracy: true, timeout: 5000 }
     );
   } else {
     window.showToast("Browser Anda tidak mendukung GPS.", "error");
+    useFallbackLocation();
   }
 };
+
+// Fungsi fallback menggunakan koordinat regional
+function useFallbackLocation() {
+  const fallbackLocation = window.APP_LOCATION?.qiblaFallbackLocation || {
+    lat: -7.801389,
+    lng: 110.364444,
+  };
+  const fallbackLat = fallbackLocation.lat;
+  const fallbackLng = fallbackLocation.lng;
+
+  window.qiblaAngle = window.calculateQiblaBearing(fallbackLat, fallbackLng);
+  window.qiblaDistance = window.calculateQiblaDistance(fallbackLat, fallbackLng);
+
+  document.getElementById("qibla-angle-txt").textContent = Math.round(window.qiblaAngle) + "\u00b0 (Perkiraan)";
+  document.getElementById("qibla-distance-txt").textContent = Math.round(window.qiblaDistance).toLocaleString("id-ID") + " km";
+
+  document.getElementById("qibla-loading").classList.add("hidden");
+  document.getElementById("qibla-content-wrapper").classList.remove("hidden");
+  window.setQiblaPrecisionState("calibrating");
+
+  window.initCompass();
+  window.showToast("Gagal GPS. Menggunakan estimasi koordinat regional.", "info");
+}
 
 window.openAsramaPage = function () {
   window.compassTargetMode = "asrama";
@@ -271,6 +288,10 @@ window.openAsramaPage = function () {
     return;
   }
 
+  // Cek apakah GPS sudah pernah ditolak di session ini
+  const gpsPermissionKey = "gps_permission_denied_" + window.APP_CONFIG?.appName?.replace(/\s+/g, "_").toLowerCase() || "syamsa_app";
+  const gpsDenied = sessionStorage.getItem(gpsPermissionKey);
+
   if (!navigator.geolocation) {
     window.showToast("Browser Anda tidak mendukung GPS.", "error");
     return;
@@ -279,6 +300,20 @@ window.openAsramaPage = function () {
   // Hentikan watch sebelumnya jika ada
   if (window.asramaGpsWatchId !== null) {
     navigator.geolocation.clearWatch(window.asramaGpsWatchId);
+  }
+
+  // Jika GPS sudah pernah ditolak, gunakan mode tanpa GPS dengan fallback
+  if (gpsDenied) {
+    const fallbackTarget = window.APP_LOCATION?.geofenceLocations?.[0];
+    if (fallbackTarget) {
+      // Gunakan fallback tanpa GPS tracking
+      openWithPosition(fallbackTarget.lat, fallbackTarget.lng);
+      window.showToast("GPS dinonaktifkan. Menggunakan mode tanpa GPS.", "info");
+    } else {
+      window.showToast("Tidak ada data asrama dan GPS tidak tersedia.", "warning");
+      window.closeQiblaPage();
+    }
+    return;
   }
 
   // Gunakan watchPosition untuk update GPS real-time
@@ -297,7 +332,13 @@ window.openAsramaPage = function () {
     },
     (error) => {
       console.error("GPS error for Asrama:", error);
-      // Jangan tutup halaman, biarkan user tetap pakai kompas
+      // Tandai bahwa GPS ditolak, skip untuk session ini
+      sessionStorage.setItem(gpsPermissionKey, "true");
+      const fallbackTarget = window.APP_LOCATION?.geofenceLocations?.[0];
+      if (fallbackTarget) {
+        openWithPosition(fallbackTarget.lat, fallbackTarget.lng);
+        window.showToast("GPS ditolak. Menggunakan mode tanpa GPS.", "info");
+      }
     },
     { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
   );
@@ -384,7 +425,7 @@ window.preparePrecisionQiblaUI = function () {
 
   if (qiblaNeedle && !qiblaNeedle.dataset.precisionReady) {
     qiblaNeedle.innerHTML = `
-      <img src="assets/arrowup.webp" alt="" aria-hidden="true" class="qibla-arrow-img">
+      <img src="assets/illustrations/arrow-up.webp" alt="" aria-hidden="true" class="qibla-arrow-img">
     `;
     qiblaNeedle.dataset.precisionReady = "true";
   }

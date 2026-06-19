@@ -428,14 +428,17 @@ async function reloadTahfizhData() {
 
         if (!localMetadata) {
             console.log("📥 Database lokal kosong, memuat tahfizh_metadata.json...");
-            const response = await fetch('./tahfizh_metadata.json');
-            if (!response.ok) throw new Error('Gagal mengambil metadata lokal');
-            const data = await response.json();
-            
-            if (!localMetadata) {
-                const metadata = { refJuz: data.refJuz || [], refSurat: data.refSurat || [] };
-                localStorage.setItem('tahfizh_local_metadata', JSON.stringify(metadata));
-                localMetadata = JSON.stringify(metadata);
+            // Cegah fetch dari file:// protocol (file lokal)
+            if (window.location.protocol === "file:") {
+                console.warn("⚠️ Tidak bisa fetch dari file:// protocol. Menggunakan data kosong.");
+                localStorage.setItem('tahfizh_local_metadata', JSON.stringify({ refJuz: [], refSurat: [] }));
+                localMetadata = JSON.stringify({ refJuz: [], refSurat: [] });
+            } else {
+                const response = await fetch('./tahfizh_metadata.json');
+                if (!response.ok) throw new Error('Gagal mengambil metadata lokal');
+                const data = await response.json();
+                localStorage.setItem('tahfizh_local_metadata', JSON.stringify({ refJuz: data.refJuz || [], refSurat: data.refSurat || [] }));
+                localMetadata = JSON.stringify({ refJuz: data.refJuz || [], refSurat: data.refSurat || [] });
             }
         }
 

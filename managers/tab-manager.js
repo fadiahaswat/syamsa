@@ -43,7 +43,8 @@ window.showToast = function (message, type = "info", isPersistent = false) {
   };
 
   // Tambahkan class penanda 'toast-element' agar lebih mudah diidentifikasi
-  toast.className = `toast-element ${UI_COLORS[type] || UI_COLORS.info} text-white px-4 sm:px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 animate-[slideUp_0.3s_ease-out] mb-3 z-[9999] cursor-pointer pointer-events-auto`;
+  // Motion: animate-toast-enter (250ms ease-enter) - using motion tokens from design system
+  toast.className = `toast-element ${UI_COLORS[type] || UI_COLORS.info} text-white px-4 sm:px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 animate-toast-enter mb-3 z-[9999] cursor-pointer pointer-events-auto`;
 
   // Tambahkan class penanda 'toast-msg-text' pada bagian teks
   toast.innerHTML = `
@@ -52,10 +53,12 @@ window.showToast = function (message, type = "info", isPersistent = false) {
     `;
 
   // Fitur Tambahan: Toast sekarang bisa ditutup instan jika di-klik/disentuh (Anti-annoying)
+  // Motion: toast-exit (200ms ease-exit) untuk keluar smooth
   toast.onclick = () => {
     toast.style.opacity = "0";
     toast.style.transform = "translateY(-20px)";
-    setTimeout(() => toast.remove(), 300);
+    toast.style.transition = "opacity 200ms cubic-bezier(0.4, 0, 1, 1), transform 200ms cubic-bezier(0.4, 0, 1, 1)";
+    setTimeout(() => toast.remove(), 200);
   };
 
   container.appendChild(toast);
@@ -65,7 +68,8 @@ window.showToast = function (message, type = "info", isPersistent = false) {
     setTimeout(() => {
       toast.style.opacity = "0";
       toast.style.transform = "translateY(-20px)";
-      setTimeout(() => toast.remove(), 300);
+      toast.style.transition = "opacity 200ms cubic-bezier(0.4, 0, 1, 1), transform 200ms cubic-bezier(0.4, 0, 1, 1)";
+      setTimeout(() => toast.remove(), 200);
     }, 3000);
   } else {
     setTimeout(() => toast.remove(), 10000);
@@ -831,7 +835,7 @@ window.openModal = function (modalId) {
   const modal = document.getElementById(modalId);
   if (!modal) return;
 
-  const baseZIndex = 1000;
+  const baseZIndex = 100;
   const zIndex = baseZIndex + modalStack.length * 10;
 
   modal.style.zIndex = zIndex;
