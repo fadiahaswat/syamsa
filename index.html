@@ -132,6 +132,15 @@
         outline: 2px solid var(--color-brand);
         outline-offset: 2px;
       }
+      
+      /* --- JURUS PAMUNGKAS KHUSUS iOS --- */
+@supports (-webkit-touch-callout: none) {
+  html, body, #view-main {
+    /* Ini akan memaksa iOS untuk menghitung tinggi layar fisik yang sebenarnya */
+    height: -webkit-fill-available !important;
+    min-height: -webkit-fill-available !important;
+  }
+}
 
       /* Running text animation for location */
       @keyframes marquee-text {
