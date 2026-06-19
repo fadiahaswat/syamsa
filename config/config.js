@@ -20,6 +20,9 @@ window.APP_CREDENTIALS = {
 window.APP_LOCATION = {
   gpsCacheKey: "presensi_gps_cache",
   gpsCacheDurationMs: 15 * 60 * 1000,
+  gpsStatusTimeoutMs: 15 * 1000,
+  gpsVerificationTimeoutMs: 20 * 1000,
+  gpsVerificationGuardTimeoutMs: 22 * 1000,
   useGeofencing: true,
   maxRadiusMeters: 50,
   defaultPrayerLocation: {
