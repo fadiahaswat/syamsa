@@ -313,4 +313,60 @@ window.checkScheduledNotifications = function () {
       );
     }
   }
+
+  // 13. Sakit lebih dari 2 hari tanpa surat dokter (sakit_tanpa_surat)
+  // Dicek jam 09:00 dan 15:00
+  if (types.sakit_tanpa_surat && (h === 9 || h === 15) && m === 0) {
+    const todayStr = window.getLocalDateStr ? window.getLocalDateStr() : new Date().toISOString().split("T")[0];
+    const activeSickPermits = (appState.permits || []).filter((p) => {
+      return p.is_active !== false && p.category === "sakit" && !p.hasDocument;
+    });
+
+    activeSickPermits.forEach((permit) => {
+      if (!permit.start_date) return;
+      const startDate = new Date(permit.start_date);
+      const today = new Date(todayStr);
+      const diffDays = Math.floor((today - startDate) / (1000 * 60 * 60 * 24));
+
+      if (diffDays >= 2) {
+        const studentId = permit.nis || permit.studentId || "Santri";
+        window.sendLocalNotification(
+          "⚠️ Wajib Surat Dokter!",
+          `${studentId} sakit lebih dari ${diffDays} hari - Surat dokter wajib diupload.`
+        );
+      }
+    });
+  }
+
+  // 14. Izin/Pulang melewati deadline - Otomatis jadi Alpa (izin_lewat_deadline)
+  // Dicek jam 08:00 dan 17:00
+  if (types.izin_lewat_deadline && (h === 8 || h === 17) && m === 0) {
+    const todayStr = window.getLocalDateStr ? window.getLocalDateStr() : new Date().toISOString().split("T")[0];
+    const expiredPermits = (appState.permits || []).filter((p) => {
+      if (p.is_active === false) return false;
+      if (p.category === "sakit") return false; // Sakit tidak expire otomatis
+      if (!p.end_date) return false;
+      return p.end_date < todayStr;
+    });
+
+    expiredPermits.forEach((permit) => {
+      const studentId = permit.nis || permit.studentId || "Santri";
+      const permitType = permit.category === "pulang" ? "Izin Pulang" : "Izin";
+
+      // Tandai permit sebagai expired
+      permit.is_active = false;
+      permit.expiredByNotification = true;
+
+      window.sendLocalNotification(
+        "⚠️ Izin Kadaluarsa - Alpa!",
+        `${studentId}: ${permitType} telah melewati deadline - status otomatis berubah menjadi Alpa.`
+      );
+    });
+
+    // Simpan perubahan jika ada yang expire
+    if (expiredPermits.length > 0 && window.persistPermits) {
+      window.persistPermits();
+      window.refreshPermitSurfaces?.();
+    }
+  }
 };

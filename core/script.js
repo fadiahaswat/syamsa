@@ -1739,6 +1739,8 @@ window.updateDashboard = function () {
         isya: "moon"
       };
       dashboardBgIcon.setAttribute("data-lucide", slotBgIconMap[heroSlotId] || "calendar-check");
+      // Re-render lucide icon agar berubah
+      if (window.lucide) window.lucide.createIcons();
     }
     if (dashboardContent) {
       const slotBgColorMap = {
@@ -2158,6 +2160,8 @@ window.updateLocationStatus = function () {
           distance: nearestDist,
           locationName: nearestName,
           isInside: isInside,
+          lat: userLat,
+          lng: userLng,
         }),
       );
 
@@ -2222,14 +2226,20 @@ window.updateLocationStatus = function () {
       }
 
       if (window.lucide) window.lucide.createIcons();
+
+      // Update widget jadwal shalat/Hijriah dengan koordinat baru secara senyap
+      if (window.initSalatHijriWidget) {
+        window.initSalatHijriWidget().catch(err => console.error("Gagal update salat widget dari lokasi baru:", err));
+      }
     },
     (error) => {
       if (elLoading) elLoading.classList.add("hidden");
       if (elError) {
         elError.classList.remove("hidden");
         let msg = "Gagal deteksi lokasi.";
-        if (error.code === 1) msg = "Izin lokasi ditolak.";
-        else if (error.code === 2) msg = "Sinyal GPS lemah.";
+        if (error.code === 1) {
+          msg = 'Izin lokasi ditolak. <button onclick="event.stopPropagation(); window.openGpsGuideModal();" class="underline text-palette-blue dark:text-palette-cyan font-bold ml-1 hover:opacity-85">Aktifkan</button>';
+        } else if (error.code === 2) msg = "Sinyal GPS lemah.";
         else if (error.code === 3) msg = "Waktu GPS habis. Coba lagi di area terbuka.";
         elError.innerHTML = `<p class="text-[10px] font-bold text-red-500 leading-tight">${msg}</p>`;
       }
@@ -7547,6 +7557,8 @@ window.verifyLocation = function () {
               distance: nearestDist,
               locationName: nearestName,
               isInside: isInside,
+              lat: userLat,
+              lng: userLng,
             }),
           );
           resolve(true);
@@ -7558,6 +7570,8 @@ window.verifyLocation = function () {
               distance: nearestDist,
               locationName: nearestName,
               isInside: isInside,
+              lat: userLat,
+              lng: userLng,
             }),
           );
           reject(
@@ -7575,6 +7589,7 @@ window.verifyLocation = function () {
           const gpsPermissionKey = "gps_permission_denied_" + APP_CONFIG?.appName?.replace(/\s+/g, "_").toLowerCase() || "syamsa_app";
           sessionStorage.setItem(gpsPermissionKey, "true");
           msg = "Izin lokasi ditolak. Aktifkan GPS di browser.";
+          window.openGpsGuideModal(); // Buka panduan perizinan
         } else if (error.code === 2)
           msg = "Sinyal GPS tidak ditemukan. Pastikan Anda di luar ruangan.";
         else if (error.code === 3)
@@ -8136,6 +8151,15 @@ window.markAsRecovered = function (id) {
     window.showToast("Status kesembuhan diperbarui", "success");
 
     window.refreshPermitSurfaces();
+
+    // Notifikasi: Santri sembuh
+    if (window.sendLocalNotification && appState.settings?.notifications) {
+      const studentId = permit.nis || permit.studentId || "Santri";
+      window.sendLocalNotification(
+        "✅ Santri Sembuh",
+        `${studentId} telah ditandai sembuh. Sesi diperbarui.`
+      );
+    }
     };
 
     window.showConfirmModal(
@@ -8182,7 +8206,8 @@ window.extendPermit = function (id) {
 
   // Poin 5: "mengabari jadi I Izin"
   // Jika asalnya Pulang, kita ubah jadi Izin karena sudah lewat jatah pulang.
-  if (permit.category === "pulang") {
+  const wasPulang = permit.category === "pulang";
+  if (wasPulang) {
     permit.category = "izin";
     permit.status_label = "I";
     permit.reason += " (Diperpanjang/Telat)";
@@ -8193,6 +8218,17 @@ window.extendPermit = function (id) {
 
   window.persistPermits();
   window.refreshPermitSurfaces();
+
+  // Notifikasi: Izin pulang diperpanjang
+  if (window.sendLocalNotification && appState.settings?.notifications) {
+    const studentId = permit.nis || permit.studentId || "Santri";
+    if (wasPulang) {
+      window.sendLocalNotification(
+        "🔄 Izin Diperpanjang",
+        `${studentId}: Status Pulang diubah menjadi Izin (Diperpanjang).`
+      );
+    }
+  }
 };
 
 window.toggleSelectAllPermit = function () {
@@ -9753,19 +9789,23 @@ window.verifyLocationCached = async function () {
   }
 
   const cache = JSON.parse(localStorage.getItem(GPS_CACHE_KEY) || "null");
+  const VERIFY_MAX_AGE = 2 * 60 * 1000; // 2 menit untuk validasi presensi
 
   if (
     cache &&
     cache.distance !== undefined &&
-    Date.now() - cache.timestamp < GPS_CACHE_DURATION
+    Date.now() - cache.timestamp < VERIFY_MAX_AGE
   ) {
     if (
       cache.isInside === true &&
       Number(cache.distance) <= GEO_CONFIG.maxRadiusMeters
     ) {
       return true;
+    } else {
+      // Jika di luar radius dan cache masih sangat baru (< 2 menit), jangan minta GPS lagi.
+      // Tolak langsung menggunakan data jarak yang ada tanpa menghapus cache.
+      throw `Lokasi Anda terlalu jauh (${Math.round(cache.distance)}m dari ${cache.locationName || "Asrama"}). Radius maksimal: ${GEO_CONFIG.maxRadiusMeters}m.`;
     }
-    localStorage.removeItem(GPS_CACHE_KEY);
   }
 
   await window.verifyLocation();
@@ -9861,27 +9901,11 @@ window.initSalatHijriWidget = async function () {
   let lng = defaultPrayerLocation.lng;
   let locationLabel = defaultPrayerLocation.label;
 
-  // Coba gunakan lokasi dari cache atau minta GPS sekali saja per sesi
-  if (!window._gpsLocationCache.attempted) {
-    window._gpsLocationCache.attempted = true;
-    try {
-      const position = await new Promise((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 4000 });
-      });
-      lat = position.coords.latitude;
-      lng = position.coords.longitude;
-      window._gpsLocationCache.lat = lat;
-      window._gpsLocationCache.lng = lng;
-      // Reverse geocode DISABLE - CORS blocking dari browser.
-      locationLabel = defaultPrayerLocation.label;
-    } catch (locErr) {
-      // GPS gagal, gunakan default - tidak akan diminta lagi di sesi ini
-      console.warn("GPS tidak tersedia, menggunakan lokasi default:", locErr.message);
-    }
-  } else if (window._gpsLocationCache.lat !== null) {
-    // Gunakan hasil cache jika tersedia
-    lat = window._gpsLocationCache.lat;
-    lng = window._gpsLocationCache.lng;
+  // Coba gunakan lokasi dari cache utama (localStorage)
+  const cached = window.getCachedLocation();
+  if (cached && cached.lat && cached.lng) {
+    lat = cached.lat;
+    lng = cached.lng;
   }
 
   // Update subtitle
@@ -10316,3 +10340,58 @@ window.toggleSalatAccordion = function () {
     if (label) label.textContent = "Jadwal Salat";
   }
 };
+
+// ==========================================
+// PANDUAN IZIN GPS INTERAKTIF
+// ==========================================
+window.openGpsGuideModal = function () {
+  const modal = document.getElementById("modal-gps-guide");
+  if (!modal) return;
+
+  modal.classList.remove("hidden");
+  
+  // Auto-detect OS/platform
+  let platform = "android";
+  const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+  if (/iPad|iPhone|iPod/.test(userAgent) && !window.MSStream) {
+    platform = "ios";
+  } else if (/Macintosh|Windows|Linux/.test(userAgent) && !/Android|Mobi/i.test(userAgent)) {
+    platform = "pc";
+  }
+
+  window.setGpsTab(platform);
+  if (window.lucide) window.lucide.createIcons();
+};
+
+window.setGpsTab = function (platform) {
+  const tabs = ["android", "ios", "pc"];
+  tabs.forEach((t) => {
+    const btn = document.getElementById(`gps-tab-btn-${t}`);
+    const content = document.getElementById(`gps-tab-content-${t}`);
+    if (t === platform) {
+      if (btn) {
+        btn.className = "gps-tab-btn flex-1 py-2 rounded-lg text-[11px] font-black transition-all bg-white dark:bg-slate-700 shadow-sm text-palette-blue dark:text-palette-cyan";
+      }
+      if (content) content.classList.remove("hidden");
+    } else {
+      if (btn) {
+        btn.className = "gps-tab-btn flex-1 py-2 rounded-lg text-[11px] font-black transition-all text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200";
+      }
+      if (content) content.classList.add("hidden");
+    }
+  });
+};
+
+window.recheckGpsFromModal = function () {
+  const modal = document.getElementById("modal-gps-guide");
+  if (modal) modal.classList.add("hidden");
+
+  // Hapus tanda penolakan di session dan cache utama agar browser meminta izin lagi
+  const gpsPermissionKey = "gps_permission_denied_" + window.APP_CONFIG?.appName?.replace(/\s+/g, "_").toLowerCase() || "syamsa_app";
+  sessionStorage.removeItem(gpsPermissionKey);
+  localStorage.removeItem(GPS_CACHE_KEY);
+
+  window.showToast("🔄 Mencoba mendeteksi lokasi kembali...", "info");
+  window.updateLocationStatus();
+};
+

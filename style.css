@@ -1448,7 +1448,7 @@ body.qibla-browser-active.qibla-browser-green {
   z-index: -1;
   width: clamp(9rem, 34vw, 17rem);
   height: clamp(9rem, 34vw, 17rem);
-  color: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.025);
   pointer-events: none;
   transform: rotate(-8deg);
 }

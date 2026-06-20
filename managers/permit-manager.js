@@ -27,6 +27,16 @@ const PERMIT_THEMES = {
 };
 window.PERMIT_THEMES = PERMIT_THEMES;
 
+// --- UTILITY FUNCTIONS ---
+window.fileToBase64 = function(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+};
+
 // --- FITUR PERIZINAN (UPDATED) ---
 
 // Variable state tambahan
@@ -62,10 +72,10 @@ window.openPermitModal = function (mode = "daily") {
   tabPulang.classList.remove("hidden");
 
   if (mode === "daily") {
-    tabPulang.classList.add("hidden");
+    // Tab Pulang tetap muncul di mode daily
     window.setPermitTab("sakit");
     if (modalTitle) modalTitle.textContent = "Input Perizinan Harian";
-    if (modalDesc) modalDesc.textContent = "Sakit & Izin Kegiatan";
+    if (modalDesc) modalDesc.textContent = "Sakit, Izin & Pulang";
   } else {
     tabSakit.classList.add("hidden");
     tabIzin.classList.add("hidden");
@@ -136,11 +146,14 @@ window.getPermitSlotIdForView = window.getPermitSlotIdForView || function () {
 window.getPermitRuntimeState = window.getPermitRuntimeState || function (
   permit,
   currentDateStr = appState.date,
-  currentSlotId = window.getPermitSlotIdForView(),
+  currentSlotId = window.getPermitSlotIdForView?.() || appState.currentSlotId || "shubuh",
 ) {
-  if (!permit || !currentDateStr || !currentSlotId) {
+  if (!permit || !currentDateStr) {
     return { relevant: false, active: false, evaluated: null };
   }
+
+  // Fallback slotId jika tidak ada
+  const effectiveSlotId = currentSlotId || "shubuh";
 
   const status = String(permit.status || "approved").toLowerCase();
   if (status !== "approved") return { relevant: false, active: false, evaluated: null };
@@ -151,7 +164,7 @@ window.getPermitRuntimeState = window.getPermitRuntimeState || function (
   const evaluated = window.evaluatePermitForSlot?.(
     permit,
     currentDateStr,
-    currentSlotId,
+    effectiveSlotId,
   ) || null;
   const hasReachedDate =
     !permit.start_date || currentDateStr >= permit.start_date;
@@ -437,7 +450,68 @@ window.setPermitTab = function (tab) {
     fieldLoc.classList.remove("hidden");
     fieldTrans.classList.add("hidden");
     infoSakit.classList.remove("hidden");
-    if (btnSelectAll) btnSelectAll.parentElement.classList.add("hidden"); // Sembunyikan pilih semua utk sakit
+
+    // Setup tanggal selesai sakit default (hari ini + 2 hari)
+    const endDateInput = document.getElementById("permit-end-date-sick");
+    if (endDateInput) {
+      const startDateVal = document.getElementById("permit-start-date")?.value || window.getLocalDateStr();
+      const startDate = new Date(startDateVal);
+      startDate.setDate(startDate.getDate() + 2); // Default 2 hari
+      endDateInput.value = window.getLocalDateStr(startDate);
+      endDateInput.min = startDateVal;
+      // Maksimal 7 hari dari mulai
+      const maxDate = new Date(startDateVal);
+      maxDate.setDate(maxDate.getDate() + 7);
+      endDateInput.max = window.getLocalDateStr(maxDate);
+    }
+
+    // Setup event listener untuk update durasi info
+    setTimeout(() => {
+      const endDateInput = document.getElementById("permit-end-date-sick");
+      const startDateInput = document.getElementById("permit-start-date");
+      const durationInfo = document.getElementById("sick-duration-info");
+      const fieldSuratDokter = document.getElementById("field-surat-dokter");
+
+      const updateDurationInfo = () => {
+        if (!startDateInput?.value || !endDateInput?.value || !durationInfo) return;
+
+        const start = new Date(startDateInput.value);
+        const end = new Date(endDateInput.value);
+        const diffDays = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
+
+        if (diffDays <= 0) {
+          durationInfo.textContent = "";
+          fieldSuratDokter?.classList.add("hidden");
+          return;
+        }
+
+        if (diffDays === 1) {
+          durationInfo.textContent = "Durasi: 1 hari";
+        } else {
+          durationInfo.textContent = `Durasi: ${diffDays} hari`;
+        }
+
+        // Tampilkan field surat dokter jika lebih dari 2 hari
+        if (diffDays > 2) {
+          fieldSuratDokter?.classList.remove("hidden");
+        } else {
+          fieldSuratDokter?.classList.add("hidden");
+        }
+      };
+
+      endDateInput?.addEventListener("change", updateDurationInfo);
+      startDateInput?.addEventListener("change", () => {
+        if (endDateInput) {
+          const startDate = new Date(startDateInput.value);
+          startDate.setDate(startDate.getDate() + 2);
+          endDateInput.value = window.getLocalDateStr(startDate);
+          endDateInput.min = startDateInput.value;
+        }
+        updateDurationInfo();
+      });
+
+      updateDurationInfo();
+    }, 100);
 
     [
       "Demam",
@@ -456,7 +530,6 @@ window.setPermitTab = function (tab) {
     fieldEnd.classList.remove("hidden");
     fieldLoc.classList.add("hidden");
     infoSakit.classList.add("hidden");
-    if (btnSelectAll) btnSelectAll.parentElement.classList.remove("hidden"); // Munculkan utk izin/pulang
 
     if (tab === "izin") {
       lblReason.textContent = "Keperluan Apa?";
@@ -487,7 +560,7 @@ window.setPermitTab = function (tab) {
 };
 
 // 3. Logic Simpan Data (Advanced)
-window.savePermitLogic = function () {
+window.savePermitLogic = async function () {
   const checkboxes = document.querySelectorAll(
     'input[name="permit_santri_select"]:checked',
   );
@@ -499,10 +572,16 @@ window.savePermitLogic = function () {
   const reason = document.getElementById("permit-reason").value;
   const startDate = document.getElementById("permit-start-date").value;
   const startSession = document.getElementById("permit-start-session").value;
+  const todayStr = window.getLocalDateStr();
 
   if (!reason) return window.showToast("Isi alasannya dulu", "warning");
   if (!startDate)
     return window.showToast("Tanggal mulai wajib diisi", "warning");
+
+  // VALIDASI: Sakit tidak bisa direncanakan untuk masa depan
+  if (currentPermitTab === "sakit" && startDate > todayStr) {
+    return window.showToast("Sakit tidak bisa direncanakan! Input untuk hari ini atau sebelumnya.", "warning");
+  }
 
   let permitData = {
     category: currentPermitTab, // sakit, izin, pulang
@@ -515,12 +594,36 @@ window.savePermitLogic = function () {
 
   // Tambahan Data per Kategori
   if (currentPermitTab === "sakit") {
-    // SAKIT: Open ended (end_date null)
-    permitData.location = document.querySelector(
-      'input[name="loc_sakit"]:checked',
-    ).value;
-    permitData.end_date = null;
+    const endDateSick = document.getElementById("permit-end-date-sick")?.value;
+    const location = document.querySelector('input[name="loc_sakit"]:checked')?.value || "Asrama";
+
+    // Hitung durasi sakit
+    const startDateObj = new Date(startDate);
+    const endDateObj = endDateSick ? new Date(endDateSick) : new Date(startDate);
+    endDateObj.setDate(endDateObj.getDate() + 1); // Inclusive
+    const diffDays = Math.ceil((endDateObj - startDateObj) / (1000 * 60 * 60 * 24)) + 1;
+
+    // VALIDASI: Jika lebih dari 2 hari, harus ada surat dokter
+    let suratDokterBase64 = null;
+    if (diffDays > 2) {
+      const suratDokterFile = document.getElementById("permit-surat-dokter")?.files[0];
+      if (!suratDokterFile) {
+        return window.showToast("Sakit lebih dari 2 hari wajib upload surat dokter!", "warning");
+      }
+      // Convert file to base64
+      try {
+        suratDokterBase64 = await window.fileToBase64(suratDokterFile);
+      } catch (e) {
+        return window.showToast("Gagal upload surat dokter. Coba lagi.", "error");
+      }
+    }
+
+    permitData.location = location;
+    permitData.end_date = endDateSick || startDate; // Default sama dengan start
+    permitData.end_session = null;
     permitData.status_label = "S";
+    permitData.requires_surat_dokter = diffDays > 2;
+    permitData.surat_dokter = suratDokterBase64;
   } else {
     // IZIN & PULANG: Punya Deadline
     const endDate = document.getElementById("permit-end-date").value;
@@ -554,10 +657,12 @@ window.savePermitLogic = function () {
 
   window.persistPermits();
 
-  // SINKRONISASI: Jika sakit, sync ke semua sesi dalam satu hari
+  // SINKRONISASI: Jika sakit, sync ke SEMUA sesi untuk SETIAP sambutri
   if (currentPermitTab === "sakit" && savedPermits.length > 0) {
-    // Ambil permit pertama (ID sama untuk semua dalam batch ini)
-    window.syncSickPermitAcrossSessions(savedPermits[0].id, startDate);
+    // Sync untuk setiap permit yang disimpan
+    savedPermits.forEach(permit => {
+      window.syncSickPermitAcrossSessions(permit.id, startDate);
+    });
     window.renderAttendanceList?.();
   }
 
@@ -646,6 +751,7 @@ window.syncSickPermitAcrossSessions = function (permitId = null, targetDate = nu
   if (permitsToSync.length === 0) return;
 
   // 2. Untuk setiap permit, sync ke sesi-sesi berikutnya
+  let anyChanged = false; // Track changes globally for saveData
   permitsToSync.forEach(permit => {
     const nis = String(permit.nis);
     const startSession = permit.start_session || "shubuh";
@@ -656,13 +762,28 @@ window.syncSickPermitAcrossSessions = function (permitId = null, targetDate = nu
       // Selalu sync sesi yang >= start_session
       if (idx < startIdx) return false;
 
-      // Jika permitId spesifik diberikan, hanya sync sesi yang >= sesi saat ini
-      // (kecuali jika belum ada data attendance)
-      if (permitId && currentSessionIdx >= 0 && idx < currentSessionIdx) {
-        // Cek apakah sesi ini sudah punya data attendance
+      // Jika permitId spesifik diberikan (input sakit baru), WAJIB sync ke SEMUA sesi
+      // dari start_session, termasuk sesi yang sudah lewat dan sudah ada datanya
+      // Ini agar sakit "mulai dari Shubuh" bisa diterapkan ke Shubuh meskipun sudah lewat
+      if (permitId) {
+        return true; // Sync semua sesi dari start_session ke akhir
+      }
+
+      // Untuk sync umum (tanpa permitId - saat buka attendance view):
+      // Sync sesi yang LEBIH DULU dari sesi saat ini tapi BELUM punya data
+      // Ini untuk menangkap kasus "lompat sesi" (misal: dari Shubuh langsung ke Ashar)
+      if (currentSessionIdx >= 0) {
+        // Cek apakah sesi ini belum punya data attendance
         const slotData = appState.attendanceData?.[dateKey]?.[sessionId]?.[nis];
-        if (slotData && Object.keys(slotData.status || {}).length > 0) {
-          return false; // Sudah ada data, skip
+        const hasExistingData = slotData && Object.keys(slotData.status || {}).length > 0;
+
+        // Jika sesi ini sudah punya data dan BUKAN sesi saat ini, skip
+        if (hasExistingData && idx < currentSessionIdx) {
+          return false;
+        }
+        // Jika sesi ini sudah punya data dan ADALAH sesi saat ini, skip juga (sudah ditangani)
+        if (hasExistingData && idx === currentSessionIdx) {
+          return false;
         }
       }
 
@@ -696,7 +817,6 @@ window.syncSickPermitAcrossSessions = function (permitId = null, targetDate = nu
       if (hasPermitOverride) return;
 
       // Apply status sakit ke semua aktivitas wajib
-      let changed = false;
       slot.activities.forEach(act => {
         // Skip jika aktivitas libur
         if (window.isActivityHoliday?.(dateKey, sessionId, act.id)) return;
@@ -710,7 +830,7 @@ window.syncSickPermitAcrossSessions = function (permitId = null, targetDate = nu
 
         if (sData.status[act.id] !== targetStatus) {
           sData.status[act.id] = targetStatus;
-          changed = true;
+          anyChanged = true;
         }
       });
 
@@ -718,16 +838,16 @@ window.syncSickPermitAcrossSessions = function (permitId = null, targetDate = nu
       const autoNote = `[Auto] Sakit s/d ${window.formatDate(permit.end_date || 'belum sembuh')}`;
       if (!sData.note || !sData.note.includes("[Auto]")) {
         sData.note = autoNote;
-        changed = true;
+        anyChanged = true;
       } else if (!sData.note.includes("Sakit")) {
         sData.note = autoNote;
-        changed = true;
+        anyChanged = true;
       }
     });
   });
 
   // 4. Simpan perubahan
-  if (changed) {
+  if (anyChanged) {
     window.saveData?.();
   }
 };

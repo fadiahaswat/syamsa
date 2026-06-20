@@ -8,27 +8,32 @@
   "orientation": "portrait",
   "icons": [
     {
-      "src": "assets/branding/Logomark.webp",
+      "src": "assets/icons/app-icon.png",
       "sizes": "1024x1024",
-      "type": "image/webp",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "assets/branding/Logomark.webp",
-      "sizes": "1024x1024",
-      "type": "image/webp"
-    },
-    {
-      "src": "assets/branding/Logomark.webp",
-      "sizes": "1024x1024",
-      "type": "image/webp",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "assets/branding/Logomark.webp",
-      "sizes": "1024x1024",
-      "type": "image/webp",
+      "type": "image/png",
       "purpose": "any"
+    },
+    {
+      "src": "assets/icons/app-icon.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "assets/screenshots/desktop-wide.png",
+      "sizes": "1440x900",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Syamsa desktop view"
+    },
+    {
+      "src": "assets/screenshots/mobile-narrow.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Syamsa mobile view"
     }
   ]
 }

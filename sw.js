@@ -1,4 +1,4 @@
-const CACHE_NAME = "musyrif-app-v221-branding-filenames";
+const CACHE_NAME = "musyrif-app-v223-ios-safe-area";
 const ASSETS_TO_CACHE = [
   "./",
   "./index.html",
@@ -17,6 +17,8 @@ const ASSETS_TO_CACHE = [
   "./assets/branding/Logo%20PP%20Muhammadiyah.webp",
   "./assets/branding/Logo%20Sekolah%20Pemimpin%20Bangsa.webp",
   "./assets/branding/Internastional%20Partners.webp",
+  "./assets/screenshots/desktop-wide.png",
+  "./assets/screenshots/mobile-narrow.png",
   "./assets/illustrations/arrow-up.webp",
   "./assets/illustrations/kaaba.webp",
   "./managers/santri-manager.js",
